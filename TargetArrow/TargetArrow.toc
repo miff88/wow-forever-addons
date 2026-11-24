@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: Target Arrow
+## Notes: Puts a bobbing arrow above your target's nameplate so you can pick it out of a crowd.
+## Author: Mitch
+## Version: 1.0.0
+## SavedVariables: TargetArrowDB
+
+TargetArrow.lua

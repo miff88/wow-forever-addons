@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: Plate Threat
+## Notes: Shows your threat percentage beside every enemy nameplate in combat. Sits clear of Overpower Plates' icon.
+## Author: Mitch
+## Version: 1.0.0
+## SavedVariables: PlateThreatDB
+
+PlateThreat.lua

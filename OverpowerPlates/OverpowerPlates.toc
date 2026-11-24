@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: Overpower Plates
+## Notes: Shows an Overpower icon above the nameplate of any mob that dodges you, including off-target Whirlwind and Cleave dodges.
+## Author: Mitch
+## Version: 1.2.0
+## SavedVariables: OverpowerPlatesDB
+
+OverpowerPlates.lua
