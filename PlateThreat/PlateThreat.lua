@@ -7,7 +7,9 @@
 -- addon can't do maths on them. So the number is passed straight to the text, and the
 -- colour only changes when the game lets the addon read the value. No combat log is used.
 --
--- Needs enemy nameplates on (V by default).
+-- It also puts a retail-style threat box on top of the target frame.
+--
+-- Needs enemy nameplates on (V by default) for the nameplate numbers.
 
 local ADDON_NAME, ns = ...
 
@@ -15,6 +17,9 @@ local defaults = {
     size = 11,         -- font size
     side = "left",     -- "left" or "right" of the health bar (right overlaps the level box)
     offsetX = 4,
+    portrait = true,   -- threat box on top of the target frame
+    portraitX = 0,
+    portraitY = 0,
 }
 
 local db
@@ -145,16 +150,107 @@ local function UpdatePlate(plate, unit)
     f:Show()
 end
 
+local UpdateTargetBoxRef -- set below, once the target box code exists
+
 local function RefreshAll()
     if not db then return end
     for _, plate in ipairs(GetNamePlates()) do
         UpdatePlate(plate)
     end
+    if UpdateTargetBoxRef then UpdateTargetBoxRef() end
+end
+
+---------------------------------------------------------------------------
+-- Target frame box (like retail's threat percentage on the target portrait)
+---------------------------------------------------------------------------
+local box
+
+local function TargetAnchor()
+    if not TargetFrame then return nil end
+    local content = TargetFrame.TargetFrameContent
+    local name = _G.TargetFrameTextureFrameName
+        or (content and content.TargetFrameContentMain and content.TargetFrameContentMain.Name)
+        or TargetFrame.name
+    if name then return name, 0, 2 end
+    return TargetFrame, -20, -8
+end
+
+local function GetBox()
+    if box then return box end
+    if not TargetFrame then return nil end
+
+    box = CreateFrame("Frame", "PlateThreatTargetBox", TargetFrame)
+    box:SetSize(49, 18)
+    box:SetFrameLevel((TargetFrame:GetFrameLevel() or 1) + 10)
+
+    -- same art the game uses for its own numeric threat box
+    box.bg = box:CreateTexture(nil, "BACKGROUND")
+    box.bg:SetTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    box.bg:SetSize(37, 14)
+    box.bg:SetPoint("TOP", 0, -3)
+
+    box.border = box:CreateTexture(nil, "ARTWORK")
+    box.border:SetTexture("Interface\\TargetingFrame\\NumericThreatBorder")
+    box.border:SetTexCoord(0, 0.765625, 0, 0.5625)
+    box.border:SetSize(49, 18)
+    box.border:SetPoint("TOP")
+
+    box.text = box:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    box.text:SetPoint("TOP", 0, -4)
+
+    box:Hide()
+    return box
+end
+
+local function BoxColour(isTanking, status, pct)
+    if not IsSecret(status) and type(status) == "number" and GetThreatStatusColor then
+        local ok, r, g, b = pcall(GetThreatStatusColor, status)
+        if ok and r then return r, g, b end
+    end
+    if not IsSecret(isTanking) and isTanking then return 1, 0, 0 end
+    if not IsSecret(pct) and type(pct) == "number" then return PctColour(pct) end
+    return 0.69, 0.69, 0.69
+end
+
+local function UpdateTargetBox()
+    local b = GetBox()
+    if not b then return end
+
+    if not db.portrait then b:Hide() return end
+
+    local anchor, ax, ay = TargetAnchor()
+    b:ClearAllPoints()
+    b:SetPoint("BOTTOM", anchor, "TOP", ax + db.portraitX, ay + db.portraitY)
+
+    if testMode then
+        b.text:SetText("87%")
+        b.bg:SetVertexColor(PctColour(87))
+        b:Show()
+        return
+    end
+
+    if not UnitExists("target") or not UnitCanAttack("player", "target") or not UnitAffectingCombat("player") then
+        b:Hide()
+        return
+    end
+
+    local ok, isTanking, status, pct = pcall(UnitDetailedThreatSituation, "player", "target")
+    if not ok or (not IsSecret(pct) and pct == nil) then
+        b:Hide()
+        return
+    end
+
+    SetThreatText(b.text, pct)
+    b.bg:SetVertexColor(BoxColour(isTanking, status, pct))
+    b:Show()
 end
 
 local function HideAll()
     for _, f in pairs(labels) do f:Hide() end
+    if box then box:Hide() end
 end
+
+UpdateTargetBoxRef = UpdateTargetBox
 
 ---------------------------------------------------------------------------
 -- Events
@@ -189,6 +285,7 @@ ev:SetScript("OnEvent", function(_, event, arg1)
         SafeRegister("PLAYER_REGEN_DISABLED")
         SafeRegister("UNIT_THREAT_LIST_UPDATE")
         SafeRegister("UNIT_THREAT_SITUATION_UPDATE")
+        SafeRegister("PLAYER_TARGET_CHANGED")
         C_Timer.NewTicker(0.25, RefreshAll) -- threat changes constantly, keep it fresh
 
     elseif event == "NAME_PLATE_UNIT_ADDED" then
@@ -222,7 +319,7 @@ function ns.BuildOptions()
     ns.CreateOptions({
         title = "Plate Threat",
         icon = ICON,
-        about = "Your threat % beside every enemy nameplate",
+        about = "Your threat % on enemy nameplates and the target frame",
         slash = "/pth",
         db = db,
         onChange = function()
@@ -234,6 +331,10 @@ function ns.BuildOptions()
             { type = "choice", key = "side", label = "Side of the health bar", values = { "left", "right" } },
             { type = "range", key = "size", label = "Font size", min = 8, max = 20, step = 1 },
             { type = "range", key = "offsetX", label = "Gap from the health bar", min = 0, max = 20, step = 1 },
+            { type = "header", label = "Target frame" },
+            { type = "check", key = "portrait", label = "Show a threat box on the target frame" },
+            { type = "range", key = "portraitX", label = "Move left / right", min = -150, max = 150, step = 2 },
+            { type = "range", key = "portraitY", label = "Move up / down", min = -100, max = 100, step = 2 },
             { type = "header", label = "Preview" },
             { type = "button", dynamicLabel = function() return testMode and "Stop test" or "Test on nameplates" end,
               label = "Test on nameplates",
@@ -263,6 +364,10 @@ SlashCmdList.PLATETHREAT = function(msg)
         Print("test mode " .. (testMode and "on" or "off"))
     elseif cmd == "size" and n then
         db.size = n; RefreshAll(); Print("font size " .. n)
+    elseif cmd == "portrait" then
+        db.portrait = not db.portrait
+        RefreshAll()
+        Print("target frame box " .. (db.portrait and "on" or "off"))
     elseif cmd == "left" or cmd == "right" then
         db.side = cmd; RefreshAll(); Print("shown on the " .. cmd .. " of the health bar")
     elseif cmd == "gap" and n then
@@ -273,6 +378,7 @@ SlashCmdList.PLATETHREAT = function(msg)
         Print("/pth left, /pth right - which side of the health bar (now " .. db.side .. ")")
         Print("/pth size <n> - font size (now " .. db.size .. ")")
         Print("/pth gap <n> - gap from the health bar (now " .. db.offsetX .. ")")
+        Print("/pth portrait - threat box on the target frame (now " .. (db.portrait and "on" or "off") .. ")")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end
 end

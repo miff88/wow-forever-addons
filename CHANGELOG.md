@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-24 (later)
+
+Plate Threat 1.3.0
+- Retail-style threat box on top of the target frame, coloured by threat level. Can be moved or turned off.
+
 ## 2026-11-24
 
 All addons
