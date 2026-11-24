@@ -1,7 +1,7 @@
 -- Plate Threat (WoW Forever)
 -- Shows your threat on each enemy nameplate as a percentage of what it takes to pull
--- aggro (100% = you have it). Sits beside the health bar so it doesn't clash with the
--- Overpower Plates icon above the bar.
+-- aggro (100% = you have it). Sits on the left of the health bar, clear of the level box
+-- and of the Overpower Plates icon above the bar.
 --
 -- Forever hands addons threat as "secret" values: they can be shown on screen but the
 -- addon can't do maths on them. So the number is passed straight to the text, and the
@@ -13,7 +13,7 @@ local ADDON_NAME = ...
 
 local defaults = {
     size = 11,         -- font size
-    side = "right",    -- "right" or "left" of the health bar
+    side = "left",     -- "left" or "right" of the health bar (right overlaps the level box)
     offsetX = 4,
 }
 
@@ -65,23 +65,31 @@ local function GetLabel(plate)
     if not f then
         f = CreateFrame("Frame", nil, plate)
         f:SetFrameStrata("HIGH")
-        f:SetSize(1, 1)
-        f.text = f:CreateFontString(nil, "OVERLAY")
-        f.text:SetPoint("CENTER")
+        f:SetSize(48, 20)
+        -- start from a built-in font object so the text always has a font, even if SetFont fails
+        f.text = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         f:Hide()
         labels[plate] = f
     end
 
-    f.text:SetFont(STANDARD_TEXT_FONT, db.size, "OUTLINE")
+    if f.fontSize ~= db.size then
+        local fontPath = STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF"
+        if pcall(f.text.SetFont, f.text, fontPath, db.size, "OUTLINE") then
+            f.fontSize = db.size
+        end
+    end
+
     f:ClearAllPoints()
     f.text:ClearAllPoints()
     local anchor = PlateAnchor(plate)
     if db.side == "left" then
         f:SetPoint("RIGHT", anchor, "LEFT", -db.offsetX, 0)
         f.text:SetPoint("RIGHT", f, "RIGHT")
+        f.text:SetJustifyH("RIGHT")
     else
         f:SetPoint("LEFT", anchor, "RIGHT", db.offsetX, 0)
         f.text:SetPoint("LEFT", f, "LEFT")
+        f.text:SetJustifyH("LEFT")
     end
     return f
 end
@@ -167,6 +175,11 @@ ev:SetScript("OnEvent", function(_, event, arg1)
             if PlateThreatDB[k] == nil then PlateThreatDB[k] = v end
         end
         db = PlateThreatDB
+        -- 1.1: move existing installs to the left so the number stops covering the level box
+        if (db.v or 0) < 2 then
+            db.side = "left"
+            db.v = 2
+        end
 
     elseif event == "PLAYER_LOGIN" then
         SafeRegister("NAME_PLATE_UNIT_ADDED")

@@ -15,7 +15,7 @@ A bobbing arrow above your target's nameplate so you can pick it out of a crowd.
 - `/tarrow size <n>`, `/tarrow offset <n>`, `/tarrow bob`, `/tarrow enemies`
 
 ### Plate Threat (`/pth`)
-Shows your threat percentage beside each enemy nameplate in combat (100% = you have aggro). Forever returns threat as secret values, so the number is displayed directly and is only coloured when the game allows the value to be read. May not show in instances.
+Shows your threat percentage on the left of each enemy nameplate in combat (100% = you have aggro), clear of the level box. Forever returns threat as secret values, so the number is displayed directly and is only coloured when the game allows the value to be read. May not show in instances.
 
 - `/pth test`, `/pth left`, `/pth right`, `/pth size <n>`, `/pth gap <n>`
 
