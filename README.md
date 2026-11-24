@@ -6,6 +6,10 @@ Small addons for World of Warcraft: Forever (Interface 16001). Some work on any 
 
 Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates need to be on (V) for everything except Battle Shout Reminder.
 
+## Settings
+
+Every addon has a settings page under **Options > AddOns**, and an entry on the minimap's addon button. Typing the slash command on its own (for example `/opp`) opens the page, and adding `help` (`/opp help`) lists the chat commands.
+
 ## Any class
 
 ### Target Arrow (`/tarrow`)

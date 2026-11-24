@@ -6,7 +6,7 @@
 -- from the moment you shout, and checks the real buff whenever the game allows it (out of
 -- combat). No combat log is used.
 
-local ADDON_NAME = ...
+local ADDON_NAME, ns = ...
 
 ---------------------------------------------------------------------------
 -- Settings (saved per account, change with /bsr)
@@ -194,6 +194,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, _, arg3)
         end
         db = BattleShoutReminderDB
         ApplyLayout()
+        ns.BuildOptions()
 
     elseif event == "PLAYER_LOGIN" then
         local _, class = UnitClass("player")
@@ -231,18 +232,55 @@ local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Battle Shout Reminder:|r " .. msg)
 end
 
+local function SetUnlocked(v)
+    unlocked = v
+    frame:EnableMouse(v)
+end
+
+---------------------------------------------------------------------------
+-- Settings page (Options > AddOns) and minimap addon button
+---------------------------------------------------------------------------
+function ns.BuildOptions()
+    ns.CreateOptions({
+        title = "Battle Shout Reminder",
+        icon = SHOUT_ICON,
+        about = "Reminds you when Battle Shout is missing or running out",
+        slash = "/bsr",
+        db = db,
+        onChange = function() ApplyLayout(); Update() end,
+        controls = {
+            { type = "header", label = "Reminder" },
+            { type = "range", key = "threshold", label = "Warn with this many seconds left", min = 0, max = 60, step = 5, suffix = "s" },
+            { type = "check", key = "sound", label = "Play a sound when it drops off in combat" },
+            { type = "header", label = "Icon" },
+            { type = "range", key = "size", label = "Icon size", min = 24, max = 120, step = 4 },
+            { type = "button", dynamicLabel = function() return unlocked and "Lock position" or "Unlock to move" end,
+              label = "Unlock to move", func = function() SetUnlocked(not unlocked) end },
+            { type = "button", label = "Reset position", func = function() db.point = { unpack(defaults.point) } end },
+            { type = "header", label = "Preview" },
+            { type = "button", dynamicLabel = function() return testMode and "Stop test" or "Show test icon" end,
+              label = "Show test icon", func = function() testMode = not testMode end },
+        },
+    })
+end
+
+function BattleShoutReminder_OnAddonCompartmentClick()
+    if ns.OpenOptions then ns.OpenOptions() end
+end
+
 SLASH_BATTLESHOUTREMINDER1 = "/bsr"
 SlashCmdList.BATTLESHOUTREMINDER = function(msg)
     local cmd, val = (msg or ""):lower():match("^(%S*)%s*(.-)$")
     local n = tonumber(val)
 
-    if cmd == "unlock" then
-        unlocked = true
-        frame:EnableMouse(true)
+    if cmd == "" then
+        ns.OpenOptions()
+        return
+    elseif cmd == "unlock" then
+        SetUnlocked(true)
         Print("drag the icon where you want it, then /bsr lock")
     elseif cmd == "lock" then
-        unlocked = false
-        frame:EnableMouse(false)
+        SetUnlocked(false)
         Print("locked")
     elseif cmd == "test" then
         testMode = not testMode
@@ -262,7 +300,7 @@ SlashCmdList.BATTLESHOUTREMINDER = function(msg)
         ApplyLayout()
         Print("position reset")
     else
-        Print("commands:")
+        Print("v" .. ns.version .. " commands (or just /bsr for the settings page):")
         Print("/bsr unlock, /bsr lock - move the icon")
         Print("/bsr test - show the icon to check it")
         Print("/bsr time <n> - warn when this many seconds are left (now " .. db.threshold .. ")")
@@ -271,4 +309,5 @@ SlashCmdList.BATTLESHOUTREMINDER = function(msg)
         Print("/bsr reset - put the icon back in the default spot")
     end
     Update()
+    if ns.RefreshOptions then ns.RefreshOptions() end
 end

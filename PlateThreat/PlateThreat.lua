@@ -9,7 +9,7 @@
 --
 -- Needs enemy nameplates on (V by default).
 
-local ADDON_NAME = ...
+local ADDON_NAME, ns = ...
 
 local defaults = {
     size = 11,         -- font size
@@ -180,6 +180,7 @@ ev:SetScript("OnEvent", function(_, event, arg1)
             db.side = "left"
             db.v = 2
         end
+        ns.BuildOptions()
 
     elseif event == "PLAYER_LOGIN" then
         SafeRegister("NAME_PLATE_UNIT_ADDED")
@@ -212,12 +213,51 @@ local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Plate Threat:|r " .. msg)
 end
 
+---------------------------------------------------------------------------
+-- Settings page (Options > AddOns) and minimap addon button
+---------------------------------------------------------------------------
+local ICON = "Interface\\Icons\\Ability_Warrior_Challange"
+
+function ns.BuildOptions()
+    ns.CreateOptions({
+        title = "Plate Threat",
+        icon = ICON,
+        about = "Your threat % beside every enemy nameplate",
+        slash = "/pth",
+        db = db,
+        onChange = function()
+            for _, f in pairs(labels) do f.fontSize = nil end
+            RefreshAll()
+        end,
+        controls = {
+            { type = "header", label = "Text" },
+            { type = "choice", key = "side", label = "Side of the health bar", values = { "left", "right" } },
+            { type = "range", key = "size", label = "Font size", min = 8, max = 20, step = 1 },
+            { type = "range", key = "offsetX", label = "Gap from the health bar", min = 0, max = 20, step = 1 },
+            { type = "header", label = "Preview" },
+            { type = "button", dynamicLabel = function() return testMode and "Stop test" or "Test on nameplates" end,
+              label = "Test on nameplates",
+              func = function()
+                  testMode = not testMode
+                  if not testMode then HideAll() end
+              end },
+        },
+    })
+end
+
+function PlateThreat_OnAddonCompartmentClick()
+    if ns.OpenOptions then ns.OpenOptions() end
+end
+
 SLASH_PLATETHREAT1 = "/pth"
 SlashCmdList.PLATETHREAT = function(msg)
     local cmd, val = (msg or ""):lower():match("^(%S*)%s*(.-)$")
     local n = tonumber(val)
 
-    if cmd == "test" then
+    if cmd == "" then
+        ns.OpenOptions()
+        return
+    elseif cmd == "test" then
         testMode = not testMode
         if testMode then RefreshAll() else HideAll() end
         Print("test mode " .. (testMode and "on" or "off"))
@@ -228,10 +268,11 @@ SlashCmdList.PLATETHREAT = function(msg)
     elseif cmd == "gap" and n then
         db.offsetX = n; RefreshAll(); Print("gap from the health bar " .. n)
     else
-        Print("commands:")
+        Print("v" .. ns.version .. " commands (or just /pth for the settings page):")
         Print("/pth test - show a sample on every nameplate")
         Print("/pth left, /pth right - which side of the health bar (now " .. db.side .. ")")
         Print("/pth size <n> - font size (now " .. db.size .. ")")
         Print("/pth gap <n> - gap from the health bar (now " .. db.offsetX .. ")")
     end
+    if ns.RefreshOptions then ns.RefreshOptions() end
 end

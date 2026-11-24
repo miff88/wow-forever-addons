@@ -3,7 +3,7 @@
 -- icon by default so the two stack instead of overlapping.
 -- Needs nameplates on (V for enemies). No combat log is used.
 
-local ADDON_NAME = ...
+local ADDON_NAME, ns = ...
 
 local defaults = {
     size    = 28,
@@ -119,6 +119,7 @@ ev:SetScript("OnEvent", function(_, event, arg1)
         end
         db = TargetArrowDB
         ApplyLook()
+        ns.BuildOptions()
         return
     end
 
@@ -144,12 +145,41 @@ local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Target Arrow:|r " .. msg)
 end
 
+---------------------------------------------------------------------------
+-- Settings page (Options > AddOns) and minimap addon button
+---------------------------------------------------------------------------
+function ns.BuildOptions()
+    ns.CreateOptions({
+        title = "Target Arrow",
+        icon = "Interface\\Icons\\Ability_Hunter_SniperShot",
+        about = "An arrow over your target's nameplate",
+        slash = "/tarrow",
+        db = db,
+        onChange = function() Update() end,
+        controls = {
+            { type = "header", label = "Arrow" },
+            { type = "choice", key = "colour", label = "Colour", values = { "red", "yellow", "green", "blue", "white" } },
+            { type = "range", key = "size", label = "Size", min = 16, max = 64, step = 2 },
+            { type = "range", key = "offsetY", label = "Height above health bar", min = 0, max = 120, step = 2 },
+            { type = "check", key = "bob", label = "Bob up and down" },
+            { type = "check", key = "enemiesOnly", label = "Only show on enemies" },
+        },
+    })
+end
+
+function TargetArrow_OnAddonCompartmentClick()
+    if ns.OpenOptions then ns.OpenOptions() end
+end
+
 SLASH_TARGETARROW1 = "/tarrow"
 SlashCmdList.TARGETARROW = function(msg)
     local cmd, val = (msg or ""):lower():match("^(%S*)%s*(.-)$")
     local n = tonumber(val)
 
-    if cmd == "size" and n then
+    if cmd == "" then
+        ns.OpenOptions()
+        return
+    elseif cmd == "size" and n then
         db.size = n; Print("size " .. n)
     elseif cmd == "offset" and n then
         db.offsetY = n; Print("height above the health bar " .. n)
@@ -165,7 +195,7 @@ SlashCmdList.TARGETARROW = function(msg)
         db.enemiesOnly = not db.enemiesOnly
         Print(db.enemiesOnly and "only on enemies" or "on any target with a nameplate")
     else
-        Print("commands:")
+        Print("v" .. ns.version .. " commands (or just /tarrow for the settings page):")
         Print("/tarrow size <n> - arrow size (now " .. db.size .. ")")
         Print("/tarrow offset <n> - height above the health bar (now " .. db.offsetY .. ")")
         Print("/tarrow colour <red|yellow|green|blue|white> (now " .. db.colour .. ")")
@@ -173,4 +203,5 @@ SlashCmdList.TARGETARROW = function(msg)
         Print("/tarrow enemies - only show on enemies (now " .. (db.enemiesOnly and "on" or "off") .. ")")
     end
     Update()
+    if ns.RefreshOptions then ns.RefreshOptions() end
 end

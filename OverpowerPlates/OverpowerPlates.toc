@@ -1,8 +1,13 @@
 ## Interface: 16001
-## Title: Overpower Plates
-## Notes: Shows an Overpower icon above the nameplate of any mob that dodges you, including off-target Whirlwind and Cleave dodges.
-## Author: Mitch
-## Version: 1.2.0
+## Title: |cffffd100Overpower|r Plates
+## Notes: Shows an Overpower icon above the nameplate of the mob that dodged you, including off-target Whirlwind and Cleave dodges. Warrior only.
+## Author: Mitch Brindle
+## Version: 1.3.0
+## IconTexture: Interface\Icons\Ability_MeleeDamage
+## Category: Combat
+## X-Website: https://github.com/miff88/wow-forever-addons
+## AddonCompartmentFunc: OverpowerPlates_OnAddonCompartmentClick
 ## SavedVariables: OverpowerPlatesDB
 
+Options.lua
 OverpowerPlates.lua

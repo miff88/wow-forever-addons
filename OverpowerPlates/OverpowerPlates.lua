@@ -10,7 +10,7 @@
 --
 -- No combat log is used (Forever forbids it). Needs enemy nameplates on (V by default).
 
-local ADDON_NAME = ...
+local ADDON_NAME, ns = ...
 
 ---------------------------------------------------------------------------
 -- Settings (saved per account, change with /opp)
@@ -20,6 +20,7 @@ local defaults = {
     size    = 30,   -- icon size in pixels
     offsetY = 18,   -- how far above the health bar the icon sits
     sound   = true, -- play a sound when a mob dodges you
+    pop     = true, -- icon pops in with a quick scale animation
 }
 
 local MATCH_WINDOW = 0.35 -- seconds between a nameplate dodge and a new combo point to call it a match
@@ -110,6 +111,17 @@ local function GetIcon(plate)
         f.cd:SetAllPoints()
         if f.cd.SetDrawEdge then f.cd:SetDrawEdge(false) end
 
+        f.pop = f:CreateAnimationGroup()
+        local grow = f.pop:CreateAnimation("Scale")
+        if grow.SetScaleFrom then
+            grow:SetScaleFrom(1.7, 1.7)
+            grow:SetScaleTo(1, 1)
+        else
+            grow:SetScale(0.6, 0.6)
+        end
+        grow:SetDuration(0.18)
+        grow:SetSmoothing("OUT")
+
         f:Hide()
         icons[plate] = f
     end
@@ -138,6 +150,7 @@ local function UpdatePlate(plate, unit)
     local expires = unit and procs[unit]
     if expires and expires > GetTime() then
         f.cd:SetCooldown(expires - db.window, db.window)
+        if not f:IsShown() and db.pop then f.pop:Stop(); f.pop:Play() end
         f:Show()
     else
         f:Hide()
@@ -285,6 +298,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
             if OverpowerPlatesDB[k] == nil then OverpowerPlatesDB[k] = v end
         end
         db = OverpowerPlatesDB
+        ns.BuildOptions()
 
     elseif event == "PLAYER_LOGIN" then
         local _, class = UnitClass("player")
@@ -313,12 +327,45 @@ local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Overpower Plates:|r " .. msg)
 end
 
+---------------------------------------------------------------------------
+-- Settings page (Options > AddOns) and minimap addon button
+---------------------------------------------------------------------------
+function ns.BuildOptions()
+    ns.CreateOptions({
+        title = "Overpower Plates",
+        icon = OVERPOWER_ICON,
+        about = "Overpower icon on the mob that dodged you",
+        slash = "/opp",
+        db = db,
+        onChange = function() RefreshAll() end,
+        controls = {
+            { type = "header", label = "Icon" },
+            { type = "range", key = "size", label = "Icon size", min = 16, max = 64, step = 2 },
+            { type = "range", key = "offsetY", label = "Height above health bar", min = 0, max = 80, step = 2 },
+            { type = "range", key = "window", label = "Seconds the icon stays up", min = 1, max = 10, step = 1, suffix = "s" },
+            { type = "check", key = "pop", label = "Pop the icon in when a mob dodges you" },
+            { type = "header", label = "Alerts" },
+            { type = "check", key = "sound", label = "Play a sound when a mob dodges you" },
+            { type = "header", label = "Preview" },
+            { type = "button", dynamicLabel = function() return testMode and "Stop test" or "Test on nameplates" end,
+              label = "Test on nameplates", func = function() testMode = not testMode; RefreshAll() end },
+        },
+    })
+end
+
+function OverpowerPlates_OnAddonCompartmentClick()
+    if ns.OpenOptions then ns.OpenOptions() end
+end
+
 SLASH_OVERPOWERPLATES1 = "/opp"
 SlashCmdList.OVERPOWERPLATES = function(msg)
     local cmd, val = (msg or ""):lower():match("^(%S*)%s*(.-)$")
     local n = tonumber(val)
 
-    if cmd == "test" then
+    if cmd == "" then
+        ns.OpenOptions()
+        return
+    elseif cmd == "test" then
         testMode = not testMode
         RefreshAll()
         Print(testMode and "test mode on, every visible nameplate shows the icon. /opp test again to turn it off."
@@ -335,7 +382,7 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
     elseif cmd == "debug" then
         Print("Overpower charges: " .. tostring(ReadPoints()))
     else
-        Print("commands:")
+        Print("v" .. ns.version .. " commands (or just /opp for the settings page):")
         Print("/opp test - show the icon on every nameplate to check placement")
         Print("/opp size <n> - icon size (now " .. db.size .. ")")
         Print("/opp offset <n> - height above the health bar (now " .. db.offsetY .. ")")
@@ -343,4 +390,5 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
         Print("/opp sound - dodge sound (now " .. (db.sound and "on" or "off") .. ")")
         Print("/opp debug - show your current Overpower charge count")
     end
+    if ns.RefreshOptions then ns.RefreshOptions() end
 end
