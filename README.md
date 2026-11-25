@@ -37,8 +37,18 @@ Spots people asking for portals or water in chat and lists them in a small windo
 
 **On-screen alerts.** The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4 and ElvUI), a message shows at the top of the screen, and the screen edges flash. Each can be turned off.
 
+**Portal button.** A big icon at the top-left of the window casts the portal for the selected request (or Conjure Water for a water request). The top request is picked automatically; click a row to pick another. It can be bound to a key under Key Bindings > AddOns. It updates as soon as combat ends, since the game doesn't allow spell buttons to change during combat.
+
+**Payment messages.** After a trade with someone who asked (or is in your group), it posts the result: payment received (gold and any items), completed with no payment, cancelled, or failed with the reason. It uses party chat if they're still in your group, otherwise it whispers them. Choose whether it sends automatically, only types it into your chat box for you to send, or stays off.
+
+**Earnings.** Gold received is totalled per character, split into portals (with a per-city breakdown), water/food and other, plus a total for the current session. It's shown at the bottom of the window, on the settings page and with `/ms earnings`.
+
 Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it only works out in the world.
 
+- `/ms earnings` totals; `/ms earnings reset` to clear
+- `/ms receipts [auto|prefill|off]` how payment messages are posted
+- `/ms paidmsg`, `/ms nopaymsg`, `/ms cancelmsg`, `/ms failmsg <text>` change them (`{name}`, `{amount}`, `{reason}` are filled in)
+- `/ms testtrade [complete|cancelled|failed]` preview a payment message (typed only, never sent)
 - `/ms zone [auto|city|zone]` show or set your location, e.g. `/ms zone uc`
 - `/ms add <phrase>` watch for your own phrase too, e.g. `/ms add lf summon`; `/ms list`, `/ms remove <n>`
 - `/ms exclude <phrase>` never match lines containing it; `/ms excludes`, `/ms unexclude <n>`

@@ -130,6 +130,17 @@ function ns.CreateOptions(spec)
                 end)
                 y = y - 30
 
+            elseif c.type == "info" then
+                local fs = Label(panel, "", "GameFontHighlightSmall")
+                fs:SetPoint("TOPLEFT", 24, y - 2)
+                fs:SetPoint("RIGHT", panel, "RIGHT", -16, 0)
+                fs:SetJustifyH("LEFT")
+                table.insert(refreshers, function()
+                    local lines = c.lines()
+                    fs:SetText(type(lines) == "table" and table.concat(lines, "\n") or tostring(lines or ""))
+                end)
+                y = y - (c.height or 40)
+
             elseif c.type == "button" then
                 local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
                 b:SetSize(170, 24)

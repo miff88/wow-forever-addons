@@ -14,6 +14,10 @@
 
 local ADDON_NAME, ns = ...
 
+-- Key Bindings > AddOns > Mage Services
+BINDING_HEADER_MAGESERVICES = "Mage Services"
+_G["BINDING_NAME_CLICK MageServicesCastButton:LeftButton"] = "Cast the requested portal"
+
 local defaults = {
     ports       = true,
     water       = true,
@@ -37,6 +41,13 @@ local defaults = {
     screenMsg = true,     -- short message at the top of the screen
     edgeFlash = true,     -- flash the edges of the screen
     glowTime = 20,        -- seconds a button keeps glowing
+    -- payments
+    receiptMode = "auto", -- "auto" posts by itself, "prefill" types it for you, "off"
+    receiptAll  = false,  -- post for every trade, not just people who asked or are in your group
+    paidMsg   = "Payment received from {name}: {amount}. Thanks, safe travels!",
+    noPayMsg  = "Trade with {name} completed, but no payment was included.",
+    cancelMsg = "Trade with {name} was cancelled. No payment received.",
+    failMsg   = "Trade with {name} failed ({reason}). No payment received.",
     maxRows = 6,
     custom = {},          -- your own phrases, e.g. "lf summon"
     excludes = {},        -- phrases that should never match
@@ -48,11 +59,13 @@ local defaults = {
 
 local db
 local requests = {}   -- newest first: { sender, short, msg, info, time }
+ns.requests = requests
 local testMode = false
 
 local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cff69ccf0Mage Services:|r " .. msg)
 end
+ns.Print = Print
 
 local function IsSecret(v)
     return issecretvalue and issecretvalue(v) or false
@@ -184,10 +197,15 @@ if win.SetBackdrop then
     win:SetBackdropBorderColor(0.41, 0.8, 0.94, 1)
 end
 win:Hide()
+ns.win = win
 
 win.title = win:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 win.title:SetPoint("TOPLEFT", 10, -8)
 win.title:SetTextColor(0.41, 0.8, 0.94)
+
+win.footer = win:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+win.footer:SetPoint("BOTTOMLEFT", 10, 7)
+win.footer:SetJustifyH("LEFT")
 
 win.close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
 win.close:SetSize(24, 24)
@@ -216,6 +234,11 @@ local function MakeRow(i)
     row.bg = row:CreateTexture(nil, "BACKGROUND")
     row.bg:SetAllPoints()
     row.bg:SetColorTexture(1, 0.82, 0, 0.14)
+
+    row.sel = row:CreateTexture(nil, "BORDER")
+    row.sel:SetAllPoints()
+    row.sel:SetColorTexture(0.41, 0.8, 0.94, 0.22)
+    row.sel:Hide()
 
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetSize(22, 22)
@@ -267,9 +290,11 @@ local function MakeRow(i)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:AddLine(self.req.sender, 0.41, 0.8, 0.94)
         GameTooltip:AddLine(self.req.msg, 1, 1, 1, true)
+        GameTooltip:AddLine("Click to put this request on the portal button.", 0.7, 0.7, 0.7, true)
         GameTooltip:Show()
     end)
     row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnMouseUp", function(self) if self.req and ns.Select then ns.Select(self.req) end end)
 
     row.invite:SetScript("OnClick", function() if row.req then Invite(row.req.sender) end end)
     row.where:SetScript("OnClick", function() if row.req then ns.LookupZone(row.req) end end)
@@ -311,7 +336,9 @@ Refresh = function()
                 row.icon:SetTexture(req.info.icon)
                 local ago = math.floor(now - req.time)
                 local tag = ""
-                if req.priority == HIGH then
+                if req.paid then
+                    tag = "  |cff33ff33paid " .. ns.Money(req.paid) .. "|r"
+                elseif req.priority == HIGH then
                     tag = "  |cff33ff33" .. (req.reason or "near you") .. "|r"
                 elseif req.reason then
                     tag = "  |cff999999" .. req.reason .. "|r"
@@ -319,6 +346,7 @@ Refresh = function()
                 row.label:SetText(req.info.label .. tag .. "  |cffaaaaaa" .. req.short .. ", " .. ago .. "s|r")
                 row.text:SetText(req.msg)
                 row.bg:SetShown(req.priority == HIGH)
+                row.sel:SetShown(req.selected and true or false)
                 row:SetAlpha(req.priority == LOW and 0.45 or 1)
                 row:Show()
             else
@@ -333,14 +361,21 @@ Refresh = function()
     win.title:SetText("Mage Services" .. (where ~= "" and ("  |cffaaaaaa" .. where .. (db.zone == "auto" and "" or " (picked)") .. "|r") or "")
         .. (extra > 0 and ("  (+" .. extra .. " more)") or ""))
     if ns.UpdateGlows then ns.UpdateGlows(visible) end
-    win:SetHeight(34 + shown * ROW_H)
+    if ns.UpdateCastButton then ns.UpdateCastButton(visible) end
+    win.footer:SetText(ns.EarningsLine and ns.EarningsLine() or "")
+    win:SetHeight(50 + shown * ROW_H)
     if shown == 0 then win:Hide() else win:Show() end
 end
 
+ns.Refresh = Refresh
 win.clear:SetScript("OnClick", function() wipe(requests); Refresh() end)
 win.close:SetScript("OnClick", function() win:Hide() end)
 
 local function ApplyPosition()
+    if ns.PositionCast then
+        ns.PositionCast() -- the window hangs off the portal button
+        return
+    end
     win:ClearAllPoints()
     local p = db.point
     win:SetPoint(p[1], UIParent, p[2], p[3], p[4])
@@ -368,6 +403,7 @@ local function AddRequest(sender, msg, info, source)
     local req = { sender = sender, short = ShortName(sender), msg = msg, info = info, time = GetTime(),
                   source = source, zoneAtReceive = ns.MyZone() }
     req.priority, req.reason = Rank(req)
+    ns.customers[req.short] = { time = GetTime(), kind = info.kind, dest = info.dest }
     table.insert(requests, 1, req)
     if req.priority > LOW or db.alertLow then
         Alert(req)
@@ -536,6 +572,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
         end
         db = MageServicesDB
         ns.db = db
+        ns.InitEarnings()
         ApplyPosition()
         ns.BuildOptions()
 
@@ -618,6 +655,12 @@ function ns.BuildOptions()
             { type = "range", key = "glowTime", label = "Glow for", min = 5, max = 60, step = 5, suffix = "s" },
             { type = "check", key = "screenMsg", label = "Show a message at the top of the screen" },
             { type = "check", key = "edgeFlash", label = "Flash the edges of the screen" },
+            { type = "header", label = "Earnings (this character)" },
+            { type = "info", lines = function() return ns.EarningsLines() end, height = 58 },
+            { type = "header", label = "Payments" },
+            { type = "choice", key = "receiptMode", label = "Payment messages (Auto / Prefill / Off)", values = { "auto", "prefill", "off" } },
+            { type = "check", key = "receiptAll", label = "Post for every trade, not just customers" },
+            { type = "button", label = "Test a payment message", func = function() ns.TestTrade("complete") end },
             { type = "header", label = "When someone asks" },
             { type = "check", key = "sound", label = "Play a sound" },
             { type = "check", key = "flash", label = "Flash the WoW icon on the taskbar" },
@@ -674,6 +717,29 @@ SlashCmdList.MAGESERVICES = function(msg)
             db.zone = picked; Print("location set to " .. picked)
         end
         Refresh()
+    elseif cmd == "paidmsg" and rest ~= "" then
+        db.paidMsg = rest; Print("payment message: " .. rest)
+    elseif cmd == "nopaymsg" and rest ~= "" then
+        db.noPayMsg = rest; Print("no-payment message: " .. rest)
+    elseif cmd == "cancelmsg" and rest ~= "" then
+        db.cancelMsg = rest; Print("cancelled message: " .. rest)
+    elseif cmd == "failmsg" and rest ~= "" then
+        db.failMsg = rest; Print("failed message: " .. rest)
+    elseif cmd == "receipts" then
+        local m = rest:lower()
+        if m == "auto" or m == "prefill" or m == "off" then db.receiptMode = m end
+        Print("payment messages: " .. db.receiptMode .. " (auto, prefill or off)")
+    elseif cmd == "earnings" or cmd == "gold" then
+        if rest:lower() == "reset yes" then
+            ns.ResetEarnings(); Print("earnings reset.")
+        elseif rest:lower() == "reset" then
+            Print("this clears this character's earnings for good. Type /ms earnings reset yes to confirm.")
+        else
+            for _, line in ipairs(ns.EarningsLines()) do Print(line) end
+        end
+        Refresh()
+    elseif cmd == "testtrade" then
+        ns.TestTrade(rest ~= "" and rest:lower() or "complete")
     elseif cmd == "show" then
         win:Show()
     elseif cmd == "test" then
@@ -704,6 +770,10 @@ SlashCmdList.MAGESERVICES = function(msg)
         Print("/ms excludes, /ms unexclude <number>")
         Print("/ms portmsg <text>, /ms watermsg <text>, /ms custommsg <text> - reply text; {name} and {dest} get filled in")
         Print("/ms zone [auto|city|zone name] - show or set where you are, e.g. /ms zone uc")
+        Print("/ms earnings - gold earned from portals and water; /ms earnings reset to clear")
+        Print("/ms receipts [auto|prefill|off] - payment messages: send them, type them for you, or off")
+        Print("/ms paidmsg, /ms nopaymsg, /ms cancelmsg, /ms failmsg <text> - {name}, {amount}, {reason} get filled in")
+        Print("/ms testtrade [complete|cancelled|failed] - try a payment message (only typed, never sent)")
         Print("/ms test - add sample requests, /ms show - show the window")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end

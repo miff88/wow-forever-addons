@@ -2,14 +2,16 @@
 ## Title: |cff69ccf0Mage|r Services
 ## Notes: Spots people asking for portals or water in chat and lists them with Invite and Whisper buttons. Made for mages, works on any class.
 ## Author: Mitch Brindle
-## Version: 1.1.0
+## Version: 1.2.0
 ## IconTexture: Interface\Icons\Spell_Arcane_PortalOrgrimmar
 ## Category: Chat & Communication
 ## X-Website: https://github.com/miff88/wow-forever-addons
 ## AddonCompartmentFunc: MageServices_OnAddonCompartmentClick
 ## SavedVariables: MageServicesDB
+## SavedVariablesPerCharacter: MageServicesCharDB
 
 Options.lua
 Matcher.lua
 Alerts.lua
 MageServices.lua
+Service.lua

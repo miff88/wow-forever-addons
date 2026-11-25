@@ -2,6 +2,11 @@
 
 ## 2026-11-25
 
+Mage Services 1.2.0
+- Portal button that casts the selected request's portal (or Conjure Water), with a key binding.
+- Payment messages after trades: received (gold and items), no payment, cancelled or failed, in party chat or by whisper if they've left the group. Auto, prefill or off.
+- Earnings per character: portals by city, water/food, other, and this session. Shown in the window, settings page and /ms earnings.
+
 Mage Services 1.1.0
 - Location priority: requests ranked by where the person is compared with your zone (auto-detected or picked with /ms zone). Near you at the top, elsewhere or "port to where you already are" dimmed at the bottom, with an option to hide them.
 - Understands "from X" / "in X" in requests, so "LF port from Org to UC" gets the right destination.
