@@ -118,7 +118,7 @@ end
 local function ShowGlow(btn)
     local g = GetGlow(btn)
     local w = btn:GetWidth() or 36
-    g:SetSize(w * 1.9, w * 1.9)
+    g:SetSize(w * 1.75, w * 1.75)
     if not g:IsShown() then
         g:Show()
         g.pulse:Play()
@@ -173,24 +173,29 @@ end
 ---------------------------------------------------------------------------
 -- Message at the top of the screen
 ---------------------------------------------------------------------------
-local banner = CreateFrame("Frame", "MageServicesBanner", UIParent)
-banner:SetSize(520, 56)
+local banner = CreateFrame("Frame", "MageServicesBanner", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+banner:SetSize(520, 60)
 banner:SetPoint("TOP", UIParent, "TOP", 0, -170)
 banner:SetFrameStrata("HIGH")
 banner:Hide()
 
 banner.icon = banner:CreateTexture(nil, "ARTWORK")
+if banner.SetBackdrop then
+    banner:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 1 })
+end
+
 banner.icon:SetSize(44, 44)
-banner.icon:SetPoint("LEFT", 0, 0)
+banner.icon:SetPoint("LEFT", 8, 0)
 banner.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
 banner.text = banner:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
-banner.text:SetPoint("TOPLEFT", banner.icon, "TOPRIGHT", 10, -2)
+banner.text:SetPoint("BOTTOMLEFT", banner.icon, "RIGHT", 10, 3)
 banner.text:SetTextColor(0.41, 0.8, 0.94)
+banner.text:SetWordWrap(false)
 
 banner.sub = banner:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-banner.sub:SetPoint("TOPLEFT", banner.text, "BOTTOMLEFT", 0, -4)
-banner.sub:SetWidth(460)
+banner.sub:SetPoint("TOPLEFT", banner.icon, "RIGHT", 10, -5)
+banner.sub:SetWidth(520)
 banner.sub:SetJustifyH("LEFT")
 banner.sub:SetWordWrap(false)
 
@@ -200,6 +205,24 @@ bIn:SetFromAlpha(0); bIn:SetToAlpha(1); bIn:SetDuration(0.15); bIn:SetOrder(1)
 local bOut = banner.anim:CreateAnimation("Alpha")
 bOut:SetFromAlpha(1); bOut:SetToAlpha(0); bOut:SetDuration(0.7); bOut:SetStartDelay(3); bOut:SetOrder(2)
 banner.anim:SetScript("OnFinished", function() banner:Hide() end)
+
+function ns.ApplyBannerTheme(t)
+    if banner.SetBackdropColor then
+        banner:SetBackdropColor(t.bg[1], t.bg[2], t.bg[3], 0.9)
+        banner:SetBackdropBorderColor(t.border[1], t.border[2], t.border[3], 1)
+    end
+    banner.text:SetTextColor(t.title[1], t.title[2], t.title[3])
+    banner.sub:SetTextColor(t.text[1], t.text[2], t.text[3])
+    local sh = t.shadow and 1 or 0
+    banner.text:SetShadowOffset(sh, -sh)
+    banner.sub:SetShadowOffset(sh, -sh)
+end
+
+-- Size the panel to its content so it stays centred on screen.
+local function FitBanner()
+    local w = math.max(banner.text:GetStringWidth() or 0, math.min(banner.sub:GetStringWidth() or 0, 520))
+    banner:SetWidth(8 + 44 + 10 + w + 14)
+end
 
 ---------------------------------------------------------------------------
 -- Screen edge flash
@@ -238,6 +261,7 @@ function ns.ScreenAlert(req)
         banner.text:SetText(req.info.label .. "  -  " .. req.short)
         local reason = req.reason and ("(" .. req.reason .. ")  ") or ""
         banner.sub:SetText(reason .. req.msg)
+        FitBanner()
         banner.anim:Stop()
         banner:SetAlpha(1)
         banner:Show()

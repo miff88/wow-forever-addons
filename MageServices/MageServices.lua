@@ -56,6 +56,7 @@ local defaults = {
     waterMsg = "Hi {name}, I've got water and food for you. Sending you an invite now.",
     customMsg = "Hi {name}, sending you an invite now.",
     point = { "CENTER", "CENTER", 300, 100 },
+    theme = "dark",       -- "dark" or "light"
 }
 
 local db
@@ -170,12 +171,88 @@ local function OpenWhisper(req)
 end
 
 ---------------------------------------------------------------------------
--- Request window
+-- Themes
 ---------------------------------------------------------------------------
-local ROW_H, WIDTH = 28, 440
+local WHITE = "Interface\\Buttons\\WHITE8x8"
+
+-- Colours are {r, g, b[, a]}; hex strings are used inside text.
+local THEMES = {
+    dark = {
+        bg = { 0.07, 0.07, 0.09, 0.95 }, header = { 0.12, 0.12, 0.16, 1 }, border = { 0.41, 0.8, 0.94, 0.9 },
+        title = { 0.41, 0.8, 0.94 }, label = { 1, 0.82, 0 }, text = { 0.88, 0.88, 0.88 }, footer = { 0.72, 0.72, 0.72 },
+        high = { 1, 0.82, 0, 0.12 }, sel = { 0.41, 0.8, 0.94, 0.2 }, divider = { 1, 1, 1, 0.07 },
+        btn = { 0.16, 0.16, 0.2, 1 }, btnHover = { 0.25, 0.25, 0.31, 1 }, btnBorder = { 0.32, 0.32, 0.38, 1 },
+        btnText = { 0.92, 0.92, 0.92 },
+        accent = { 0.16, 0.42, 0.56, 1 }, accentHover = { 0.22, 0.52, 0.68, 1 }, accentText = { 1, 1, 1 },
+        good = "4cd964", muted = "a0a0a0", dim = "8a8a8a", shadow = true,
+    },
+    light = {
+        bg = { 0.96, 0.96, 0.94, 0.97 }, header = { 0.87, 0.9, 0.93, 1 }, border = { 0.25, 0.5, 0.65, 1 },
+        title = { 0.1, 0.33, 0.5 }, label = { 0.12, 0.12, 0.12 }, text = { 0.3, 0.3, 0.3 }, footer = { 0.33, 0.33, 0.33 },
+        high = { 1, 0.78, 0.1, 0.22 }, sel = { 0.25, 0.55, 0.85, 0.18 }, divider = { 0, 0, 0, 0.09 },
+        btn = { 0.9, 0.9, 0.9, 1 }, btnHover = { 0.8, 0.85, 0.9, 1 }, btnBorder = { 0.68, 0.68, 0.7, 1 },
+        btnText = { 0.12, 0.12, 0.12 },
+        accent = { 0.2, 0.47, 0.66, 1 }, accentHover = { 0.27, 0.56, 0.77, 1 }, accentText = { 1, 1, 1 },
+        good = "1d8a3a", muted = "666666", dim = "8c8c8c", shadow = false,
+    },
+}
+ns.THEMES = THEMES
+
+function ns.Theme()
+    return THEMES[(db and db.theme) or "dark"] or THEMES.dark
+end
+
+local function Color(obj, method, c) obj[method](obj, c[1], c[2], c[3], c[4] or 1) end
+
+local function StyleText(fs, c)
+    local t = ns.Theme()
+    fs:SetTextColor(c[1], c[2], c[3])
+    if t.shadow then fs:SetShadowOffset(1, -1) else fs:SetShadowOffset(0, 0) end
+end
+
+-- Flat buttons drawn in the theme's colours.
+local buttons = {}
+
+local function PaintButton(b)
+    local t = ns.Theme()
+    local base = b.primary and t.accent or t.btn
+    local hover = b.primary and t.accentHover or t.btnHover
+    Color(b, "SetBackdropColor", b.hovered and hover or base)
+    Color(b, "SetBackdropBorderColor", b.primary and base or t.btnBorder)
+    StyleText(b.text, b.primary and t.accentText or t.btnText)
+end
+
+local function FlatButton(parent, w, h, label, primary)
+    local b = CreateFrame("Button", nil, parent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+    b:SetSize(w, h)
+    if b.SetBackdrop then b:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }) end
+    b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    b.text:SetPoint("CENTER", 0, 0)
+    b.text:SetText(label)
+    b.primary = primary
+    b:HookScript("OnEnter", function(self) self.hovered = true; PaintButton(self) end)
+    b:HookScript("OnLeave", function(self) self.hovered = false; PaintButton(self) end)
+    buttons[#buttons + 1] = b
+    PaintButton(b)
+    return b
+end
+
+---------------------------------------------------------------------------
+-- Request window
+--
+--   +-----------------------------------------------------------+
+--   | Mage Services  Orgrimmar                     [Clear] [x]  |  header 24
+--   +-----------------------------------------------------------+
+--   | [icon] Port: Undercity  in your zone  Bob, 4s  [?][Invite][Whisper][x] |  rows 30
+--   |        LF port to UC pls                                  |
+--   +-----------------------------------------------------------+
+--   | Earned 12g (portals 10g, water 2g)  this session 1g 50s   |  footer 20
+--   +-----------------------------------------------------------+
+---------------------------------------------------------------------------
+local WIDTH, HEADER_H, ROW_H, FOOTER_H, PAD = 460, 24, 30, 20, 6
 
 local win = CreateFrame("Frame", "MageServicesFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
-win:SetSize(WIDTH, 40)
+win:SetSize(WIDTH, 60)
 win:SetFrameStrata("MEDIUM")
 win:SetClampedToScreen(true)
 win:SetMovable(true)
@@ -187,35 +264,38 @@ win:SetScript("OnDragStop", function(self)
     local p, _, rp, x, y = self:GetPoint()
     db.point = { p, rp, x, y }
 end)
-if win.SetBackdrop then
-    win:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 14,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
-    })
-    win:SetBackdropColor(0.05, 0.05, 0.1, 0.92)
-    win:SetBackdropBorderColor(0.41, 0.8, 0.94, 1)
-end
+if win.SetBackdrop then win:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 }) end
 win:Hide()
 ns.win = win
 
+win.header = win:CreateTexture(nil, "BORDER")
+win.header:SetPoint("TOPLEFT", 1, -1)
+win.header:SetPoint("TOPRIGHT", -1, -1)
+win.header:SetHeight(HEADER_H)
+
+win.close = FlatButton(win, 18, 18, "x")
+win.close:SetPoint("RIGHT", win.header, "RIGHT", -4, 0)
+
+win.clear = FlatButton(win, 46, 18, "Clear")
+win.clear:SetPoint("RIGHT", win.close, "LEFT", -4, 0)
+
 win.title = win:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-win.title:SetPoint("TOPLEFT", 10, -8)
-win.title:SetTextColor(0.41, 0.8, 0.94)
+win.title:SetPoint("LEFT", win.header, "LEFT", 8, 0)
+win.title:SetPoint("RIGHT", win.clear, "LEFT", -8, 0)
+win.title:SetJustifyH("LEFT")
+win.title:SetWordWrap(false)
+
+win.footerLine = win:CreateTexture(nil, "BORDER")
+win.footerLine:SetPoint("BOTTOMLEFT", 1, FOOTER_H)
+win.footerLine:SetPoint("BOTTOMRIGHT", -1, FOOTER_H)
+win.footerLine:SetHeight(1)
 
 win.footer = win:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-win.footer:SetPoint("BOTTOMLEFT", 10, 7)
+win.footer:SetPoint("BOTTOMLEFT", 8, 0)
+win.footer:SetPoint("BOTTOMRIGHT", -8, 0)
+win.footer:SetHeight(FOOTER_H)
 win.footer:SetJustifyH("LEFT")
-
-win.close = CreateFrame("Button", nil, win, "UIPanelCloseButton")
-win.close:SetSize(24, 24)
-win.close:SetPoint("TOPRIGHT", 0, 0)
-
-win.clear = CreateFrame("Button", nil, win, "UIPanelButtonTemplate")
-win.clear:SetSize(56, 18)
-win.clear:SetPoint("RIGHT", win.close, "LEFT", -2, 0)
-win.clear:SetText("Clear")
+win.footer:SetWordWrap(false)
 
 local rows = {}
 local Refresh -- forward
@@ -227,61 +307,60 @@ local function Remove(req)
     Refresh()
 end
 
+local function Tooltip(btn, title, body)
+    btn:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine(title)
+        if body then GameTooltip:AddLine(body, 1, 1, 1, true) end
+        GameTooltip:Show()
+    end)
+    btn:HookScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
 local function MakeRow(i)
     local row = CreateFrame("Frame", nil, win)
-    row:SetSize(WIDTH - 16, ROW_H)
-    row:SetPoint("TOPLEFT", 8, -28 - (i - 1) * ROW_H)
+    row:SetSize(WIDTH - 2, ROW_H)
+    row:SetPoint("TOPLEFT", 1, -(1 + HEADER_H + (i - 1) * ROW_H))
 
     row.bg = row:CreateTexture(nil, "BACKGROUND")
     row.bg:SetAllPoints()
-    row.bg:SetColorTexture(1, 0.82, 0, 0.14)
 
     row.sel = row:CreateTexture(nil, "BORDER")
     row.sel:SetAllPoints()
-    row.sel:SetColorTexture(0.41, 0.8, 0.94, 0.22)
     row.sel:Hide()
 
+    row.line = row:CreateTexture(nil, "BORDER")
+    row.line:SetPoint("BOTTOMLEFT", PAD, 0)
+    row.line:SetPoint("BOTTOMRIGHT", -PAD, 0)
+    row.line:SetHeight(1)
+
     row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetSize(22, 22)
-    row.icon:SetPoint("LEFT", 0, 0)
+    row.icon:SetSize(24, 24)
+    row.icon:SetPoint("LEFT", PAD + 1, 0)
     row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-    row.dismiss = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-    row.dismiss:SetSize(22, 20)
-    row.dismiss:SetPoint("RIGHT", 0, 0)
-    row.dismiss:SetText("x")
+    -- buttons, right to left, all 20 high and centred in the row
+    row.dismiss = FlatButton(row, 20, 20, "x")
+    row.dismiss:SetPoint("RIGHT", -PAD, 0)
+    row.whisper = FlatButton(row, 58, 20, "Whisper")
+    row.whisper:SetPoint("RIGHT", row.dismiss, "LEFT", -3, 0)
+    row.invite = FlatButton(row, 52, 20, "Invite", true)
+    row.invite:SetPoint("RIGHT", row.whisper, "LEFT", -3, 0)
+    row.where = FlatButton(row, 20, 20, "?")
+    row.where:SetPoint("RIGHT", row.invite, "LEFT", -3, 0)
+    Tooltip(row.where, "Where are they?", "Runs a /who on this player and re-ranks the request by their zone.")
+    Tooltip(row.dismiss, "Dismiss")
 
-    row.whisper = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-    row.whisper:SetSize(62, 20)
-    row.whisper:SetPoint("RIGHT", row.dismiss, "LEFT", -2, 0)
-    row.whisper:SetText("Whisper")
-
-    row.invite = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-    row.invite:SetSize(56, 20)
-    row.invite:SetPoint("RIGHT", row.whisper, "LEFT", -2, 0)
-    row.invite:SetText("Invite")
-
+    -- two lines of text between the icon and the buttons, centred on the icon
     row.label = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    row.label:SetPoint("TOPLEFT", row.icon, "TOPRIGHT", 6, 0)
-    row.where = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-    row.where:SetSize(22, 20)
-    row.where:SetPoint("RIGHT", row.invite, "LEFT", -2, 0)
-    row.where:SetText("?")
-    row.where:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:AddLine("Where are they?")
-        GameTooltip:AddLine("Runs a /who on this player and re-ranks the request by their zone.", 1, 1, 1, true)
-        GameTooltip:Show()
-    end)
-    row.where:SetScript("OnLeave", function() GameTooltip:Hide() end)
-
-    row.label:SetPoint("RIGHT", row.where, "LEFT", -6, 0)
+    row.label:SetPoint("BOTTOMLEFT", row.icon, "RIGHT", 8, 1)
+    row.label:SetPoint("RIGHT", row.where, "LEFT", -8, 0)
     row.label:SetJustifyH("LEFT")
     row.label:SetWordWrap(false)
 
     row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.text:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMRIGHT", 6, 0)
-    row.text:SetPoint("RIGHT", row.where, "LEFT", -6, 0)
+    row.text:SetPoint("TOPLEFT", row.icon, "RIGHT", 8, -1)
+    row.text:SetPoint("RIGHT", row.where, "LEFT", -8, 0)
     row.text:SetJustifyH("LEFT")
     row.text:SetWordWrap(false)
 
@@ -303,11 +382,36 @@ local function MakeRow(i)
     row.dismiss:SetScript("OnClick", function() if row.req then Remove(row.req) end end)
 
     rows[i] = row
+    ns.ApplyTheme()
     return row
+end
+
+-- Repaint everything in the current theme.
+function ns.ApplyTheme()
+    local t = ns.Theme()
+    if win.SetBackdropColor then
+        Color(win, "SetBackdropColor", t.bg)
+        Color(win, "SetBackdropBorderColor", t.border)
+    end
+    Color(win.header, "SetColorTexture", t.header)
+    Color(win.footerLine, "SetColorTexture", t.divider)
+    StyleText(win.title, t.title)
+    StyleText(win.footer, t.footer)
+    for _, row in ipairs(rows) do
+        Color(row.bg, "SetColorTexture", t.high)
+        Color(row.sel, "SetColorTexture", t.sel)
+        Color(row.line, "SetColorTexture", t.divider)
+        StyleText(row.label, t.label)
+        StyleText(row.text, t.text)
+    end
+    for _, b in ipairs(buttons) do PaintButton(b) end
+    if ns.ApplyCastTheme then ns.ApplyCastTheme(t) end
+    if ns.ApplyBannerTheme then ns.ApplyBannerTheme(t) end
 end
 
 Refresh = function()
     if not db then return end
+    local t = ns.Theme()
     local now = GetTime()
     for i = #requests, 1, -1 do
         if now - requests[i].time > db.expire then table.remove(requests, i) end
@@ -338,17 +442,18 @@ Refresh = function()
                 local ago = math.floor(now - req.time)
                 local tag = ""
                 if req.paid then
-                    tag = "  |cff33ff33paid " .. ns.Money(req.paid) .. "|r"
+                    tag = "  |cff" .. t.good .. "paid " .. ns.Money(req.paid) .. "|r"
                 elseif req.priority == HIGH then
-                    tag = "  |cff33ff33" .. (req.reason or "near you") .. "|r"
+                    tag = "  |cff" .. t.good .. (req.reason or "near you") .. "|r"
                 elseif req.reason then
-                    tag = "  |cff999999" .. req.reason .. "|r"
+                    tag = "  |cff" .. t.dim .. req.reason .. "|r"
                 end
-                row.label:SetText(req.info.label .. tag .. "  |cffaaaaaa" .. req.short .. ", " .. ago .. "s|r")
+                row.label:SetText(req.info.label .. tag .. "  |cff" .. t.muted .. req.short .. ", " .. ago .. "s|r")
                 row.text:SetText(req.msg)
                 row.bg:SetShown(req.priority == HIGH)
                 row.sel:SetShown(req.selected and true or false)
-                row:SetAlpha(req.priority == LOW and 0.45 or 1)
+                row.line:SetShown(i < shown)
+                row:SetAlpha(req.priority == LOW and 0.5 or 1)
                 row:Show()
             else
                 row.req = nil
@@ -359,12 +464,13 @@ Refresh = function()
 
     local extra = #visible - shown
     local where = ns.MyZone()
-    win.title:SetText("Mage Services" .. (where ~= "" and ("  |cffaaaaaa" .. where .. (db.zone == "auto" and "" or " (picked)") .. "|r") or "")
-        .. (extra > 0 and ("  (+" .. extra .. " more)") or ""))
+    win.title:SetText("Mage Services"
+        .. (where ~= "" and ("  |cff" .. t.muted .. where .. (db.zone == "auto" and "" or " (picked)") .. "|r") or "")
+        .. (extra > 0 and ("  |cff" .. t.muted .. "+" .. extra .. " more|r") or ""))
     if ns.UpdateGlows then ns.UpdateGlows(visible) end
     if ns.UpdateCastButton then ns.UpdateCastButton(visible) end
     win.footer:SetText(ns.EarningsLine and ns.EarningsLine() or "")
-    win:SetHeight(50 + shown * ROW_H)
+    win:SetHeight(2 + HEADER_H + shown * ROW_H + FOOTER_H + 1)
     if shown == 0 then win:Hide() else win:Show() end
 end
 
@@ -611,6 +717,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
         db = MageServicesDB
         ns.db = db
         ns.InitEarnings()
+        ns.ApplyTheme()
         ApplyPosition()
         ns.BuildOptions()
 
@@ -673,7 +780,7 @@ function ns.BuildOptions()
         about = "Spots portal and water requests in chat",
         slash = "/ms",
         db = db,
-        onChange = function() Refresh() end,
+        onChange = function() ns.ApplyTheme(); Refresh() end,
         controls = {
             { type = "header", label = "Look for" },
             { type = "check", key = "ports", label = "Portal requests" },
@@ -684,6 +791,8 @@ function ns.BuildOptions()
             { type = "check", key = "chSay", label = "Say and yell" },
             { type = "check", key = "chWhisper", label = "Whispers" },
             { type = "check", key = "chGuild", label = "Guild" },
+            { type = "header", label = "Look" },
+            { type = "choice", key = "theme", label = "Window theme", values = { "dark", "light" } },
             { type = "header", label = "Your location" },
             { type = "choice", key = "zone", label = "Where you are (Auto = current zone)", values = ns.ZoneChoices() },
             { type = "check", key = "hideLow", label = "Hide requests you can't help with (instead of dimming)" },
@@ -769,6 +878,11 @@ SlashCmdList.MAGESERVICES = function(msg)
         local m = rest:lower()
         if m == "auto" or m == "prefill" or m == "off" then db.receiptMode = m end
         Print("payment messages: " .. db.receiptMode .. " (auto, prefill or off)")
+    elseif cmd == "theme" then
+        local v = rest:lower()
+        if THEMES[v] then db.theme = v else db.theme = (db.theme == "dark") and "light" or "dark" end
+        ns.ApplyTheme(); Refresh()
+        Print("theme: " .. db.theme)
     elseif cmd == "sounds" then
         for i, o in ipairs(ns.SoundOptions()) do
             Print(i .. ". " .. o.label .. (o.value == db.soundKey and "  |cff33ff33(current)|r" or ""))
@@ -818,6 +932,7 @@ SlashCmdList.MAGESERVICES = function(msg)
         Print("/ms excludes, /ms unexclude <number>")
         Print("/ms portmsg <text>, /ms watermsg <text>, /ms custommsg <text> - reply text; {name} and {dest} get filled in")
         Print("/ms zone [auto|city|zone name] - show or set where you are, e.g. /ms zone uc")
+        Print("/ms theme [dark|light] - window theme")
         Print("/ms sounds, /ms sound <number> - list the alert sounds and pick one")
         Print("/ms earnings - gold earned from portals and water; /ms earnings reset to clear")
         Print("/ms receipts [auto|prefill|off] - payment messages: send them, type them for you, or off")

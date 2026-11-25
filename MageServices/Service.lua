@@ -19,7 +19,7 @@ end
 -- Portal button
 ---------------------------------------------------------------------------
 local cast = CreateFrame("Button", "MageServicesCastButton", UIParent, "SecureActionButtonTemplate")
-cast:SetSize(42, 42)
+cast:SetSize(40, 40)
 cast:SetFrameStrata("MEDIUM")
 cast:SetClampedToScreen(true)
 cast:SetMovable(true)
@@ -31,9 +31,10 @@ cast.icon = cast:CreateTexture(nil, "ARTWORK")
 cast.icon:SetAllPoints()
 cast.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
+-- 1px frame in the window's border colour, so the button and window read as one piece
 cast.border = cast:CreateTexture(nil, "BACKGROUND")
-cast.border:SetPoint("TOPLEFT", -2, 2)
-cast.border:SetPoint("BOTTOMRIGHT", 2, -2)
+cast.border:SetPoint("TOPLEFT", -1, 1)
+cast.border:SetPoint("BOTTOMRIGHT", 1, -1)
 cast.border:SetColorTexture(0.41, 0.8, 0.94, 1)
 
 cast.hl = cast:CreateTexture(nil, "HIGHLIGHT")
@@ -41,9 +42,23 @@ cast.hl:SetAllPoints()
 cast.hl:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
 cast.hl:SetBlendMode("ADD")
 
-cast.label = cast:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-cast.label:SetPoint("TOP", cast, "BOTTOM", 0, -2)
-cast.label:SetTextColor(0.41, 0.8, 0.94)
+-- destination name inside the bottom of the icon, like a macro name on an action button
+cast.strip = cast:CreateTexture(nil, "OVERLAY")
+cast.strip:SetPoint("BOTTOMLEFT")
+cast.strip:SetPoint("BOTTOMRIGHT")
+cast.strip:SetHeight(12)
+cast.strip:SetColorTexture(0, 0, 0, 0.6)
+
+cast.label = cast:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+cast.label:SetPoint("BOTTOMLEFT", 1, 1)
+cast.label:SetPoint("BOTTOMRIGHT", -1, 1)
+cast.label:SetHeight(11)
+cast.label:SetWordWrap(false)
+pcall(cast.label.SetFont, cast.label, STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", 9, "OUTLINE")
+
+function ns.ApplyCastTheme(t)
+    cast.border:SetColorTexture(t.border[1], t.border[2], t.border[3], 1)
+end
 
 cast:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -78,7 +93,7 @@ function ns.PositionCast()
     local p = ns.db.point
     cast:SetPoint(p[1], UIParent, p[2], p[3], p[4])
     win:ClearAllPoints()
-    win:SetPoint("TOPLEFT", cast, "TOPRIGHT", 6, 0)
+    win:SetPoint("TOPLEFT", cast, "TOPRIGHT", 5, 1) -- tops line up, borders included
     win:SetScript("OnDragStart", StartMove)
     win:SetScript("OnDragStop", StopMove)
 end
@@ -137,12 +152,16 @@ function ns.UpdateCastButton(visible)
         cast:SetAttribute("spell", spell)
         cast.icon:SetTexture(IconFor(spell, chosen))
         cast.icon:SetDesaturated(false)
-        cast.label:SetText(chosen.info.dest or "Water")
+        local short = { ["Thunder Bluff"] = "TB", Undercity = "UC", Orgrimmar = "Org",
+                        Stormwind = "SW", Ironforge = "IF", Darnassus = "Darn" }
+        cast.label:SetText(short[chosen.info.dest] or chosen.info.dest or "Water")
+        cast.strip:Show()
     else
         cast:SetAttribute("spell", nil)
         cast.icon:SetTexture(ns.ICONS.port)
         cast.icon:SetDesaturated(true)
         cast.label:SetText("")
+        cast.strip:Hide()
     end
 
     if #visible > 0 then cast:Show() else cast:Hide() end
@@ -283,8 +302,9 @@ end
 function ns.EarningsLine()
     local e, s = ns.earnings, ns.session
     if not e then return "" end
-    return ("Earned %s  |cffaaaaaa(portals %s, water %s)  this session %s|r"):format(
-        Money(e.total), Money(e.port), Money(e.water), Money(s.total))
+    local muted = ns.Theme and ns.Theme().muted or "aaaaaa"
+    return ("Earned %s  |cff%s(portals %s, water %s)   this session %s|r"):format(
+        Money(e.total), muted, Money(e.port), Money(e.water), Money(s.total))
 end
 
 -- Longer breakdown for chat and the settings page.

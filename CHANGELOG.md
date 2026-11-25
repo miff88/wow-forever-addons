@@ -2,6 +2,13 @@
 
 ## 2026-11-25
 
+Mage Services 1.4.0
+- Dark and light themes for the window, portal button and on-screen message (settings page or /ms theme).
+- Window rebuilt on a fixed grid with flat themed buttons: header buttons centred, row buttons share one right edge, two-line text centred on the icon, long titles and footer text cut off cleanly instead of running into buttons.
+- Portal button's border matches the window and its top lines up with the window; the city name now sits inside the button (UC, TB, Org...) instead of spilling into the window.
+- On-screen message has a panel, is sized to its text so it stays centred, and the two lines no longer overlap.
+- Action button glow sized closer to the game's own.
+
 Mage Services 1.3.0
 - Choose the alert sound from a dropdown of the game's own sounds (or None), with a Play button to preview. Also /ms sounds and /ms sound <number>.
 
