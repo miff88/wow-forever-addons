@@ -73,12 +73,99 @@ local function IsSecret(v)
     return issecretvalue and issecretvalue(v) or false
 end
 
-local function ShortName(full)
-    if Ambiguate then
-        local ok, n = pcall(Ambiguate, full, "none")
-        if ok and n then return n end
+---------------------------------------------------------------------------
+-- Player names
+--
+-- Forever characters have a first AND last name ("John Blizzard"), and the full name is
+-- what identifies them. So names are never cut down to the first word except for
+-- friendly greetings. The game hands names over as "John Blizzard" or "John-Blizzard"
+-- depending on where they come from, so comparisons use a key that ignores spaces,
+-- hyphens and case.
+---------------------------------------------------------------------------
+local function Clean(name)
+    if type(name) ~= "string" or IsSecret(name) then return nil end
+    return name
+end
+
+-- "John Blizzard", "John-Blizzard", "john blizzard" -> "johnblizzard"
+function ns.NameKey(name)
+    name = Clean(name)
+    if not name then return "" end
+    return (name:lower():gsub("[%s%-]", ""))
+end
+
+-- For showing in the list: "John-Blizzard" -> "John Blizzard"
+function ns.DisplayName(name)
+    name = Clean(name)
+    return name and (name:gsub("%-", " ")) or "?"
+end
+
+-- For greetings in messages: "John Blizzard" -> "John"
+function ns.FirstName(name)
+    name = Clean(name)
+    return name and (name:match("^[^%s%-]+") or name) or "there"
+end
+
+-- A unit's full name, joining whatever parts the game gives.
+function ns.UnitFull(unit)
+    if GetUnitName then
+        local ok, full = pcall(GetUnitName, unit, true)
+        if ok and Clean(full) and full ~= "" then
+            if UnitFullName then
+                local ok2, first, last = pcall(UnitFullName, unit)
+                -- some clients give only the first name here; add the surname if it's separate
+                if ok2 and Clean(last) and last ~= "" and not full:find(last, 1, true) then
+                    return full .. " " .. last
+                end
+            end
+            return full
+        end
     end
-    return (full:match("^[^%-]+")) or full
+    if UnitFullName then
+        local ok, first, last = pcall(UnitFullName, unit)
+        if ok and Clean(first) then
+            return (Clean(last) and last ~= "") and (first .. " " .. last) or first
+        end
+    end
+    local n = UnitName and UnitName(unit)
+    return Clean(n)
+end
+
+-- Is someone with this name key in your party or raid?
+function ns.InGroupWith(key)
+    if key == "" then return false end
+    local prefix, count = "party", 4
+    if IsInRaid and IsInRaid() then prefix, count = "raid", 40 end
+    for i = 1, count do
+        local unit = prefix .. i
+        if UnitExists and UnitExists(unit) and ns.NameKey(ns.UnitFull(unit)) == key then return true end
+    end
+    return false
+end
+
+-- Opens the chat box in whisper mode aimed at this exact name, with the text typed in.
+-- This skips "/w Name text" parsing, which splits two-part names at the space.
+function ns.OpenWhisperTo(name, text)
+    local sendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
+    if sendTell then
+        local ok = pcall(sendTell, name)
+        if ok then
+            local box = (ChatFrameUtil and ChatFrameUtil.GetActiveWindow and ChatFrameUtil.GetActiveWindow())
+                or (ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow())
+                or (DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.editBox)
+            if box and box.Insert then
+                box:Insert(text)
+                return
+            end
+        end
+    end
+    -- older clients: fall back to the typed command
+    local line = "/w " .. name .. " " .. text
+    if ChatFrameUtil and ChatFrameUtil.OpenChat then
+        ChatFrameUtil.OpenChat(line)
+    elseif ChatFrame_OpenChat then
+        ChatFrame_OpenChat(line)
+    end
 end
 
 local function Faction()
@@ -161,19 +248,14 @@ end
 
 local function FillTemplate(template, req)
     local dest = (req.info and req.info.dest) or "your city"
-    return (template:gsub("{name}", req.short):gsub("{dest}", dest))
+    return (template:gsub("{name}", req.first):gsub("{dest}", dest))
 end
 
 local function OpenWhisper(req)
     local template = db.customMsg
     if req.info.kind == "port" then template = db.portMsg
     elseif req.info.kind == "water" then template = db.waterMsg end
-    local line = "/w " .. req.sender .. " " .. FillTemplate(template, req)
-    if ChatFrameUtil and ChatFrameUtil.OpenChat then
-        ChatFrameUtil.OpenChat(line)
-    elseif ChatFrame_OpenChat then
-        ChatFrame_OpenChat(line)
-    end
+    ns.OpenWhisperTo(req.sender, FillTemplate(template, req))
 end
 
 ---------------------------------------------------------------------------
@@ -454,7 +536,7 @@ Refresh = function()
                 elseif req.reason then
                     tag = "  |cff" .. t.dim .. req.reason .. "|r"
                 end
-                row.label:SetText(req.info.label .. tag .. "  |cff" .. t.muted .. req.short .. ", " .. ago .. "s|r")
+                row.label:SetText(req.info.label .. tag .. "  |cff" .. t.muted .. req.display .. ", " .. ago .. "s|r")
                 row.text:SetText(req.msg)
                 row.bg:SetShown(req.priority == HIGH)
                 row.sel:SetShown(req.selected and true or false)
@@ -550,15 +632,16 @@ end
 local function AddRequest(sender, msg, info, source)
     -- same person again: refresh their entry instead of adding a second one
     for i, r in ipairs(requests) do
-        if r.sender == sender then
+        if r.key == ns.NameKey(sender) then
             table.remove(requests, i)
             break
         end
     end
-    local req = { sender = sender, short = ShortName(sender), msg = msg, info = info, time = GetTime(),
+    local req = { sender = sender, key = ns.NameKey(sender), display = ns.DisplayName(sender),
+                  first = ns.FirstName(sender), msg = msg, info = info, time = GetTime(),
                   source = source, zoneAtReceive = ns.MyZone() }
     req.priority, req.reason = Rank(req)
-    ns.customers[req.short] = { time = GetTime(), kind = info.kind, dest = info.dest }
+    ns.customers[req.key] = { time = GetTime(), kind = info.kind, dest = info.dest, sender = sender }
     table.insert(requests, 1, req)
     if req.priority > LOW or db.alertLow then
         Alert(req)
@@ -574,9 +657,9 @@ function ns.HandleChat(msg, sender, source)
     if IsSecret(msg) or IsSecret(sender) then return end -- inside instances: unreadable
     if type(msg) ~= "string" or type(sender) ~= "string" or sender == "" then return end
 
-    local me = UnitName("player")
-    if ShortName(sender) == me then return end
-    if UnitInParty and UnitInParty(ShortName(sender)) then return end
+    local key = ns.NameKey(sender)
+    if key == ns.NameKey(ns.UnitFull("player")) then return end -- yourself
+    if ns.InGroupWith(key) then return end                       -- already grouped
 
     local info = ns.Classify(msg, MatchOptions())
     if info then AddRequest(sender, msg, info, source or "other") end
@@ -623,10 +706,11 @@ function ns.LookupZone(req)
         return
     end
     if C_FriendList.SetWhoToUi then pcall(C_FriendList.SetWhoToUi, false) end
-    pendingWho = { req = req, name = req.short, time = GetTime() }
-    ns.lastWhoName, ns.lastWhoTime = req.short, GetTime()
+    pendingWho = { req = req, key = req.key, time = GetTime() }
+    ns.lastWhoKey, ns.lastWhoTime = req.key, GetTime()
     req.whoPending, req.whoFailed = true, nil
-    local ok = pcall(C_FriendList.SendWho, 'n-"' .. req.short .. '"')
+    -- search by first name; results are matched on the full name below
+    local ok = pcall(C_FriendList.SendWho, 'n-"' .. req.first .. '"')
     if not ok then
         pendingWho = nil
         req.whoPending, req.whoFailed = nil, true
@@ -645,7 +729,7 @@ local function OnWhoList()
     local n = C_FriendList.GetNumWhoResults and C_FriendList.GetNumWhoResults() or 0
     for i = 1, n do
         local ok, info = pcall(C_FriendList.GetWhoInfo, i)
-        if ok and info and info.fullName and ShortName(info.fullName) == pendingWho.name then
+        if ok and info and ns.NameKey(info.fullName) == pendingWho.key then
             FinishWho(info.area)
             return
         end
@@ -659,7 +743,7 @@ local function ParseWhoLine(msg)
     local name = msg:match("|Hplayer:([^:|]+)")
     if not name then return end
     local area = msg:match("^.*%s%-%s(.-)%s*$")
-    return ShortName(name), area
+    return ns.NameKey(name), area
 end
 
 -- Hide our own lookup lines from chat so the lookup is quiet.
@@ -668,7 +752,7 @@ local function WhoChatFilter(_, _, msg)
     if type(msg) ~= "string" or IsSecret(msg) then return false end
     local name = ParseWhoLine(msg)
     local recent = ns.lastWhoTime and GetTime() - ns.lastWhoTime < 6
-    if (pendingWho and name == pendingWho.name) or (recent and name == ns.lastWhoName) then return true end
+    if (pendingWho and name == pendingWho.key) or (recent and name == ns.lastWhoKey) then return true end
     if recent and msg:find("%d+ [Pp]layers? total") then return true end
     return false
 end
@@ -676,7 +760,7 @@ end
 local function OnSystemMessage(msg)
     if not pendingWho then return end
     local name, area = ParseWhoLine(msg)
-    if name and name == pendingWho.name then
+    if name and name == pendingWho.key then
         FinishWho(area)
     end
 end
@@ -817,8 +901,8 @@ function ns.BuildOptions()
             { type = "range", key = "glowTime", label = "Glow for", min = 5, max = 60, step = 5, suffix = "s" },
             { type = "check", key = "screenMsg", label = "Show a message at the top of the screen" },
             { type = "check", key = "edgeFlash", label = "Flash the edges of the screen" },
-            { type = "header", label = "Earnings (this character)" },
-            { type = "info", lines = function() return ns.EarningsLines() end, height = 58 },
+            { type = "header", label = "Earnings (saved, kept through logouts)" },
+            { type = "info", lines = function() return ns.EarningsLines() end, height = 190 },
             { type = "header", label = "Payments" },
             { type = "choice", key = "receiptMode", label = "Payment messages (Auto / Prefill / Off)", values = { "auto", "prefill", "off" } },
             { type = "check", key = "receiptAll", label = "Post for every trade, not just customers" },
@@ -907,10 +991,14 @@ SlashCmdList.MAGESERVICES = function(msg)
         local o = ns.SoundOptions()[n]
         if o then db.soundKey = o.value; ns.PlayAlertSound(); Print("sound: " .. o.label) end
     elseif cmd == "earnings" or cmd == "gold" then
-        if rest:lower() == "reset yes" then
-            ns.ResetEarnings(); Print("earnings reset.")
-        elseif rest:lower() == "reset" then
-            Print("this clears this character's earnings for good. Type /ms earnings reset yes to confirm.")
+        local r = rest:lower()
+        if r == "reset yes" then
+            ns.ResetEarnings("character"); Print("this character's earnings reset. The all-characters total is kept.")
+        elseif r == "reset all yes" then
+            ns.ResetEarnings("all"); Print("all earnings reset, on every character.")
+        elseif r == "reset" or r == "reset all" then
+            Print("/ms earnings reset yes - clears this character's earnings (the all-characters total is kept)")
+            Print("/ms earnings reset all yes - clears everything, every character, for good")
         else
             for _, line in ipairs(ns.EarningsLines()) do Print(line) end
         end
@@ -949,7 +1037,7 @@ SlashCmdList.MAGESERVICES = function(msg)
         Print("/ms zone [auto|city|zone name] - show or set where you are, e.g. /ms zone uc")
         Print("/ms theme [dark|light] - window theme")
         Print("/ms sounds, /ms sound <number> - list the alert sounds and pick one")
-        Print("/ms earnings - gold earned from portals and water; /ms earnings reset to clear")
+        Print("/ms earnings - gold earned, all characters and this one; /ms earnings reset for options")
         Print("/ms receipts [auto|prefill|off] - payment messages: send them, type them for you, or off")
         Print("/ms paidmsg, /ms nopaymsg, /ms cancelmsg, /ms failmsg <text> - {name}, {amount}, {reason} get filled in")
         Print("/ms testtrade [complete|cancelled|failed] - try a payment message (only typed, never sent)")

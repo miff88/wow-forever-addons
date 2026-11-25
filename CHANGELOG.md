@@ -2,6 +2,12 @@
 
 ## 2026-11-25
 
+Mage Services 1.5.0
+- Whispers now work with WoW Forever's two-part names: Whisper opens a whisper aimed at the player's full name instead of typing "/w First Last", which went to the wrong player.
+- Players are matched on their full name everywhere: requests, trades, payment messages and /who lookups, so two players with the same first name can't be mixed up. Greetings still use the first name.
+- Earnings now include an all-characters, all-time total and a total of gold from every trade, all saved through logouts. Every total is split into portals and food & water.
+- /ms earnings reset now clears this character only; /ms earnings reset all clears everything.
+
 Overpower Plates 1.3.3, Battle Shout Reminder 1.1.3, Plate Threat 1.3.3, Target Arrow 1.1.3
 - Credit line on the settings page: "Created by Miff, supported by Claude".
 

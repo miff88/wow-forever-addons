@@ -64,7 +64,7 @@ cast:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     if self.spell then
         GameTooltip:AddLine("Cast " .. self.spell, 0.41, 0.8, 0.94)
-        if self.req then GameTooltip:AddLine("For " .. self.req.short .. ": " .. self.req.msg, 1, 1, 1, true) end
+        if self.req then GameTooltip:AddLine("For " .. self.req.display .. ": " .. self.req.msg, 1, 1, 1, true) end
         GameTooltip:AddLine("Click a row in the list to pick a different request. Drag to move.", 0.7, 0.7, 0.7, true)
     else
         GameTooltip:AddLine("No request selected")
@@ -170,8 +170,8 @@ end
 ---------------------------------------------------------------------------
 -- Payment receipts
 ---------------------------------------------------------------------------
-local trade      -- { name, money, items = {}, done }
-ns.customers = {} -- [short name] = { time, kind, dest } from their latest request
+local trade      -- { key, sender, first, money, items = {}, done }
+ns.customers = {} -- [name key] = { time, kind, dest, sender } from their latest request
 
 local CUSTOMER_WINDOW = 30 * 60 -- a request counts for 30 minutes
 
@@ -186,13 +186,31 @@ local function Money(copper)
 end
 ns.Money = Money
 
-local function IsCustomer(name)
-    if not name then return false end
+local function IsCustomer(key)
+    if not key or key == "" then return false end
     if ns.db.receiptAll then return true end
-    if UnitInParty and UnitInParty(name) then return true end
-    if UnitInRaid and UnitInRaid(name) then return true end
-    local c = ns.customers[name]
+    if ns.InGroupWith(key) then return true end
+    local c = ns.customers[key]
     return c ~= nil and GetTime() - c.time < CUSTOMER_WINDOW
+end
+
+-- Works out who you're trading with. If the game only gives a first name, it is matched
+-- to a recent customer with that first name, but only when exactly one fits.
+local function TradePartner()
+    local full = ns.UnitFull("NPC")
+    if not full then return nil end
+    local key = ns.NameKey(full)
+    if ns.customers[key] then
+        return key, ns.customers[key].sender
+    end
+    if not full:find("[%s%-]") then
+        local firstKey, found, foundKey = key, 0, nil
+        for k in pairs(ns.customers) do
+            if k:sub(1, #firstKey) == firstKey then found, foundKey = found + 1, k end
+        end
+        if found == 1 then return foundKey, ns.customers[foundKey].sender end
+    end
+    return key, full
 end
 
 local function SendChat(text, chatType, target)
@@ -212,24 +230,27 @@ local function OpenChat(line)
     end
 end
 
--- Party chat if they're still in the group, otherwise a whisper.
-local function Post(name, text)
+-- Party chat if they're still in the group, otherwise a whisper to their full name.
+local function Post(t, text)
     local mode = ns.db.receiptMode
     if mode == "off" then return end
 
-    local chatType, slash, target = "WHISPER", "/w " .. name .. " ", name
-    if IsInRaid and IsInRaid() and UnitInRaid and UnitInRaid(name) then
-        chatType, slash, target = "RAID", "/ra ", nil
-    elseif UnitInParty and UnitInParty(name) then
-        chatType, slash, target = "PARTY", "/p ", nil
-    end
+    local grouped = ns.InGroupWith(t.key)
+    local raid = grouped and IsInRaid and IsInRaid()
 
     if mode == "prefill" then
-        OpenChat(slash .. text)
+        if grouped then OpenChat((raid and "/ra " or "/p ") .. text)
+        else ns.OpenWhisperTo(t.sender, text) end
         return
     end
-    local ok = SendChat(text, chatType, target)
-    if not ok then OpenChat(slash .. text) end -- couldn't send: leave it ready to press Enter
+
+    local ok
+    if grouped then ok = SendChat(text, raid and "RAID" or "PARTY")
+    else ok = SendChat(text, "WHISPER", t.sender) end
+    if not ok then -- couldn't send: leave it typed, ready to press Enter
+        if grouped then OpenChat((raid and "/ra " or "/p ") .. text)
+        else ns.OpenWhisperTo(t.sender, text) end
+    end
 end
 
 local function Fill(template, name, extra)
@@ -273,12 +294,33 @@ local function NewTotals()
 end
 ns.session = NewTotals()
 
+local function FillTotals(t)
+    for k, v in pairs(NewTotals()) do if t[k] == nil then t[k] = v end end
+    return t
+end
+
+-- Saved in the addon's saved variables, so they survive logouts, reloads and restarts:
+--   ns.earnings : this character, from services
+--   ns.lifetime : every character on the account, from services, since the date it began
+--   ns.allTrades: every character, all gold received in any completed trade
 function ns.InitEarnings()
     MageServicesCharDB = MageServicesCharDB or {}
-    MageServicesCharDB.earnings = MageServicesCharDB.earnings or NewTotals()
-    local e = MageServicesCharDB.earnings
-    for k, v in pairs(NewTotals()) do if e[k] == nil then e[k] = v end end
-    ns.earnings = e
+    MageServicesCharDB.earnings = FillTotals(MageServicesCharDB.earnings or NewTotals())
+    ns.earnings = MageServicesCharDB.earnings
+
+    local db = ns.db
+    if not db.lifetime then
+        -- first run of this version: start the account total from this character's history
+        db.lifetime = FillTotals({})
+        local e = ns.earnings
+        db.lifetime.total, db.lifetime.port, db.lifetime.water, db.lifetime.other = e.total, e.port, e.water, e.other
+        for k, v in pairs(e.count) do db.lifetime.count[k] = v end
+        for k, v in pairs(e.dest) do db.lifetime.dest[k] = v end
+    end
+    ns.lifetime = FillTotals(db.lifetime)
+    db.lifetimeSince = db.lifetimeSince or (date and date("%d %b %Y")) or "install"
+    db.allTrades = db.allTrades or { total = 0, count = 0 }
+    ns.allTrades = db.allTrades
 end
 
 local function AddTo(t, kind, dest, copper)
@@ -288,54 +330,87 @@ local function AddTo(t, kind, dest, copper)
     if kind == "port" and dest then t.dest[dest] = (t.dest[dest] or 0) + copper end
 end
 
-local function RecordEarning(name, copper)
+local function RecordEarning(key, copper)
     if not copper or copper <= 0 or not ns.earnings then return end
-    local c = ns.customers[name]
+    local c = ns.customers[key]
     local kind = c and c.kind or "other"
     if kind ~= "port" and kind ~= "water" then kind = "other" end
     local dest = c and c.dest
     AddTo(ns.earnings, kind, dest, copper)
+    AddTo(ns.lifetime, kind, dest, copper)
     AddTo(ns.session, kind, dest, copper)
+end
+
+-- Any completed trade that brought in gold, customer or not.
+local function RecordAnyTrade(copper)
+    if not copper or copper <= 0 or not ns.allTrades then return end
+    ns.allTrades.total = ns.allTrades.total + copper
+    ns.allTrades.count = ns.allTrades.count + 1
 end
 
 -- One-line summary for the bottom of the window.
 function ns.EarningsLine()
-    local e, s = ns.earnings, ns.session
+    local e, s, l = ns.earnings, ns.session, ns.lifetime
     if not e then return "" end
     local muted = ns.Theme and ns.Theme().muted or "aaaaaa"
-    return ("Earned %s  |cff%s(portals %s, water %s)   this session %s|r"):format(
-        Money(e.total), muted, Money(e.port), Money(e.water), Money(s.total))
+    return ("All characters %s  |cff%s(portals %s, food & water %s)   this character %s   session %s|r"):format(
+        Money(l.total), muted, Money(l.port), Money(l.water), Money(e.total), Money(s.total))
 end
 
--- Longer breakdown for chat and the settings page.
+-- Portals / food & water / other, each on its own line, for one set of totals.
+local function Breakdown(lines, t)
+    lines[#lines + 1] = ("     Portals:  %s  from %d"):format(Money(t.port), t.count.port or 0)
+    lines[#lines + 1] = ("     Food & water:  %s  from %d"):format(Money(t.water), t.count.water or 0)
+    if (t.other or 0) > 0 then
+        lines[#lines + 1] = ("     Other:  %s  from %d"):format(Money(t.other), t.count.other or 0)
+    end
+end
+
+-- Full breakdown for chat and the settings page.
 function ns.EarningsLines()
-    local e, s = ns.earnings, ns.session
+    local e, s, l, a = ns.earnings, ns.session, ns.lifetime, ns.allTrades
     if not e then return {} end
-    local lines = {
-        ("Total: %s   This session: %s"):format(Money(e.total), Money(s.total)),
-        ("Portals: %s from %d   Water/food: %s from %d   Other: %s from %d"):format(
-            Money(e.port), e.count.port or 0, Money(e.water), e.count.water or 0, Money(e.other), e.count.other or 0),
-    }
+    local lines = {}
+
+    lines[#lines + 1] = ("All characters, all time (since %s):  %s"):format(ns.db.lifetimeSince or "install", Money(l.total))
+    Breakdown(lines, l)
+
+    lines[#lines + 1] = ("This character:  %s"):format(Money(e.total))
+    Breakdown(lines, e)
+
+    lines[#lines + 1] = ("This session:  %s"):format(Money(s.total))
+    Breakdown(lines, s)
+
     local cities = {}
-    for name, copper in pairs(e.dest) do cities[#cities + 1] = { name = name, copper = copper } end
-    table.sort(cities, function(a, b) return a.copper > b.copper end)
+    for name, copper in pairs(l.dest) do cities[#cities + 1] = { name = name, copper = copper } end
+    table.sort(cities, function(x, y) return x.copper > y.copper end)
     if #cities > 0 then
         local parts = {}
         for _, c in ipairs(cities) do parts[#parts + 1] = c.name .. " " .. Money(c.copper) end
-        lines[#lines + 1] = "Portals by city: " .. table.concat(parts, ", ")
+        lines[#lines + 1] = "Portals by city (all characters):  " .. table.concat(parts, ", ")
     end
+
+    lines[#lines + 1] = ("Every trade while the addon was on:  %s  from %d trades"):format(Money(a.total), a.count)
     return lines
 end
 
-function ns.ResetEarnings()
+-- what = "character" (this character only) or "all" (everything, every character)
+function ns.ResetEarnings(what)
     MageServicesCharDB.earnings = NewTotals()
     ns.earnings = MageServicesCharDB.earnings
     ns.session = NewTotals()
+    if what == "all" then
+        ns.db.lifetime = NewTotals()
+        ns.lifetime = ns.db.lifetime
+        ns.db.lifetimeSince = (date and date("%d %b %Y")) or "reset"
+        ns.db.allTrades = { total = 0, count = 0 }
+        ns.allTrades = ns.db.allTrades
+    end
 end
 
-local function MarkPaid(name, copper)
+local function MarkPaid(key, copper)
     for _, r in ipairs(ns.requests) do
-        if r.short == name then r.paid = copper end
+        if r.key == key then r.paid = copper end
     end
     ns.Refresh()
 end
@@ -343,8 +418,10 @@ end
 local function Finish(result, reason)
     if not trade or trade.done then return end
     trade.done = true
-    local name, db = trade.name, ns.db
-    if not name or not IsCustomer(name) then trade = nil return end
+    local t, db = trade, ns.db
+    if result == "complete" and not t.test then RecordAnyTrade(t.money or 0) end
+    if not t.key or not IsCustomer(t.key) then trade = nil return end
+    local name = t.first
 
     if result == "complete" then
         local itemsText = ItemsText(trade.items or {})
@@ -352,17 +429,17 @@ local function Finish(result, reason)
             local paid = Money(trade.money)
             if (trade.money or 0) == 0 then paid = itemsText
             elseif itemsText ~= "" then paid = paid .. " + " .. itemsText end
-            Post(name, Fill(db.paidMsg, name, { amount = paid }))
-            if not trade.test then RecordEarning(name, trade.money or 0) end
-            MarkPaid(name, trade.money or 0)
-            ns.Print("payment from " .. name .. ": " .. paid)
+            Post(t, Fill(db.paidMsg, name, { amount = paid }))
+            if not t.test then RecordEarning(t.key, t.money or 0) end
+            MarkPaid(t.key, t.money or 0)
+            ns.Print("payment from " .. ns.DisplayName(t.sender) .. ": " .. paid)
         else
-            Post(name, Fill(db.noPayMsg, name))
+            Post(t, Fill(db.noPayMsg, name))
         end
     elseif result == "cancelled" then
-        Post(name, Fill(db.cancelMsg, name))
+        Post(t, Fill(db.cancelMsg, name))
     else
-        Post(name, Fill(db.failMsg, name, { reason = (reason or "unknown reason"):gsub("%.%s*$", "") }))
+        Post(t, Fill(db.failMsg, name, { reason = (reason or "unknown reason"):gsub("%.%s*$", "") }))
     end
     trade = nil
 end
@@ -401,9 +478,8 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
         if pendingUpdate then ns.Refresh() end
 
     elseif event == "TRADE_SHOW" then
-        local name = UnitName and UnitName("NPC")
-        if IsSecret(name) then name = nil end
-        trade = { name = name, money = 0, items = {} }
+        local key, sender = TradePartner()
+        trade = { key = key, sender = sender, first = ns.FirstName(sender), money = 0, items = {} }
         ReadTrade()
 
     elseif event == "TRADE_MONEY_CHANGED" or event == "TRADE_TARGET_ITEM_CHANGED" or event == "TRADE_ACCEPT_UPDATE" then
@@ -438,8 +514,9 @@ end)
 
 -- For /ms test-trade: run a fake trade through the same path.
 function ns.TestTrade(result)
-    trade = { name = "Testbuyer", money = 15000, items = { { name = "Silk Cloth", count = 5 } }, test = true }
-    ns.customers.Testbuyer = { time = GetTime(), kind = "port", dest = "Undercity" }
+    trade = { key = "testbuyerexample", sender = "Testbuyer Example", first = "Testbuyer",
+              money = 15000, items = { { name = "Silk Cloth", count = 5 } }, test = true }
+    ns.customers.testbuyerexample = { time = GetTime(), kind = "port", dest = "Undercity", sender = "Testbuyer Example" }
     local mode = ns.db.receiptMode
     ns.db.receiptMode = "prefill" -- never send a real message from a test
     if result == "complete" then Finish("complete")

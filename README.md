@@ -53,7 +53,7 @@ Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it on
 
 - `/ms theme [dark|light]` window theme (also on the settings page)
 - `/ms sounds`, `/ms sound <number>` list and pick the alert sound (also a dropdown on the settings page)
-- `/ms earnings` totals; `/ms earnings reset` to clear
+- `/ms earnings` totals (all characters, this character, this session, split into portals and food & water); `/ms earnings reset` for clearing options
 - `/ms receipts [auto|prefill|off]` how payment messages are posted
 - `/ms paidmsg`, `/ms nopaymsg`, `/ms cancelmsg`, `/ms failmsg <text>` change them (`{name}`, `{amount}`, `{reason}` are filled in)
 - `/ms testtrade [complete|cancelled|failed]` preview a payment message (typed only, never sent)

@@ -258,7 +258,7 @@ function ns.ScreenAlert(req)
 
     if db.screenMsg then
         banner.icon:SetTexture(req.info.icon)
-        banner.text:SetText(req.info.label .. "  -  " .. req.short)
+        banner.text:SetText(req.info.label .. "  -  " .. req.display)
         local reason = req.reason and ("(" .. req.reason .. ")  ") or ""
         banner.sub:SetText(reason .. req.msg)
         FitBanner()
