@@ -84,3 +84,7 @@ Shows a Battle Shout icon when the buff is missing or under 10 seconds while you
 
 - `/bsr unlock`, `/bsr lock` move the icon
 - `/bsr test`, `/bsr time <n>`, `/bsr size <n>`, `/bsr sound`, `/bsr reset`
+
+## Releasing
+
+Pushing a tag named `<AddonFolder>-v<version>` (for example `MageServices-v1.4.4`) builds that addon's zip, attaches it to a GitHub release and, for addons listed in `curseforge.json`, uploads it to CurseForge as a WoW Forever (1.60.1) file. The tag must match the version in the addon's .toc. CurseForge uploads need the `CF_API_TOKEN` repository secret.
