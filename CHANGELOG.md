@@ -2,6 +2,10 @@
 
 ## 2026-11-25
 
+Battle Shout Notice 1.2.0
+- Renamed from Battle Shout Reminder to Battle Shout Notice, to match its CurseForge page. The addon folder and your saved settings are unchanged.
+- /bsn now works as well as /bsr.
+
 Mage Services 1.6.0
 - New setting, on by default: keep the gold amount out of payment messages, so what you charge isn't shared in party chat or whispers. Your earnings totals still record the real amounts. Turn it off on the settings page or with /ms amount; change the wording with /ms privatemsg.
 

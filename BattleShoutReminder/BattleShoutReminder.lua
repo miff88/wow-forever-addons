@@ -1,4 +1,4 @@
--- Battle Shout Reminder (WoW Forever)
+-- Battle Shout Notice (WoW Forever)
 -- Shows a Battle Shout icon when the buff is missing or about to run out while you're in
 -- combat or have a hostile target.
 --
@@ -229,7 +229,7 @@ end)
 -- Slash command: /bsr
 ---------------------------------------------------------------------------
 local function Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Battle Shout Reminder:|r " .. msg)
+    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Battle Shout Notice:|r " .. msg)
 end
 
 local function SetUnlocked(v)
@@ -242,7 +242,7 @@ end
 ---------------------------------------------------------------------------
 function ns.BuildOptions()
     ns.CreateOptions({
-        title = "Battle Shout Reminder",
+        title = "Battle Shout Notice",
         icon = SHOUT_ICON,
         about = "Reminds you when Battle Shout is missing or running out",
         credit = "Created by Miff, supported by Claude",
@@ -270,6 +270,7 @@ function BattleShoutReminder_OnAddonCompartmentClick()
 end
 
 SLASH_BATTLESHOUTREMINDER1 = "/bsr"
+SLASH_BATTLESHOUTREMINDER2 = "/bsn"
 SlashCmdList.BATTLESHOUTREMINDER = function(msg)
     local cmd, val = (msg or ""):lower():match("^(%S*)%s*(.-)$")
     local n = tonumber(val)

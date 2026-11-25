@@ -6,6 +6,14 @@ import sys
 addon, version, path = sys.argv[1], sys.argv[2], sys.argv[3]
 # "MageServices" -> "Mage Services", the way the changelog names it
 pretty = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", addon)
+# prefer the toc Title (colour codes stripped), so a renamed addon matches its changelog lines
+try:
+    for tl in open(f"{addon}/{addon}.toc", encoding="utf-8"):
+        if tl.startswith("## Title:"):
+            pretty = re.sub(r"\|c[0-9a-fA-F]{8}|\|r", "", tl.split(":", 1)[1]).strip()
+            break
+except OSError:
+    pass
 text = open(path, encoding="utf-8").read().splitlines()
 
 notes, grab = [], False

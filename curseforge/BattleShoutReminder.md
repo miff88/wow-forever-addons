@@ -1,6 +1,6 @@
-# Battle Shout Reminder
+# Battle Shout Notice
 
-**Never fight without Battle Shout again.** Battle Shout Reminder shows a Battle Shout icon when the buff is missing or about to run out while you're fighting, with a countdown and a sound when it drops off.
+**Never fight without Battle Shout again.** Battle Shout Notice shows a Battle Shout icon when the buff is missing or about to run out while you're fighting, with a countdown and a sound when it drops off.
 
 Made for **World of Warcraft: Forever**. Warrior only.
 
@@ -35,7 +35,7 @@ Made for **World of Warcraft: Forever**. Warrior only.
 | `/bsr help` | All commands |
 
 ## Good to know
-- WoW Forever hides buff details from addons during combat. Battle Shout Reminder times your own shouts, then checks the real buff (and its real length) whenever you're out of combat.
+- WoW Forever hides buff details from addons during combat. Battle Shout Notice times your own shouts, then checks the real buff (and its real length) whenever you're out of combat.
 - Because of that, a Battle Shout from another warrior during a fight is only picked up once combat ends, so in a group you may get an early reminder.
 
 Created by Miff, supported by Claude. Source and changelog: [github.com/miff88/wow-forever-addons](https://github.com/miff88/wow-forever-addons)

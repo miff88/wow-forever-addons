@@ -4,7 +4,7 @@ Small addons for World of Warcraft: Forever (Interface 16001). Some work on any 
 
 ## Install
 
-Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates need to be on (V) for everything except Battle Shout Reminder.
+Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates need to be on (V) for everything except Battle Shout Notice.
 
 ## Settings
 
@@ -77,8 +77,8 @@ Puts an Overpower icon with a 5 second countdown above the nameplate of the mob 
 - `/opp sound` toggle the dodge sound
 - `/opp debug` print your current Overpower charge count
 
-### Battle Shout Reminder (`/bsr`)
-<img src="logos/BattleShoutReminder.png" alt="BattleShoutReminder logo" width="96">
+### Battle Shout Notice (`/bsr` or `/bsn`)
+<img src="logos/BattleShoutReminder.png" alt="Battle Shout Notice logo" width="96">
 
 Shows a Battle Shout icon when the buff is missing or under 10 seconds while you're in combat or targeting an enemy. Forever hides buffs from addons in combat, so it times your own casts and checks the real buff out of combat.
 
