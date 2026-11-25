@@ -22,6 +22,7 @@ end
 -- spec = {
 --   title = "Overpower Plates", icon = "Interface\\Icons\\...", about = "one line",
 --   slash = "/opp", db = table, onChange = function(key) end,
+--   credit = "optional line shown under the version",
 --   controls = {
 --     { type = "header", label = "Icon" },
 --     { type = "check",  key = "sound", label = "Play a sound" },
@@ -115,7 +116,12 @@ function ns.CreateOptions(spec)
         sub:SetPoint("RIGHT", content, "RIGHT", -16, 0)
         sub:SetJustifyH("LEFT")
 
-        local y = -80
+        if spec.credit then
+            local credit = Label(content, spec.credit, "GameFontDisableSmall")
+            credit:SetPoint("TOPLEFT", sub, "BOTTOMLEFT", 0, -4)
+        end
+
+        local y = -86
         for _, c in ipairs(spec.controls) do
             if c.type == "header" then
                 y = y - 6

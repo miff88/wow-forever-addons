@@ -2,6 +2,9 @@
 
 ## 2026-11-25
 
+Mage Services 1.4.4
+- Credit line on the settings page: "Created by Miff, supported by Claude".
+
 All addons (Mage Services 1.4.3, Overpower Plates 1.3.2, Battle Shout Reminder 1.1.2, Plate Threat 1.3.2, Target Arrow 1.1.2)
 - Settings page scrolling rebuilt from plain frames with its own scroll bar, instead of the game's scroll template, which didn't clip or show a bar in Forever. The page also clips anything past its edge.
 

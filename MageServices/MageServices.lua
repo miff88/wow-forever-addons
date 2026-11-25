@@ -792,6 +792,7 @@ function ns.BuildOptions()
         title = "Mage Services",
         icon = "Interface\\Icons\\Spell_Arcane_PortalOrgrimmar",
         about = "Spots portal and water requests in chat",
+        credit = "Created by Miff, supported by Claude",
         slash = "/ms",
         db = db,
         onChange = function() ns.ApplyTheme(); Refresh() end,
