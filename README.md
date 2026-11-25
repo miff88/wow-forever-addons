@@ -45,6 +45,7 @@ Spots people asking for portals or water in chat and lists them in a small windo
 
 Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it only works out in the world.
 
+- `/ms sounds`, `/ms sound <number>` list and pick the alert sound (also a dropdown on the settings page)
 - `/ms earnings` totals; `/ms earnings reset` to clear
 - `/ms receipts [auto|prefill|off]` how payment messages are posted
 - `/ms paidmsg`, `/ms nopaymsg`, `/ms cancelmsg`, `/ms failmsg <text>` change them (`{name}`, `{amount}`, `{reason}` are filled in)

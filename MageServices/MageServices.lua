@@ -29,6 +29,7 @@ local defaults = {
     chGuild = true,
     -- alerts
     sound  = true,
+    soundKey = "TELL_MESSAGE", -- which game sound plays (see /ms sounds)
     flash  = true,        -- flash the WoW icon on the taskbar
     autoInvite = false,
     expire = 120,         -- seconds a request stays in the list
@@ -384,10 +385,47 @@ end
 ---------------------------------------------------------------------------
 -- Incoming chat
 ---------------------------------------------------------------------------
-local function Alert(req)
-    if db.sound and PlaySound and SOUNDKIT then
-        PlaySound(SOUNDKIT.TELL_MESSAGE or SOUNDKIT.RAID_WARNING, "Master")
+---------------------------------------------------------------------------
+-- Alert sounds: the game's own sounds. Any the client doesn't have are left out.
+---------------------------------------------------------------------------
+local SOUND_LIST = {
+    { "TELL_MESSAGE", "Whisper" },
+    { "RAID_WARNING", "Raid warning" },
+    { "READY_CHECK", "Ready check" },
+    { "UI_RAID_BOSS_WHISPER_WARNING", "Boss emote warning" },
+    { "IG_PLAYER_INVITE", "Group invite" },
+    { "LFG_ROLE_CHECK", "Role check" },
+    { "PVP_THROUGH_QUEUE", "Queue ready" },
+    { "UI_BNET_TOAST", "Battle.net toast" },
+    { "ALARM_CLOCK_WARNING_2", "Alarm clock (short)" },
+    { "ALARM_CLOCK_WARNING_3", "Alarm clock" },
+    { "MAP_PING", "Map ping" },
+    { "LOOT_WINDOW_COIN_SOUND", "Coins" },
+    { "IG_QUEST_LIST_COMPLETE", "Quest complete" },
+    { "AUCTION_WINDOW_OPEN", "Auction house" },
+    { "UI_EPICLOOT_TOAST", "Epic loot" },
+    { "UI_LEGENDARY_LOOT_TOAST", "Legendary loot" },
+    { "UI_GARRISON_TOAST_MISSION_COMPLETE", "Mission complete" },
+    { "UI_WORLDQUEST_COMPLETE", "World quest complete" },
+}
+
+function ns.SoundOptions()
+    local opts = { { value = "NONE", label = "None" } }
+    for _, s in ipairs(SOUND_LIST) do
+        if SOUNDKIT and SOUNDKIT[s[1]] then opts[#opts + 1] = { value = s[1], label = s[2] } end
     end
+    return opts
+end
+
+function ns.PlayAlertSound(key)
+    key = key or db.soundKey
+    if key == "NONE" or not (PlaySound and SOUNDKIT) then return end
+    local id = SOUNDKIT[key] or SOUNDKIT.TELL_MESSAGE or SOUNDKIT.RAID_WARNING
+    if id then PlaySound(id, "Master") end
+end
+
+local function Alert(req)
+    if db.sound then ns.PlayAlertSound() end
     if db.flash and FlashClientIcon then FlashClientIcon() end
     if ns.ScreenAlert then ns.ScreenAlert(req) end
 end
@@ -663,6 +701,8 @@ function ns.BuildOptions()
             { type = "button", label = "Test a payment message", func = function() ns.TestTrade("complete") end },
             { type = "header", label = "When someone asks" },
             { type = "check", key = "sound", label = "Play a sound" },
+            { type = "dropdown", key = "soundKey", label = "Sound", options = ns.SoundOptions,
+              onSelect = function(v) ns.PlayAlertSound(v) end, preview = function(v) ns.PlayAlertSound(v) end },
             { type = "check", key = "flash", label = "Flash the WoW icon on the taskbar" },
             { type = "check", key = "autoInvite", label = "Invite them automatically" },
             { type = "range", key = "expire", label = "Keep requests for", min = 30, max = 600, step = 30, suffix = "s" },
@@ -729,6 +769,14 @@ SlashCmdList.MAGESERVICES = function(msg)
         local m = rest:lower()
         if m == "auto" or m == "prefill" or m == "off" then db.receiptMode = m end
         Print("payment messages: " .. db.receiptMode .. " (auto, prefill or off)")
+    elseif cmd == "sounds" then
+        for i, o in ipairs(ns.SoundOptions()) do
+            Print(i .. ". " .. o.label .. (o.value == db.soundKey and "  |cff33ff33(current)|r" or ""))
+        end
+        Print("pick one with /ms sound <number>")
+    elseif cmd == "sound" and n then
+        local o = ns.SoundOptions()[n]
+        if o then db.soundKey = o.value; ns.PlayAlertSound(); Print("sound: " .. o.label) end
     elseif cmd == "earnings" or cmd == "gold" then
         if rest:lower() == "reset yes" then
             ns.ResetEarnings(); Print("earnings reset.")
@@ -770,6 +818,7 @@ SlashCmdList.MAGESERVICES = function(msg)
         Print("/ms excludes, /ms unexclude <number>")
         Print("/ms portmsg <text>, /ms watermsg <text>, /ms custommsg <text> - reply text; {name} and {dest} get filled in")
         Print("/ms zone [auto|city|zone name] - show or set where you are, e.g. /ms zone uc")
+        Print("/ms sounds, /ms sound <number> - list the alert sounds and pick one")
         Print("/ms earnings - gold earned from portals and water; /ms earnings reset to clear")
         Print("/ms receipts [auto|prefill|off] - payment messages: send them, type them for you, or off")
         Print("/ms paidmsg, /ms nopaymsg, /ms cancelmsg, /ms failmsg <text> - {name}, {amount}, {reason} get filled in")

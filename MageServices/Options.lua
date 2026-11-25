@@ -130,6 +130,56 @@ function ns.CreateOptions(spec)
                 end)
                 y = y - 30
 
+            elseif c.type == "dropdown" then
+                -- c.options() returns { { value = , label = }, ... }; c.preview(value) is optional
+                local l = Label(panel, c.label)
+                l:SetPoint("TOPLEFT", 24, y - 4)
+
+                local function LabelFor(v)
+                    for _, o in ipairs(c.options()) do if o.value == v then return o.label end end
+                    return tostring(v)
+                end
+                local function Pick(v)
+                    db[c.key] = v
+                    if c.onSelect then c.onSelect(v) end
+                    Changed(c.key)
+                end
+
+                local ok, dd = pcall(CreateFrame, "DropdownButton", nil, panel, "WowStyle1DropdownTemplate")
+                if ok and dd and dd.SetupMenu then
+                    dd:SetWidth(180)
+                    dd:SetPoint("TOPLEFT", 240, y + 2)
+                    dd:SetupMenu(function(_, root)
+                        if root.SetScrollMode then root:SetScrollMode(320) end
+                        for _, o in ipairs(c.options()) do
+                            root:CreateRadio(o.label,
+                                function() return db[c.key] == o.value end,
+                                function() Pick(o.value) end)
+                        end
+                    end)
+                    table.insert(refreshers, function() if dd.GenerateMenu then dd:GenerateMenu() end end)
+                else
+                    -- older clients: a button that steps through the list
+                    dd = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+                    dd:SetSize(180, 22)
+                    dd:SetPoint("TOPLEFT", 240, y)
+                    dd:SetScript("OnClick", function()
+                        local opts, idx = c.options(), 1
+                        for i, o in ipairs(opts) do if o.value == db[c.key] then idx = i end end
+                        Pick(opts[idx % #opts + 1].value)
+                    end)
+                    table.insert(refreshers, function() dd:SetText(LabelFor(db[c.key])) end)
+                end
+
+                if c.preview then
+                    local play = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+                    play:SetSize(50, 22)
+                    play:SetPoint("LEFT", dd, "RIGHT", 6, 0)
+                    play:SetText("Play")
+                    play:SetScript("OnClick", function() c.preview(db[c.key]) end)
+                end
+                y = y - 32
+
             elseif c.type == "info" then
                 local fs = Label(panel, "", "GameFontHighlightSmall")
                 fs:SetPoint("TOPLEFT", 24, y - 2)

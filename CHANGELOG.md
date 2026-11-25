@@ -2,6 +2,9 @@
 
 ## 2026-11-25
 
+Mage Services 1.3.0
+- Choose the alert sound from a dropdown of the game's own sounds (or None), with a Play button to preview. Also /ms sounds and /ms sound <number>.
+
 Mage Services 1.2.0
 - Portal button that casts the selected request's portal (or Conjure Water), with a key binding.
 - Payment messages after trades: received (gold and items), no payment, cancelled or failed, in party chat or by whisper if they've left the group. Auto, prefill or off.
