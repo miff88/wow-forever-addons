@@ -119,6 +119,47 @@ local function AliasMatch(tokens, alias)
     return PhraseMatch(tokens, alias)
 end
 
+-- Words that introduce where the person is now: "from org", "in tb", "at uc".
+local ORIGIN_MARKERS = { from = true, frm = true, ["in"] = true, at = true }
+
+-- Finds where the person says they are. Returns the city (if it's one we know), the raw
+-- words after "from" (for non-city zones like "crossroads"), and the token positions used.
+local function FindOrigin(tokens)
+    for i, t in ipairs(tokens) do
+        if ORIGIN_MARKERS[t] then
+            local window = { tokens[i + 1], tokens[i + 2] }
+            for _, f in ipairs({ "Horde", "Alliance" }) do
+                for _, d in ipairs(ns.DESTINATIONS[f]) do
+                    for _, alias in ipairs(d.aliases) do
+                        local a = type(alias) == "table" and alias.word or alias
+                        if #window > 0 and PhraseMatch(window, a) then
+                            return d, nil, { [i] = true, [i + 1] = true, [i + 2] = true }
+                        end
+                    end
+                end
+            end
+            if t == "from" or t == "frm" then
+                local words = {}
+                for j = i + 1, math.min(i + 3, #tokens) do
+                    if tokens[j] == "to" then break end
+                    words[#words + 1] = tokens[j]
+                end
+                if #words > 0 then
+                    local used = {}
+                    for j = i, i + #words do used[j] = true end
+                    return nil, table.concat(words, " "), used
+                end
+            end
+        end
+    end
+end
+
+-- True when every word of `phrase` appears in `text` (loosely). Used for zone names.
+function ns.TextMatches(text, phrase)
+    if type(text) ~= "string" or type(phrase) ~= "string" then return false end
+    return PhraseMatch(ns.Tokens(text), phrase)
+end
+
 local function FindDestination(tokens, faction, allFactions)
     local sets = allFactions and { "Horde", "Alliance" } or { faction }
     for _, f in ipairs(sets) do
@@ -156,12 +197,23 @@ function ns.Classify(msg, opts)
     local asking = HasAny(tokens, ASK_WORDS) or msg:find("%?") ~= nil
 
     if opts.ports and asking and HasAny(tokens, PORT_WORDS) then
-        local d = FindDestination(tokens, opts.faction, opts.allFactions)
+        -- work out where they are first, then look for the destination in the other words
+        local origin, originText, used = FindOrigin(tokens)
+        local rest = tokens
+        if used then
+            rest = {}
+            for i, t in ipairs(tokens) do
+                if not used[i] then rest[#rest + 1] = t end
+            end
+        end
+        local d = FindDestination(rest, opts.faction, opts.allFactions)
         return {
             kind = "port",
             dest = d and d.name or nil,
             icon = d and d.icon or ns.ICONS.port,
             label = d and ("Port: " .. d.name) or "Port",
+            origin = origin and origin.name or nil,
+            originText = originText,
         }
     end
 

@@ -2,6 +2,12 @@
 
 ## 2026-11-25
 
+Mage Services 1.1.0
+- Location priority: requests ranked by where the person is compared with your zone (auto-detected or picked with /ms zone). Near you at the top, elsewhere or "port to where you already are" dimmed at the bottom, with an option to hide them.
+- Understands "from X" / "in X" in requests, so "LF port from Org to UC" gets the right destination.
+- "?" button on each request runs a /who to find their zone and re-rank it.
+- On-screen alerts: glowing Portal/Conjure action button, message at the top of the screen, screen edge flash.
+
 Mage Services 1.0.0
 - New addon: spots portal and water requests in chat with Invite and Whisper buttons, custom phrases, exclusions and optional auto-invite.
 

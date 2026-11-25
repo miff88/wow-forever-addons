@@ -30,8 +30,16 @@ Also adds a retail-style threat box on top of the target frame, coloured by your
 ### Mage Services (`/ms`)
 Spots people asking for portals or water in chat and lists them in a small window, each with **Invite** and **Whisper** buttons. Whisper opens your chat box with a reply already typed (`{name}` and `{dest}` filled in), so you just press Enter. Matching is loose: it ignores case and punctuation, allows small typos, understands city shorthand (UC, TB, Org, SW, IF, Darn), and ignores other mages' adverts ("WTS portals"). Auto-invite is available but off by default. Works on any class, but it's made for mages.
 
+**Location priority.** Requests are ranked against where you are (detected automatically, or pick a city with `/ms zone`):
+- **Top, highlighted:** asked in your zone's General channel or in say/yell, said "from <your zone>", or a /who shows them in your zone.
+- **Middle:** location unknown (Trade, whispers, guild). Click **?** on the row to run a /who and re-rank it. The game only allows /who from a click, so this can't run automatically.
+- **Bottom, dimmed:** they're somewhere else, or they want a port to the city you're already in. Can be hidden instead.
+
+**On-screen alerts.** The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4 and ElvUI), a message shows at the top of the screen, and the screen edges flash. Each can be turned off.
+
 Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it only works out in the world.
 
+- `/ms zone [auto|city|zone]` show or set your location, e.g. `/ms zone uc`
 - `/ms add <phrase>` watch for your own phrase too, e.g. `/ms add lf summon`; `/ms list`, `/ms remove <n>`
 - `/ms exclude <phrase>` never match lines containing it; `/ms excludes`, `/ms unexclude <n>`
 - `/ms portmsg <text>`, `/ms watermsg <text>`, `/ms custommsg <text>` change the reply
