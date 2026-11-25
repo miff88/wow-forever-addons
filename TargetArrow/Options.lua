@@ -38,26 +38,59 @@ function ns.CreateOptions(spec)
     local db = spec.db
 
     -- Options live in a scrolling area so long pages never spill out of the window.
-    local ok, scroll = pcall(CreateFrame, "ScrollFrame", nil, panel, "ScrollFrameTemplate")
-    if not ok or not scroll then
-        scroll = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
-    end
+    -- Built from plain frames (no templates) so it behaves the same on every client.
+    -- the page itself also clips, so nothing can draw below the options window
+    if panel.SetClipsChildren then panel:SetClipsChildren(true) end
+
+    local scroll = CreateFrame("ScrollFrame", nil, panel)
     scroll:SetPoint("TOPLEFT", 0, -4)
-    scroll:SetPoint("BOTTOMRIGHT", -28, 4)
+    scroll:SetPoint("BOTTOMRIGHT", -24, 4)
+    if scroll.SetClipsChildren then scroll:SetClipsChildren(true) end
 
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(560, 400)
     scroll:SetScrollChild(content)
 
-    -- some clients only scroll with the wheel if the frame asks for it
-    scroll:EnableMouseWheel(true)
-    if not scroll:GetScript("OnMouseWheel") then
-        scroll:SetScript("OnMouseWheel", function(self, delta)
-            local maxV = math.max(0, content:GetHeight() - self:GetHeight())
-            local v = math.min(maxV, math.max(0, self:GetVerticalScroll() - delta * 40))
-            self:SetVerticalScroll(v)
-        end)
+    -- scroll bar: a track with a draggable thumb
+    local bar = CreateFrame("Slider", nil, panel)
+    bar:SetOrientation("VERTICAL")
+    bar:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -8)
+    bar:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -8, 8)
+    bar:SetWidth(10)
+    bar:SetMinMaxValues(0, 0)
+    bar:SetValue(0)
+    if bar.SetValueStep then bar:SetValueStep(1) end
+
+    bar.track = bar:CreateTexture(nil, "BACKGROUND")
+    bar.track:SetAllPoints()
+    bar.track:SetColorTexture(0, 0, 0, 0.35)
+
+    bar:SetThumbTexture("Interface\\Buttons\\WHITE8x8")
+    local thumb = bar:GetThumbTexture()
+    thumb:SetSize(10, 48)
+    thumb:SetVertexColor(0.75, 0.75, 0.75, 0.9)
+
+    bar:SetScript("OnValueChanged", function(_, v) scroll:SetVerticalScroll(v) end)
+
+    local function UpdateRange()
+        local maxV = math.max(0, (content:GetHeight() or 0) - (scroll:GetHeight() or 0))
+        bar:SetMinMaxValues(0, maxV)
+        if bar:GetValue() > maxV then bar:SetValue(maxV) end
+        -- size the thumb to how much of the page is visible
+        local h, total = scroll:GetHeight() or 0, content:GetHeight() or 1
+        if total > 0 and h > 0 then thumb:SetHeight(math.max(24, (bar:GetHeight() or h) * math.min(1, h / total))) end
+        bar:SetShown(maxV > 0)
     end
+
+    local function Wheel(_, delta)
+        local lo, hi = bar:GetMinMaxValues()
+        bar:SetValue(math.min(hi, math.max(lo, bar:GetValue() - delta * 40)))
+    end
+    for _, f in ipairs({ panel, scroll, content }) do
+        f:EnableMouseWheel(true)
+        f:SetScript("OnMouseWheel", Wheel)
+    end
+    scroll:SetScript("OnSizeChanged", function() UpdateRange() end)
 
     local function Changed(key)
         if spec.onChange then spec.onChange(key) end
@@ -235,12 +268,16 @@ function ns.CreateOptions(spec)
             y = y - 30
         end
         content:SetHeight(-y + 16)
+        UpdateRange()
     end
 
     panel:SetScript("OnShow", function()
+        -- if the options window hasn't sized the page, fill whatever it's placed in
+        if (panel:GetHeight() or 0) < 10 and panel:GetParent() then panel:SetAllPoints(panel:GetParent()) end
         local w = scroll:GetWidth()
-        if w and w > 100 then content:SetWidth(w) end
+        if w and w > 100 then content:SetWidth(w - 4) end
         Build()
+        UpdateRange()
         for _, r in ipairs(refreshers) do r() end
     end)
 

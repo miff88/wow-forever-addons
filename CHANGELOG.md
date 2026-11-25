@@ -2,6 +2,9 @@
 
 ## 2026-11-25
 
+All addons (Mage Services 1.4.3, Overpower Plates 1.3.2, Battle Shout Reminder 1.1.2, Plate Threat 1.3.2, Target Arrow 1.1.2)
+- Settings page scrolling rebuilt from plain frames with its own scroll bar, instead of the game's scroll template, which didn't clip or show a bar in Forever. The page also clips anything past its edge.
+
 All addons (Mage Services 1.4.2, Overpower Plates 1.3.1, Battle Shout Reminder 1.1.1, Plate Threat 1.3.1, Target Arrow 1.1.1)
 - Settings pages now scroll, with a scroll bar and mouse wheel, so long pages no longer spill out of the options window.
 
