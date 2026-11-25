@@ -22,6 +22,9 @@ interface="$(grep -m1 '^## Interface:' "$toc" | sed 's/^## Interface:[[:space:]]
 # 16001 -> 1.60.1 (read from the right, like the BigWigs packager)
 game_version="$((interface / 10000)).$(((interface / 100) % 100)).$((interface % 100))"
 zip_name="${addon}-${version}.zip"
+# the name players see: the toc Title without colour codes ("Battle Shout Notice")
+title="$(grep -m1 '^## Title:' "$toc" | sed 's/^## Title:[[:space:]]*//' | tr -d '\r' | sed -E 's/\|c[0-9a-fA-F]{8}//g; s/\|r//g')"
+[ -n "$title" ] || title="$addon"
 echo "Releasing $addon $version (game version $game_version)"
 
 rm -f "$zip_name"
@@ -42,7 +45,7 @@ if [ -n "$project_id" ]; then
         | .[0].id // empty' versions.json)"
     [ -n "$version_id" ] || { echo "::error::CurseForge has no game version $game_version"; exit 1; }
 
-    metadata="$(jq -n --rawfile log notes.md --argjson gv "$version_id" --arg name "$addon $version" \
+    metadata="$(jq -n --rawfile log notes.md --argjson gv "$version_id" --arg name "$title $version" \
         '{changelog: $log, changelogType: "markdown", displayName: $name, gameVersions: [$gv], releaseType: "release"}')"
     curl -sS --fail-with-body \
         -H "X-Api-Token: $CF_API_TOKEN" \
