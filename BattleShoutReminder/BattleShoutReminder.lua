@@ -246,6 +246,11 @@ function ns.BuildOptions()
     ns.CreateOptions({
         title = "Battle Shout Notice",
         updateNotice = true,
+        changes = {
+            { "1.3.1", "This What's new list" },
+            { "1.3.0", "Tells you when a newer version is out" },
+            { "1.2.0", "Renamed from Battle Shout Reminder", "/bsn works as well as /bsr" },
+        },
         icon = SHOUT_ICON,
         about = "Reminds you when Battle Shout is missing or running out",
         credit = "Created by Miff, supported by Claude",

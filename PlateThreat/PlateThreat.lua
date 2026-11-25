@@ -321,6 +321,11 @@ function ns.BuildOptions()
     ns.CreateOptions({
         title = "Plate Threat",
         updateNotice = true,
+        changes = {
+            { "1.4.1", "This What's new list" },
+            { "1.4.0", "Tells you when a newer version is out" },
+            { "1.3.0", "Retail-style threat box on top of the target frame" },
+        },
         icon = ICON,
         about = "Your threat % on enemy nameplates and the target frame",
         credit = "Created by Miff, supported by Claude",

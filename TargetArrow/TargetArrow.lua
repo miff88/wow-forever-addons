@@ -154,6 +154,11 @@ function ns.BuildOptions()
     ns.CreateOptions({
         title = "Target Arrow",
         updateNotice = true,
+        changes = {
+            { "1.2.1", "This What's new list" },
+            { "1.2.0", "Tells you when a newer version is out" },
+            { "1.1.0", "Colour, size, height and bobbing set from this page" },
+        },
         icon = "Interface\\Icons\\Ability_Hunter_SniperShot",
         about = "An arrow over your target's nameplate",
         credit = "Created by Miff, supported by Claude",

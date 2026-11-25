@@ -2,6 +2,9 @@
 
 ## 2026-11-25
 
+Mage Services 1.8.1, Plate Threat 1.4.1, Overpower Plates 1.4.1, Target Arrow 1.2.1, Battle Shout Notice 1.3.1
+- A short "What's new" list at the top of the settings page, covering the last few versions.
+
 Mage Services 1.8.0
 - The replies are now edited on the settings page, with a live example under each one. {zone} (where you are) can be used alongside {name} and {dest}. Emptying a box puts the original reply back.
 - New, off by default: reply automatically when someone whispers you for a port or food. It only answers whispers, never Trade or General posts, and answers the same player at most once every 5 minutes (adjustable). When you can't help, such as a portal you don't have, it sends a separate "can't help" reply, which can be turned off. Rows you've auto-replied to are marked "replied".

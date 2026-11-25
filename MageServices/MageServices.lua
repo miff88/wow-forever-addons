@@ -1015,6 +1015,15 @@ function ns.BuildOptions()
     ns.CreateOptions({
         title = "Mage Services",
         updateNotice = true,
+        changes = {
+            { "1.8.1", "This What's new list" },
+            { "1.8.0", "Edit your replies on this page, with an example under each",
+                       "Optional automatic reply when someone whispers you",
+                       "Tells you when a newer version is out" },
+            { "1.7.0", "Hides requests for portals you don't have",
+                       "Option to hide requests that don't say where they are" },
+            { "1.6.0", "Gold amount left out of payment messages" },
+        },
         icon = "Interface\\Icons\\Spell_Arcane_PortalOrgrimmar",
         about = "Spots portal and water requests in chat",
         credit = "Created by Miff, supported by Claude",

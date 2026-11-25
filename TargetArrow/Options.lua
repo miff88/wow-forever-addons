@@ -24,6 +24,8 @@ end
 --   slash = "/opp", db = table, onChange = function(key) end,
 --   credit = "optional line shown under the version",
 --   updateNotice = true,  -- adds an "Updates" section for VersionCheck.lua (db.updateNotice)
+--   changes = { { "1.2.0", "short point", "short point" }, { "1.1.0", "..." } },  -- newest first;
+--             the newest few are listed under "What's new" at the top of the page
 --   controls = {
 --     { type = "header", label = "Icon" },
 --     { type = "check",  key = "sound", label = "Play a sound" },
@@ -130,6 +132,28 @@ function ns.CreateOptions(spec)
         end
 
         local y = -86
+
+        -- short "What's new" list: the newest few versions, a line or two each
+        if spec.changes and #spec.changes > 0 then
+            local h = Label(content, "What's new", "GameFontNormal")
+            h:SetPoint("TOPLEFT", 16, y)
+            y = y - 20
+            local lines = {}
+            for i, v in ipairs(spec.changes) do
+                if i > (spec.changesShown or 3) then break end
+                lines[#lines + 1] = "|cffffd100" .. v[1] .. "|r"
+                for j = 2, #v do lines[#lines + 1] = "   \226\128\162 " .. v[j] end -- bullet
+            end
+            local fs = Label(content, table.concat(lines, "\n"), "GameFontHighlightSmall")
+            fs:SetPoint("TOPLEFT", 24, y)
+            fs:SetWidth(math.max(300, (content:GetWidth() or 560) - 48))
+            fs:SetJustifyH("LEFT")
+            if fs.SetSpacing then fs:SetSpacing(2) end
+            local height = fs.GetStringHeight and fs:GetStringHeight()
+            if type(height) ~= "number" or height < 1 then height = #lines * 14 end
+            y = y - height - 12
+        end
+
         for _, c in ipairs(spec.controls) do
             if c.type == "header" then
                 y = y - 6

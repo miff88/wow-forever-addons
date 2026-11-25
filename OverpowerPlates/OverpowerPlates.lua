@@ -336,6 +336,11 @@ function ns.BuildOptions()
     ns.CreateOptions({
         title = "Overpower Plates",
         updateNotice = true,
+        changes = {
+            { "1.4.1", "This What's new list" },
+            { "1.4.0", "Tells you when a newer version is out" },
+            { "1.3.0", "Icon pops in with a quick animation (can be turned off)" },
+        },
         icon = OVERPOWER_ICON,
         about = "Overpower icon on the mob that dodged you",
         credit = "Created by Miff, supported by Claude",
