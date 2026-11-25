@@ -12,6 +12,7 @@ local ADDON_NAME, ns = ...
 -- Settings (saved per account, change with /bsr)
 ---------------------------------------------------------------------------
 local defaults = {
+    updateNotice = true,  -- "a newer version is out" chat notice (VersionCheck.lua)
     threshold = 10,    -- show the icon when this many seconds or fewer are left
     duration  = 120,   -- Battle Shout length; corrected from the real buff when it can be read
     size      = 52,
@@ -193,6 +194,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, _, arg3)
             if BattleShoutReminderDB[k] == nil then BattleShoutReminderDB[k] = v end
         end
         db = BattleShoutReminderDB
+        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Battle Shout Notice") end
         ApplyLayout()
         ns.BuildOptions()
 
@@ -243,6 +245,7 @@ end
 function ns.BuildOptions()
     ns.CreateOptions({
         title = "Battle Shout Notice",
+        updateNotice = true,
         icon = SHOUT_ICON,
         about = "Reminds you when Battle Shout is missing or running out",
         credit = "Created by Miff, supported by Claude",

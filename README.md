@@ -10,6 +10,8 @@ Copy whichever addon folders you want into `World of Warcraft\_forever_\Interfac
 
 Every addon has a settings page under **Options > AddOns**, and an entry on the minimap's addon button. Typing the slash command on its own (for example `/opp`) opens the page, and adding `help` (`/opp help`) lists the chat commands.
 
+**Update notice.** Addons can't go online, so each addon quietly tells guild and group members running it which version it's on. If someone has a newer one, you get a chat message saying it's out, and a reminder at each login until you update through the CurseForge app. Turn it off under "Updates" on the settings page.
+
 ## Any class
 
 ### Target Arrow (`/tarrow`)
@@ -34,7 +36,7 @@ Also adds a retail-style threat box on top of the target frame, coloured by your
 ### Mage Services (`/ms`)
 <img src="logos/MageServices.png" alt="MageServices logo" width="96">
 
-Spots people asking for portals or water in chat and lists them in a small window, each with **Invite** and **Whisper** buttons. Whisper opens your chat box with a reply already typed (`{name}` and `{dest}` filled in), so you just press Enter. Matching is loose: it ignores case and punctuation, allows small typos, understands city shorthand (UC, TB, Org, SW, IF, Darn), and ignores other mages' adverts ("WTS portals"). Auto-invite is available but off by default. Works on any class, but it's made for mages.
+Spots people asking for portals or water in chat and lists them in a small window, each with **Invite** and **Whisper** buttons. Whisper opens your chat box with a reply already typed, so you just press Enter. The replies are edited on the settings page (`{name}`, `{dest}` and `{zone}` are filled in), and there's an optional automatic reply for people who whisper you directly: never for Trade or General posts, at most once per player every few minutes, with a separate reply when you can't help. Matching is loose: it ignores case and punctuation, allows small typos, understands city shorthand (UC, TB, Org, SW, IF, Darn), and ignores other mages' adverts ("WTS portals"). Auto-invite is available but off by default. Works on any class, but it's made for mages.
 
 **Location priority.** Requests are ranked against where you are (detected automatically, or pick a city with `/ms zone`):
 - **Top, highlighted:** asked in your zone's General channel or in say/yell, said "from <your zone>", or a /who shows them in your zone.
@@ -60,7 +62,8 @@ Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it on
 - `/ms zone [auto|city|zone]` show or set your location, e.g. `/ms zone uc`
 - `/ms add <phrase>` watch for your own phrase too, e.g. `/ms add lf summon`; `/ms list`, `/ms remove <n>`
 - `/ms exclude <phrase>` never match lines containing it; `/ms excludes`, `/ms unexclude <n>`
-- `/ms portmsg <text>`, `/ms watermsg <text>`, `/ms custommsg <text>` change the reply
+- `/ms portmsg <text>`, `/ms watermsg <text>`, `/ms custommsg <text>`, `/ms cantmsg <text>` change the replies
+- `/ms autoreply` turns automatic replies to whispers on or off
 - `/ms test` add sample requests, `/ms show` show the window
 
 ## Warrior only

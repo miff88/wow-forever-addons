@@ -2,6 +2,16 @@
 
 ## 2026-11-25
 
+Mage Services 1.8.0
+- The replies are now edited on the settings page, with a live example under each one. {zone} (where you are) can be used alongside {name} and {dest}. Emptying a box puts the original reply back.
+- New, off by default: reply automatically when someone whispers you for a port or food. It only answers whispers, never Trade or General posts, and answers the same player at most once every 5 minutes (adjustable). When you can't help, such as a portal you don't have, it sends a separate "can't help" reply, which can be turned off. Rows you've auto-replied to are marked "replied".
+- A warning shows if your replies promise an invite while "Invite them automatically" is off.
+- New commands: /ms autoreply and /ms cantmsg.
+- Update notice: addons can't go online, so Mage Services tells guild and group members running it which version it's on. If someone has a newer one, you get a chat message saying it's out and to update through the CurseForge app. Turn it off under "Updates" on the settings page.
+
+Plate Threat 1.4.0, Overpower Plates 1.4.0, Target Arrow 1.2.0, Battle Shout Notice 1.3.0
+- Update notice: addons can't go online, so each addon tells guild and group members running it which version it's on. If someone has a newer one, you get a chat message saying it's out and to update through the CurseForge app, with a reminder at each login until you do. Turn it off under "Updates" on the settings page.
+
 Mage Services 1.7.0
 - "Hide requests you can't help with" now also covers portals you don't have: ones you haven't learned yet, and the other faction's cities. Water requests count too until you can conjure water. The check reruns when you learn a spell.
 - Before, it only hid people known to be in another zone and ports to the city you're already in. Requests that don't say where the player is (most Trade chat) stayed, because the addon can't tell. A new option hides those as well; leave it off if you want to use the ? lookup on them.

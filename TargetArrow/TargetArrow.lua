@@ -6,6 +6,7 @@
 local ADDON_NAME, ns = ...
 
 local defaults = {
+    updateNotice = true,  -- "a newer version is out" chat notice (VersionCheck.lua)
     size    = 28,
     offsetY = 54,      -- above the health bar; Overpower Plates' icon sits at 18 to 48
     colour  = "red",
@@ -118,6 +119,7 @@ ev:SetScript("OnEvent", function(_, event, arg1)
             if TargetArrowDB[k] == nil then TargetArrowDB[k] = v end
         end
         db = TargetArrowDB
+        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Target Arrow") end
         ApplyLook()
         ns.BuildOptions()
         return
@@ -151,6 +153,7 @@ end
 function ns.BuildOptions()
     ns.CreateOptions({
         title = "Target Arrow",
+        updateNotice = true,
         icon = "Interface\\Icons\\Ability_Hunter_SniperShot",
         about = "An arrow over your target's nameplate",
         credit = "Created by Miff, supported by Claude",

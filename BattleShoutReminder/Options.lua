@@ -23,12 +23,15 @@ end
 --   title = "Overpower Plates", icon = "Interface\\Icons\\...", about = "one line",
 --   slash = "/opp", db = table, onChange = function(key) end,
 --   credit = "optional line shown under the version",
+--   updateNotice = true,  -- adds an "Updates" section for VersionCheck.lua (db.updateNotice)
 --   controls = {
 --     { type = "header", label = "Icon" },
 --     { type = "check",  key = "sound", label = "Play a sound" },
 --     { type = "range",  key = "size", label = "Size", min = 16, max = 64, step = 2 },
 --     { type = "choice", key = "side", label = "Side", values = { "left", "right" } },
 --     { type = "button", label = "Test", func = function() end },
+--     { type = "text",   key = "msg", label = "Reply", default = "Hi {name}",
+--       preview = function(text) return text end },  -- preview is optional
 --   },
 -- }
 function ns.CreateOptions(spec)
@@ -37,6 +40,11 @@ function ns.CreateOptions(spec)
     local refreshers = {}
     local built = false
     local db = spec.db
+    if spec.updateNotice then
+        table.insert(spec.controls, { type = "header", label = "Updates" })
+        table.insert(spec.controls, { type = "check", key = "updateNotice",
+            label = "Tell me when a newer version is out (checks with guild and group members who have it)" })
+    end
 
     -- Options live in a scrolling area so long pages never spill out of the window.
     -- Built from plain frames (no templates) so it behaves the same on every client.
@@ -251,6 +259,55 @@ function ns.CreateOptions(spec)
                     fs:SetText(type(lines) == "table" and table.concat(lines, "\n") or tostring(lines or ""))
                 end)
                 y = y - (c.height or 40)
+
+            elseif c.type == "text" then
+                -- a one-line text box: saves on Enter or when you click away, Escape undoes,
+                -- an emptied box goes back to c.default; c.preview(text) shows an example below
+                local l = Label(content, c.label)
+                l:SetPoint("TOPLEFT", 24, y - 4)
+
+                local eb = CreateFrame("EditBox", nil, content, "InputBoxTemplate")
+                eb:SetAutoFocus(false)
+                eb:SetHeight(20)
+                eb:SetPoint("TOPLEFT", 30, y - 22)
+                eb:SetPoint("RIGHT", content, "RIGHT", -24, 0)
+                eb:SetMaxLetters(c.maxLetters or 255)
+
+                local preview
+                if c.preview then
+                    preview = Label(content, "", "GameFontHighlightSmall")
+                    preview:SetPoint("TOPLEFT", 30, y - 46)
+                    preview:SetPoint("RIGHT", content, "RIGHT", -24, 0)
+                    preview:SetJustifyH("LEFT")
+                end
+                local function ShowPreview(text)
+                    if preview then preview:SetText("|cff999999Example:|r " .. tostring(c.preview(text or "") or "")) end
+                end
+                local function Save()
+                    local text = (eb:GetText() or ""):gsub("^%s+", ""):gsub("%s+$", "")
+                    if text == "" then text = c.default or "" end
+                    eb:SetText(text)
+                    if db[c.key] ~= text then
+                        db[c.key] = text
+                        Changed(c.key)
+                    end
+                    ShowPreview(text)
+                end
+                eb:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+                eb:SetScript("OnEditFocusLost", Save)
+                eb:SetScript("OnEscapePressed", function(self)
+                    self:SetText(db[c.key] or "")
+                    self:ClearFocus()
+                end)
+                eb:SetScript("OnTextChanged", function(self) ShowPreview(self:GetText()) end)
+                table.insert(refreshers, function()
+                    if not eb:HasFocus() then
+                        eb:SetText(db[c.key] or "")
+                        eb:SetCursorPosition(0)
+                        ShowPreview(db[c.key])
+                    end
+                end)
+                y = y - (preview and 68 or 50)
 
             elseif c.type == "button" then
                 local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")

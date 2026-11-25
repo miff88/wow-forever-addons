@@ -14,6 +14,7 @@
 local ADDON_NAME, ns = ...
 
 local defaults = {
+    updateNotice = true,  -- "a newer version is out" chat notice (VersionCheck.lua)
     size = 11,         -- font size
     side = "left",     -- "left" or "right" of the health bar (right overlaps the level box)
     offsetX = 4,
@@ -271,6 +272,7 @@ ev:SetScript("OnEvent", function(_, event, arg1)
             if PlateThreatDB[k] == nil then PlateThreatDB[k] = v end
         end
         db = PlateThreatDB
+        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Plate Threat") end
         -- 1.1: move existing installs to the left so the number stops covering the level box
         if (db.v or 0) < 2 then
             db.side = "left"
@@ -318,6 +320,7 @@ local ICON = "Interface\\Icons\\Ability_Warrior_Challange"
 function ns.BuildOptions()
     ns.CreateOptions({
         title = "Plate Threat",
+        updateNotice = true,
         icon = ICON,
         about = "Your threat % on enemy nameplates and the target frame",
         credit = "Created by Miff, supported by Claude",

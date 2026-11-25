@@ -16,6 +16,7 @@ local ADDON_NAME, ns = ...
 -- Settings (saved per account, change with /opp)
 ---------------------------------------------------------------------------
 local defaults = {
+    updateNotice = true,  -- "a newer version is out" chat notice (VersionCheck.lua)
     window  = 5,    -- seconds Overpower stays usable after a dodge
     size    = 30,   -- icon size in pixels
     offsetY = 18,   -- how far above the health bar the icon sits
@@ -298,6 +299,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
             if OverpowerPlatesDB[k] == nil then OverpowerPlatesDB[k] = v end
         end
         db = OverpowerPlatesDB
+        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Overpower Plates") end
         ns.BuildOptions()
 
     elseif event == "PLAYER_LOGIN" then
@@ -333,6 +335,7 @@ end
 function ns.BuildOptions()
     ns.CreateOptions({
         title = "Overpower Plates",
+        updateNotice = true,
         icon = OVERPOWER_ICON,
         about = "Overpower icon on the mob that dodged you",
         credit = "Created by Miff, supported by Claude",

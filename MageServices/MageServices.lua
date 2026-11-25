@@ -19,6 +19,7 @@ BINDING_HEADER_MAGESERVICES = "Mage Services"
 _G["BINDING_NAME_CLICK MageServicesCastButton:LeftButton"] = "Cast the requested portal"
 
 local defaults = {
+    updateNotice = true,  -- "a newer version is out" chat notice (VersionCheck.lua)
     ports       = true,
     water       = true,
     allFactions = false,  -- also match the other faction's cities
@@ -58,10 +59,16 @@ local defaults = {
     portMsg  = "Hi {name}, I can port you to {dest}. Sending you an invite now.",
     waterMsg = "Hi {name}, I've got water and food for you. Sending you an invite now.",
     customMsg = "Hi {name}, sending you an invite now.",
+    -- automatic replies to whispers (off until you turn them on)
+    autoReply = false,
+    autoReplyCant = true, -- also answer when you can't help
+    autoReplyGap = 5,     -- minutes before the same player gets another automatic reply
+    cantMsg = "Sorry {name}, I can't help with that one right now.",
     point = { "CENTER", "CENTER", 300, 100 },
     theme = "dark",       -- "dark" or "light"
 }
 
+ns.defaults = defaults
 local db
 local requests = {}   -- newest first: { sender, short, msg, info, time }
 ns.requests = requests
@@ -308,16 +315,68 @@ local function Invite(name)
     end
 end
 
+-- {name} = their first name, {dest} = the city they asked for, {zone} = where you are
 local function FillTemplate(template, req)
     local dest = (req.info and req.info.dest) or "your city"
-    return (template:gsub("{name}", req.first):gsub("{dest}", dest))
+    local zone = ns.MyZone()
+    if zone == "" then zone = "town" end
+    local out = tostring(template or "")
+    out = out:gsub("{name}", function() return req.first or "" end)
+    out = out:gsub("{dest}", function() return dest end)
+    out = out:gsub("{zone}", function() return zone end)
+    return out:sub(1, 255) -- the game's chat limit
+end
+
+local function ReplyTemplate(req)
+    if req.info.kind == "port" then return db.portMsg end
+    if req.info.kind == "water" then return db.waterMsg end
+    return db.customMsg
 end
 
 local function OpenWhisper(req)
-    local template = db.customMsg
-    if req.info.kind == "port" then template = db.portMsg
-    elseif req.info.kind == "water" then template = db.waterMsg end
-    ns.OpenWhisperTo(req.sender, FillTemplate(template, req))
+    ns.OpenWhisperTo(req.sender, FillTemplate(ReplyTemplate(req), req))
+end
+
+-- Example for the settings page.
+function ns.SampleReply(template, kind)
+    local info = { kind = kind, dest = kind == "port" and "Undercity" or nil }
+    return FillTemplate(template, { first = "Lil", info = info })
+end
+
+-- Shown under the auto-reply settings when the wording promises an invite that won't come.
+function ns.ReplyWarning()
+    if not (db and db.autoReply) or db.autoInvite then return "" end
+    for _, k in ipairs({ "portMsg", "waterMsg", "customMsg" }) do
+        if tostring(db[k] or ""):lower():find("invite") then
+            return "|cffff8040Your replies mention an invite, but \"Invite them automatically\" is off.|r"
+        end
+    end
+    return ""
+end
+
+-- Automatic reply to someone who whispered you a request. Only whispers (never
+-- Trade or General posts), at most once per player per few minutes, never in test mode.
+local lastAutoReply = {}
+local function AutoReply(req)
+    if not db.autoReply or testMode then return end
+    local now = GetTime()
+    local last = lastAutoReply[req.key]
+    if last and now - last < (db.autoReplyGap or 5) * 60 then return end
+
+    local template
+    if req.priority == LOW then
+        if not db.autoReplyCant then return end
+        template = db.cantMsg
+    else
+        template = ReplyTemplate(req)
+    end
+    lastAutoReply[req.key] = now
+    local ok = ns.SendChat and ns.SendChat(FillTemplate(template, req), "WHISPER", req.sender)
+    if ok then
+        req.replied = true
+    else
+        Print("couldn't send the automatic reply to " .. req.display .. ". Use the Whisper button instead.")
+    end
 end
 
 ---------------------------------------------------------------------------
@@ -598,6 +657,7 @@ Refresh = function()
                 elseif req.reason then
                     tag = "  |cff" .. t.dim .. req.reason .. "|r"
                 end
+                if req.replied then tag = tag .. "  |cff" .. t.muted .. "replied|r" end
                 row.label:SetText(req.info.label .. tag .. "  |cff" .. t.muted .. req.display .. ", " .. ago .. "s|r")
                 row.text:SetText(req.msg)
                 row.bg:SetShown(req.priority == HIGH)
@@ -699,7 +759,7 @@ local function Alert(req)
     if ns.ScreenAlert then ns.ScreenAlert(req) end
 end
 
-local function AddRequest(sender, msg, info, source)
+local function AddRequest(sender, msg, info, source, whispered)
     -- same person again: refresh their entry instead of adding a second one
     for i, r in ipairs(requests) do
         if r.key == ns.NameKey(sender) then
@@ -718,12 +778,13 @@ local function AddRequest(sender, msg, info, source)
         Alert(req)
         if db.autoInvite and not testMode and req.priority > LOW then Invite(sender) end
     end
+    if whispered then AutoReply(req) end
     Refresh()
 end
 
 -- source: "say" (say/yell, so they're close), "local" (your zone's General or
 -- LocalDefense channel), or "other" (trade, whispers, guild: could be anywhere)
-function ns.HandleChat(msg, sender, source)
+function ns.HandleChat(msg, sender, source, whispered)
     if not db then return end
     if IsSecret(msg) or IsSecret(sender) then return end -- inside instances: unreadable
     if type(msg) ~= "string" or type(sender) ~= "string" or sender == "" then return end
@@ -733,7 +794,7 @@ function ns.HandleChat(msg, sender, source)
     if ns.InGroupWith(key) then return end                       -- already grouped
 
     local info = ns.Classify(msg, MatchOptions())
-    if info then AddRequest(sender, msg, info, source or "other") end
+    if info then AddRequest(sender, msg, info, source or "other", whispered) end
 end
 
 local SOURCE = {
@@ -859,9 +920,10 @@ SafeRegister("PLAYER_LOGIN")
 ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9)
     local setting = CHANNEL_EVENTS[event]
     if setting then
-        if db and db[setting] then
+        local whispered = event == "CHAT_MSG_WHISPER"
+        if db and (db[setting] or (whispered and db.autoReply)) then
             local source = SOURCE[event] or ChannelSource(arg4, arg9)
-            ns.HandleChat(arg1, arg2, source)
+            ns.HandleChat(arg1, arg2, source, whispered)
         end
 
     elseif event == "WHO_LIST_UPDATE" then
@@ -888,6 +950,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
             end
         end
         db = MageServicesDB
+        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Mage Services") end
         ns.db = db
         ns.InitEarnings()
         ns.ApplyTheme()
@@ -951,6 +1014,7 @@ end
 function ns.BuildOptions()
     ns.CreateOptions({
         title = "Mage Services",
+        updateNotice = true,
         icon = "Interface\\Icons\\Spell_Arcane_PortalOrgrimmar",
         about = "Spots portal and water requests in chat",
         credit = "Created by Miff, supported by Claude",
@@ -981,6 +1045,21 @@ function ns.BuildOptions()
             { type = "check", key = "edgeFlash", label = "Flash the edges of the screen" },
             { type = "header", label = "Earnings (saved, kept through logouts)" },
             { type = "info", lines = function() return ns.EarningsLines() end, height = 190 },
+            { type = "header", label = "Replies (the Whisper button, and automatic replies)" },
+            { type = "text", key = "portMsg", label = "Portal reply", default = defaults.portMsg,
+              preview = function(t) return ns.SampleReply(t, "port") end },
+            { type = "text", key = "waterMsg", label = "Food and water reply", default = defaults.waterMsg,
+              preview = function(t) return ns.SampleReply(t, "water") end },
+            { type = "text", key = "customMsg", label = "Reply for your own phrases (/ms add)", default = defaults.customMsg,
+              preview = function(t) return ns.SampleReply(t, "custom") end },
+            { type = "info", height = 24, lines = function()
+                return "|cff999999{name} is their first name, {dest} the city they want, {zone} where you are. Press Enter to save.|r" end },
+            { type = "check", key = "autoReply", label = "Reply automatically when someone whispers you for a port or food" },
+            { type = "check", key = "autoReplyCant", label = "Also reply when you can't help (a portal you don't have, or they're elsewhere)" },
+            { type = "text", key = "cantMsg", label = "Can't-help reply", default = defaults.cantMsg,
+              preview = function(t) return ns.SampleReply(t, "port") end },
+            { type = "range", key = "autoReplyGap", label = "Don't auto-reply to them again for", min = 1, max = 30, step = 1, suffix = " min" },
+            { type = "info", height = 22, lines = function() return ns.ReplyWarning() end },
             { type = "header", label = "Payments" },
             { type = "choice", key = "receiptMode", label = "Payment messages (Auto / Prefill / Off)", values = { "auto", "prefill", "off" } },
             { type = "check", key = "receiptAll", label = "Post for every trade, not just customers" },
@@ -1109,6 +1188,12 @@ SlashCmdList.MAGESERVICES = function(msg)
         db.portMsg = rest; Print("portal reply: " .. rest)
     elseif cmd == "watermsg" and rest ~= "" then
         db.waterMsg = rest; Print("water reply: " .. rest)
+    elseif cmd == "cantmsg" and rest ~= "" then
+        db.cantMsg = rest; Print("can't-help reply: " .. rest)
+    elseif cmd == "autoreply" then
+        db.autoReply = not db.autoReply
+        Print(db.autoReply and "automatic replies to whispers are on" or "automatic replies are off")
+        if db.autoReply and ns.ReplyWarning() ~= "" then Print("your replies mention an invite, but auto-invite is off (type /ms for settings)") end
     elseif cmd == "custommsg" and rest ~= "" then
         db.customMsg = rest; Print("custom reply: " .. rest)
     else
@@ -1117,7 +1202,8 @@ SlashCmdList.MAGESERVICES = function(msg)
         Print("/ms list, /ms remove <number> - see or remove your phrases")
         Print("/ms exclude <phrase> - never match lines with this, e.g. /ms exclude ratchet")
         Print("/ms excludes, /ms unexclude <number>")
-        Print("/ms portmsg <text>, /ms watermsg <text>, /ms custommsg <text> - reply text; {name} and {dest} get filled in")
+        Print("/ms portmsg <text>, /ms watermsg <text>, /ms custommsg <text>, /ms cantmsg <text> - reply text; {name}, {dest} and {zone} get filled in")
+        Print("/ms autoreply - reply automatically when someone whispers you for a port or food (now " .. (db.autoReply and "on" or "off") .. ")")
         Print("/ms zone [auto|city|zone name] - show or set where you are, e.g. /ms zone uc")
         Print("/ms theme [dark|light] - window theme")
         Print("/ms sounds, /ms sound <number> - list the alert sounds and pick one")

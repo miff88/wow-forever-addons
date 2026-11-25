@@ -223,6 +223,8 @@ local function SendChat(text, chatType, target)
     return false
 end
 
+ns.SendChat = SendChat
+
 local function OpenChat(line)
     if ChatFrameUtil and ChatFrameUtil.OpenChat then
         ChatFrameUtil.OpenChat(line)

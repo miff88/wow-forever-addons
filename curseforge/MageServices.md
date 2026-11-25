@@ -21,6 +21,8 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 ### One-click service
 - **Portal button:** casts the requested portal (or Conjure Water) for the selected request. Click a row to pick another. Bindable to a key.
 - **Invite** and **Whisper** on every request. Whisper opens a ready-made reply aimed at the player's full two-part Forever name ("Hi Lil, I can port you to Undercity..."), so you just press Enter.
+- Edit the replies on the settings page, with a live example. `{name}`, `{dest}` and `{zone}` are filled in.
+- **Optional automatic reply** for people who whisper you directly. Never for Trade or General posts, at most once per player every few minutes, and a separate polite reply when you can't help (a portal you don't have, or they're somewhere else).
 - Optional auto-invite.
 
 ### Hard to miss
@@ -44,7 +46,8 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 | `/ms zone [auto, city or zone]` | Show or set your location |
 | `/ms earnings` | Show your earnings |
 | `/ms add <phrase>` / `/ms exclude <phrase>` | Watch for or ignore your own phrases |
-| `/ms portmsg`, `/ms watermsg` `<text>` | Change the whisper replies (`{name}` and `{dest}` are filled in) |
+| `/ms portmsg`, `/ms watermsg`, `/ms cantmsg` `<text>` | Change the replies (`{name}`, `{dest}` and `{zone}` are filled in) |
+| `/ms autoreply` | Turn automatic replies to whispers on or off |
 | `/ms receipts [auto, prefill, off]` | How payment messages are posted |
 | `/ms theme [dark, light]` | Window theme |
 | `/ms help` | All commands |
