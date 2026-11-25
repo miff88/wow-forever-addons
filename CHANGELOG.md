@@ -2,6 +2,10 @@
 
 ## 2026-11-25
 
+Mage Services 1.4.1
+- Re-checks your zone straight after loading screens (hearth, portals, instances), not just on zone changes.
+- With a picked zone, the title also shows where you really are when they differ, e.g. "Thunder Bluff (picked, you're in Orgrimmar)".
+
 Mage Services 1.4.0
 - Dark and light themes for the window, portal button and on-screen message (settings page or /ms theme).
 - Window rebuilt on a fixed grid with flat themed buttons: header buttons centred, row buttons share one right edge, two-line text centred on the icon, long titles and footer text cut off cleanly instead of running into buttons.

@@ -99,11 +99,17 @@ end
 ---------------------------------------------------------------------------
 local HIGH, NORMAL, LOW = 3, 2, 1
 
-function ns.MyZone()
-    if db.zone and db.zone ~= "auto" then return db.zone end
+-- The zone the game says you're in right now ("" while a loading screen is up).
+function ns.RealZone()
     local z = (GetRealZoneText and GetRealZoneText()) or (GetZoneText and GetZoneText()) or ""
     if IsSecret(z) then return "" end
     return z
+end
+
+-- The zone used for ranking: the one you picked, or the real one.
+function ns.MyZone()
+    if db.zone and db.zone ~= "auto" then return db.zone end
+    return ns.RealZone()
 end
 
 local function SameZone(a, b)
@@ -463,9 +469,14 @@ Refresh = function()
     end
 
     local extra = #visible - shown
-    local where = ns.MyZone()
+    local where, real = ns.MyZone(), ns.RealZone()
+    local note = ""
+    if db.zone ~= "auto" then
+        -- a picked zone stays put when you travel, so show where you really are if it differs
+        note = (real ~= "" and real ~= where) and (" (picked, you're in " .. real .. ")") or " (picked)"
+    end
     win.title:SetText("Mage Services"
-        .. (where ~= "" and ("  |cff" .. t.muted .. where .. (db.zone == "auto" and "" or " (picked)") .. "|r") or "")
+        .. (where ~= "" and ("  |cff" .. t.muted .. where .. note .. "|r") or "")
         .. (extra > 0 and ("  |cff" .. t.muted .. "+" .. extra .. " more|r") or ""))
     if ns.UpdateGlows then ns.UpdateGlows(visible) end
     if ns.UpdateCastButton then ns.UpdateCastButton(visible) end
@@ -704,8 +715,10 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
     elseif event == "CHAT_MSG_SYSTEM" then
         OnSystemMessage(arg1)
 
-    elseif event == "ZONE_CHANGED_NEW_AREA" then
+    elseif event == "ZONE_CHANGED_NEW_AREA" or event == "PLAYER_ENTERING_WORLD" then
+        -- after a loading screen the zone can be blank for a moment, so check again shortly
         Refresh()
+        C_Timer.After(1, Refresh)
 
     elseif event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         MageServicesDB = MageServicesDB or {}
@@ -724,6 +737,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
     elseif event == "PLAYER_LOGIN" then
         for e in pairs(CHANNEL_EVENTS) do SafeRegister(e) end
         SafeRegister("ZONE_CHANGED_NEW_AREA")
+        SafeRegister("PLAYER_ENTERING_WORLD")
         SafeRegister("WHO_LIST_UPDATE")
         SafeRegister("CHAT_MSG_SYSTEM")
         if ChatFrame_AddMessageEventFilter then
