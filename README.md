@@ -75,9 +75,12 @@ These do nothing on other classes.
 
 Puts an Overpower icon with a 5 second countdown above the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave. A nameplate dodge only counts when your Overpower charge (combo point) goes up at the same moment, so dodges against other players are ignored.
 
-- `/opp test` show the icon on every nameplate
+While Overpower is up, a gold glow pulses around the icon and your Overpower button glows on the action bars (Blizzard bars, Bartender4 and ElvUI). There's also an optional big Overpower icon in the middle of the screen that you can move and resize.
+
+- `/opp test` show the icon on every nameplate (and the glow and screen icon)
 - `/opp size <n>`, `/opp offset <n>`, `/opp window <n>`
 - `/opp sound` toggle the dodge sound
+- `/opp glow` toggle the action bar glow, `/opp screen` toggle the screen icon, `/opp move` place it
 - `/opp debug` print your current Overpower charge count
 
 ### Battle Shout Notice (`/bsr` or `/bsn`)

@@ -22,6 +22,10 @@ local defaults = {
     offsetY = 18,   -- how far above the health bar the icon sits
     sound   = true, -- play a sound when a mob dodges you
     pop     = true, -- icon pops in with a quick scale animation
+    pulse   = true, -- glow pulses around the nameplate icon while Overpower is up
+    barGlow = true, -- your Overpower button on the action bars glows while it's up
+    screenIcon = false, -- big Overpower icon in the middle of the screen
+    screenSize = 64,
 }
 
 local MATCH_WINDOW = 0.35 -- seconds between a nameplate dodge and a new combo point to call it a match
@@ -51,6 +55,9 @@ end
 
 local OVERPOWER_NAME = SpellName("Overpower") or SpellName(7384) or "Overpower"
 local OVERPOWER_ICON = SpellTexture("Overpower") or SpellTexture(7384) or "Interface\\Icons\\Ability_MeleeDamage"
+
+ns.OVERPOWER_NAME = OVERPOWER_NAME
+ns.OVERPOWER_ICON = OVERPOWER_ICON
 
 local COMBO_TYPE = (Enum and Enum.PowerType and Enum.PowerType.ComboPoints) or 4
 
@@ -98,6 +105,22 @@ local function GetIcon(plate)
         f = CreateFrame("Frame", nil, plate)
         f:SetFrameStrata("HIGH")
 
+        -- soft gold glow behind the icon, pulsing while Overpower is up
+        f.glow = f:CreateTexture(nil, "BACKGROUND", nil, -1)
+        f.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+        f.glow:SetBlendMode("ADD")
+        f.glow:SetVertexColor(1, 0.82, 0.1)
+        f.glow:SetPoint("CENTER")
+        f.glow:Hide()
+
+        f.pulse = f:CreateAnimationGroup()
+        f.pulse:SetLooping("BOUNCE")
+        local fade = f.pulse:CreateAnimation("Alpha")
+        fade:SetTarget(f.glow)
+        fade:SetFromAlpha(1)
+        fade:SetToAlpha(0.2)
+        fade:SetDuration(0.35)
+
         f.border = f:CreateTexture(nil, "BACKGROUND")
         f.border:SetPoint("TOPLEFT", -2, 2)
         f.border:SetPoint("BOTTOMRIGHT", 2, -2)
@@ -128,6 +151,7 @@ local function GetIcon(plate)
     end
 
     f:SetSize(db.size, db.size)
+    f.glow:SetSize(db.size * 1.9, db.size * 1.9)
     f:ClearAllPoints()
     f:SetPoint("BOTTOM", PlateAnchor(plate), "TOP", 0, db.offsetY)
     return f
@@ -135,6 +159,16 @@ end
 
 local function PlateUnit(plate)
     return plate.namePlateUnitToken or (plate.UnitFrame and plate.UnitFrame.unit)
+end
+
+local function SetPulse(f, on)
+    if on and db.pulse then
+        f.glow:Show()
+        if not f.pulse:IsPlaying() then f.pulse:Play() end
+    else
+        f.pulse:Stop()
+        f.glow:Hide()
+    end
 end
 
 local function UpdatePlate(plate, unit)
@@ -145,6 +179,7 @@ local function UpdatePlate(plate, unit)
     if testMode then
         f.cd:SetCooldown(GetTime(), db.window)
         f:Show()
+        SetPulse(f, true)
         return
     end
 
@@ -153,7 +188,9 @@ local function UpdatePlate(plate, unit)
         f.cd:SetCooldown(expires - db.window, db.window)
         if not f:IsShown() and db.pop then f.pop:Stop(); f.pop:Play() end
         f:Show()
+        SetPulse(f, true)
     else
+        SetPulse(f, false)
         f:Hide()
     end
 end
@@ -166,6 +203,15 @@ local function RefreshAll()
     for _, plate in ipairs(GetNamePlates()) do
         UpdatePlate(plate)
     end
+
+    -- the louder alerts (Alerts.lua): button glow and the big screen icon
+    local latest
+    for _, expires in pairs(procs) do
+        if not latest or expires > latest then latest = expires end
+    end
+    if testMode then latest = now + db.window end
+    if ns.SetButtonGlow then ns.SetButtonGlow(db.barGlow and latest ~= nil) end
+    if ns.UpdateScreenIcon then ns.UpdateScreenIcon(latest, ReadPoints()) end
 end
 
 ---------------------------------------------------------------------------
@@ -287,6 +333,11 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
         local plate = GetNamePlateForUnit(arg1)
         if plate and icons[plate] then icons[plate]:Hide() end
 
+    elseif event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_BONUS_ACTIONBAR"
+        or event == "ACTIONBAR_SLOT_CHANGED" or event == "UPDATE_SHAPESHIFT_FORM" then
+        -- stance swaps page the bars, so the Overpower button may have moved
+        if next(procs) or testMode then RefreshAll() end
+
     elseif event == "PLAYER_REGEN_ENABLED" then
         wipe(procs)
         wipe(recentDodges)
@@ -299,6 +350,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
             if OverpowerPlatesDB[k] == nil then OverpowerPlatesDB[k] = v end
         end
         db = OverpowerPlatesDB
+        ns.db = db
         if ns.StartVersionCheck then ns.StartVersionCheck(db, "Overpower Plates") end
         ns.BuildOptions()
 
@@ -312,6 +364,10 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
         SafeRegister("NAME_PLATE_UNIT_ADDED")
         SafeRegister("NAME_PLATE_UNIT_REMOVED")
         SafeRegister("PLAYER_REGEN_ENABLED")
+        SafeRegister("ACTIONBAR_PAGE_CHANGED")
+        SafeRegister("UPDATE_BONUS_ACTIONBAR")
+        SafeRegister("ACTIONBAR_SLOT_CHANGED")
+        SafeRegister("UPDATE_SHAPESHIFT_FORM")
 
         lastPoints = ReadPoints() or 0
         if ReadPoints() == nil then
@@ -337,6 +393,9 @@ function ns.BuildOptions()
         title = "Overpower Plates",
         updateNotice = true,
         changes = {
+            { "1.5.0", "Gold glow pulses around the nameplate icon",
+                       "Your Overpower button glows on the action bars",
+                       "Optional big Overpower icon in the middle of the screen" },
             { "1.4.1", "This What's new list" },
             { "1.4.0", "Tells you when a newer version is out" },
             { "1.3.0", "Icon pops in with a quick animation (can be turned off)" },
@@ -353,8 +412,15 @@ function ns.BuildOptions()
             { type = "range", key = "offsetY", label = "Height above health bar", min = 0, max = 80, step = 2 },
             { type = "range", key = "window", label = "Seconds the icon stays up", min = 1, max = 10, step = 1, suffix = "s" },
             { type = "check", key = "pop", label = "Pop the icon in when a mob dodges you" },
+            { type = "check", key = "pulse", label = "Pulse a gold glow around the icon while Overpower is up" },
             { type = "header", label = "Alerts" },
             { type = "check", key = "sound", label = "Play a sound when a mob dodges you" },
+            { type = "check", key = "barGlow", label = "Make your Overpower button glow on the action bars" },
+            { type = "check", key = "screenIcon", label = "Show a big Overpower icon in the middle of the screen" },
+            { type = "range", key = "screenSize", label = "Screen icon size", min = 32, max = 128, step = 4 },
+            { type = "button", dynamicLabel = function() return ns.screenUnlocked and "Lock screen icon" or "Move screen icon" end,
+              label = "Move screen icon", func = function() ns.screenUnlocked = not ns.screenUnlocked; RefreshAll() end },
+            { type = "button", label = "Reset screen icon position", func = function() ns.ResetScreenIcon(); RefreshAll() end },
             { type = "header", label = "Preview" },
             { type = "button", dynamicLabel = function() return testMode and "Stop test" or "Test on nameplates" end,
               label = "Test on nameplates", func = function() testMode = not testMode; RefreshAll() end },
@@ -388,6 +454,15 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
     elseif cmd == "sound" then
         db.sound = not db.sound
         Print("sound " .. (db.sound and "on" or "off"))
+    elseif cmd == "glow" then
+        db.barGlow = not db.barGlow; RefreshAll()
+        Print("action bar glow " .. (db.barGlow and "on" or "off"))
+    elseif cmd == "screen" then
+        db.screenIcon = not db.screenIcon; RefreshAll()
+        Print("screen icon " .. (db.screenIcon and "on" or "off") .. (db.screenIcon and ". /opp move to place it." or ""))
+    elseif cmd == "move" then
+        ns.screenUnlocked = not ns.screenUnlocked; RefreshAll()
+        Print(ns.screenUnlocked and "screen icon unlocked, drag it where you want it. /opp move again to lock." or "screen icon locked.")
     elseif cmd == "debug" then
         Print("Overpower charges: " .. tostring(ReadPoints()))
     else
@@ -397,6 +472,8 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
         Print("/opp offset <n> - height above the health bar (now " .. db.offsetY .. ")")
         Print("/opp window <n> - seconds the icon stays up (now " .. db.window .. ")")
         Print("/opp sound - dodge sound (now " .. (db.sound and "on" or "off") .. ")")
+        Print("/opp glow - glow on your Overpower button (now " .. (db.barGlow and "on" or "off") .. ")")
+        Print("/opp screen - big icon in the middle of the screen (now " .. (db.screenIcon and "on" or "off") .. "), /opp move to place it")
         Print("/opp debug - show your current Overpower charge count")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end

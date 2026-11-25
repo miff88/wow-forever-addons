@@ -2,6 +2,12 @@
 
 ## 2026-11-25
 
+Overpower Plates 1.5.0
+- A gold glow now pulses around the nameplate icon for as long as Overpower is up (can be turned off).
+- Your Overpower button on the action bars glows at the same time: Blizzard bars, Bartender4 and ElvUI. It follows the button when a stance swap pages your bars. On by default; /opp glow toggles it.
+- Optional big Overpower icon in the middle of the screen, with a countdown sweep and your charge count. Off by default; turn it on in settings or with /opp screen, and place it with "Move screen icon" or /opp move.
+- Test mode shows all of these.
+
 Mage Services 1.8.1, Plate Threat 1.4.1, Overpower Plates 1.4.1, Target Arrow 1.2.1, Battle Shout Notice 1.3.1
 - A short "What's new" list at the top of the settings page, covering the last few versions.
 
