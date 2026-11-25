@@ -2,6 +2,11 @@
 
 ## 2026-11-25
 
+Mage Services 1.7.0
+- "Hide requests you can't help with" now also covers portals you don't have: ones you haven't learned yet, and the other faction's cities. Water requests count too until you can conjure water. The check reruns when you learn a spell.
+- Before, it only hid people known to be in another zone and ports to the city you're already in. Requests that don't say where the player is (most Trade chat) stayed, because the addon can't tell. A new option hides those as well; leave it off if you want to use the ? lookup on them.
+- Hidden requests no longer play a sound, flash or glow, and the portal button no longer offers a portal you don't have.
+
 Battle Shout Notice 1.2.0
 - Renamed from Battle Shout Reminder to Battle Shout Notice, to match its CurseForge page. The addon folder and your saved settings are unchanged.
 - /bsn now works as well as /bsr.

@@ -36,6 +36,7 @@ local defaults = {
     -- location
     zone = "auto",        -- "auto" = the zone you're in, or a city name you pick
     hideLow = false,      -- hide requests you can't help with instead of dimming them
+    hideUnknown = false,  -- also hide requests that don't say where the player is
     alertLow = false,     -- sound/flash/glow for low-priority requests too
     -- on-screen alerts
     glowBar = true,       -- glow the matching Portal / Conjure button on your action bars
@@ -207,9 +208,68 @@ local function SameZone(a, b)
     return ns.TextMatches(a, b) or ns.TextMatches(b, a)
 end
 
+-- Can you cast what this request needs? Portals you haven't learned (or the other
+-- faction's cities) and water before you can conjure it count as "can't help".
+-- Answers are cached and cleared when your spells change.
+local PORTAL_IDS = {
+    ["Portal: Orgrimmar"] = 11417, ["Portal: Undercity"] = 11418, ["Portal: Thunder Bluff"] = 11420,
+    ["Portal: Stormwind"] = 10059, ["Portal: Ironforge"] = 11416, ["Portal: Darnassus"] = 11419,
+}
+local WATER_SPELLS = { "Conjure Water", "Conjure Food", "Conjure Refreshment" }
+local knownCache = {}
+
+local function Truthy(ok, v) return ok and v ~= nil and v ~= false and not IsSecret(v) end
+
+-- true = known, false = not known, nil = the game gave no way to tell
+local function KnowsSpell(name)
+    if knownCache[name] ~= nil then return knownCache[name] end
+    local asked, known = false, false
+    local id = PORTAL_IDS[name]
+    if id and IsPlayerSpell then
+        asked = true
+        if Truthy(pcall(IsPlayerSpell, id)) then known = true end
+    end
+    if not known and C_SpellBook and C_SpellBook.FindSpellBookSlotForSpell then
+        -- portals sit in a flyout on this client, so include flyouts
+        asked = true
+        if Truthy(pcall(C_SpellBook.FindSpellBookSlotForSpell, name, false, true, false, false)) then known = true end
+        if not known and id and Truthy(pcall(C_SpellBook.FindSpellBookSlotForSpell, id, false, true, false, false)) then known = true end
+    end
+    if not asked then return nil end
+    knownCache[name] = known
+    return known
+end
+
+function ns.SpellsChanged() wipe(knownCache) end
+
+-- Returns nil if you can help, or the reason you can't.
+local function CantCast(info)
+    if not UnitClass then return nil end
+    local _, class = UnitClass("player")
+    if class ~= "MAGE" then return nil end -- the check only makes sense on a mage
+    if info.kind == "port" and info.dest then
+        local spell = "Portal: " .. info.dest
+        if KnowsSpell(spell) == false then return "you don't have " .. spell end
+    elseif info.kind == "water" then
+        local anyAnswer, anyKnown = false, false
+        for _, name in ipairs(WATER_SPELLS) do
+            local k = KnowsSpell(name)
+            if k ~= nil then anyAnswer = true end
+            if k then anyKnown = true break end
+        end
+        if anyAnswer and not anyKnown then return "you can't conjure water yet" end
+    end
+    return nil
+end
+
+ns.CantCast = CantCast
+
 -- Returns priority and a short reason shown on the row.
 local function Rank(req)
     local info, here = req.info, ns.MyZone()
+
+    local cant = CantCast(info)
+    if cant then return LOW, cant end
 
     if info.kind == "port" and info.dest and SameZone(info.dest, here) then
         return LOW, "wants " .. info.dest .. ", you're already there"
@@ -514,10 +574,10 @@ Refresh = function()
     end)
 
     local visible = requests
-    if db.hideLow then
+    if db.hideLow or db.hideUnknown then
         visible = {}
         for _, r in ipairs(requests) do
-            if r.priority > LOW then visible[#visible + 1] = r end
+            if not ns.IsHidden(r) then visible[#visible + 1] = r end
         end
     end
 
@@ -625,6 +685,14 @@ function ns.PlayAlertSound(key)
     if id then PlaySound(id, "Master") end
 end
 
+-- Hidden by your settings: can't help (another zone, already there, no spell),
+-- or, with hideUnknown, no idea where they are and no /who lookup running.
+function ns.IsHidden(r)
+    if db.hideLow and r.priority == LOW then return true end
+    if db.hideUnknown and r.priority == NORMAL and not r.whoPending and not r.paid then return true end
+    return false
+end
+
 local function Alert(req)
     if db.sound then ns.PlayAlertSound() end
     if db.flash and FlashClientIcon then FlashClientIcon() end
@@ -645,7 +713,8 @@ local function AddRequest(sender, msg, info, source)
     req.priority, req.reason = Rank(req)
     ns.customers[req.key] = { time = GetTime(), kind = info.kind, dest = info.dest, sender = sender }
     table.insert(requests, 1, req)
-    if req.priority > LOW or db.alertLow then
+    -- nothing for requests your settings hide
+    if not ns.IsHidden(req) and (req.priority > LOW or db.alertLow) then
         Alert(req)
         if db.autoInvite and not testMode and req.priority > LOW then Invite(sender) end
     end
@@ -801,6 +870,11 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
     elseif event == "CHAT_MSG_SYSTEM" then
         OnSystemMessage(arg1)
 
+    elseif event == "SPELLS_CHANGED" then
+        -- learned a portal, levelled up, changed spec: check the spells again
+        ns.SpellsChanged()
+        Refresh()
+
     elseif event == "ZONE_CHANGED_NEW_AREA" or event == "PLAYER_ENTERING_WORLD" then
         -- after a loading screen the zone can be blank for a moment, so check again shortly
         Refresh()
@@ -823,6 +897,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
     elseif event == "PLAYER_LOGIN" then
         for e in pairs(CHANNEL_EVENTS) do SafeRegister(e) end
         SafeRegister("ZONE_CHANGED_NEW_AREA")
+        SafeRegister("SPELLS_CHANGED")
         SafeRegister("PLAYER_ENTERING_WORLD")
         SafeRegister("WHO_LIST_UPDATE")
         SafeRegister("CHAT_MSG_SYSTEM")
@@ -896,7 +971,8 @@ function ns.BuildOptions()
             { type = "choice", key = "theme", label = "Window theme", values = { "dark", "light" } },
             { type = "header", label = "Your location" },
             { type = "choice", key = "zone", label = "Where you are (Auto = current zone)", values = ns.ZoneChoices() },
-            { type = "check", key = "hideLow", label = "Hide requests you can't help with (instead of dimming)" },
+            { type = "check", key = "hideLow", label = "Hide requests you can't help with: another zone, or a portal you don't have" },
+            { type = "check", key = "hideUnknown", label = "Also hide requests that don't say where they are (most Trade chat)" },
             { type = "check", key = "alertLow", label = "Alert for low-priority requests too" },
             { type = "header", label = "On screen" },
             { type = "check", key = "glowBar", label = "Glow the matching Portal / Conjure button" },

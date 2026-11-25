@@ -16,7 +16,7 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 - Knows where you are, automatically or from a city you pick.
 - **Top:** people near you, who asked in your zone's General channel or in say/yell, or said "from <your zone>".
 - **Middle:** Trade and whispers, where the location is unknown. Click **?** to run a /who and re-rank the request by their real zone.
-- **Bottom, dimmed:** people elsewhere, or asking for a port to the city you're already in. Can be hidden instead.
+- **Bottom, dimmed:** people elsewhere, asking for a port to the city you're already in, or asking for a portal you don't have yet. Can be hidden instead, and there's a separate option to hide requests that don't say where the player is.
 
 ### One-click service
 - **Portal button:** casts the requested portal (or Conjure Water) for the selected request. Click a row to pick another. Bindable to a key.

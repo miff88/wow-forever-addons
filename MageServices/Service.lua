@@ -100,6 +100,7 @@ end
 
 local function SpellFor(req)
     if not req then return nil end
+    if ns.CantCast and ns.CantCast(req.info) then return nil end -- don't offer a spell you don't have
     if req.info.kind == "port" and req.info.dest then return "Portal: " .. req.info.dest end
     if req.info.kind == "water" then return "Conjure Water" end
     return nil

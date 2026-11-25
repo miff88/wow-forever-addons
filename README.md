@@ -39,7 +39,7 @@ Spots people asking for portals or water in chat and lists them in a small windo
 **Location priority.** Requests are ranked against where you are (detected automatically, or pick a city with `/ms zone`):
 - **Top, highlighted:** asked in your zone's General channel or in say/yell, said "from <your zone>", or a /who shows them in your zone.
 - **Middle:** location unknown (Trade, whispers, guild). Click **?** on the row to run a /who and re-rank it. The game only allows /who from a click, so this can't run automatically.
-- **Bottom, dimmed:** they're somewhere else, or they want a port to the city you're already in. Can be hidden instead.
+- **Bottom, dimmed:** they're somewhere else, they want a port to the city you're already in, or they want a portal you don't have yet. Can be hidden instead, and there's a separate option to hide requests that don't say where the player is.
 
 **On-screen alerts.** The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4 and ElvUI), a message shows at the top of the screen, and the screen edges flash. Each can be turned off.
 
