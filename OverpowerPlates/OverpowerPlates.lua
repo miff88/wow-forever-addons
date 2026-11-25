@@ -335,6 +335,7 @@ function ns.BuildOptions()
         title = "Overpower Plates",
         icon = OVERPOWER_ICON,
         about = "Overpower icon on the mob that dodged you",
+        credit = "Created by Miff, supported by Claude",
         slash = "/opp",
         db = db,
         onChange = function() RefreshAll() end,

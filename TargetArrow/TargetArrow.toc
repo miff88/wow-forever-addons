@@ -2,7 +2,7 @@
 ## Title: |cff33ccffTarget|r Arrow
 ## Notes: Puts a bobbing arrow above your target's nameplate so you can pick it out of a crowd. Any class.
 ## Author: Mitch Brindle
-## Version: 1.1.2
+## Version: 1.1.3
 ## IconTexture: Interface\Icons\Ability_Hunter_SniperShot
 ## Category: Interface Enhancements
 ## X-Website: https://github.com/miff88/wow-forever-addons

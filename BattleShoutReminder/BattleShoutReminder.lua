@@ -245,6 +245,7 @@ function ns.BuildOptions()
         title = "Battle Shout Reminder",
         icon = SHOUT_ICON,
         about = "Reminds you when Battle Shout is missing or running out",
+        credit = "Created by Miff, supported by Claude",
         slash = "/bsr",
         db = db,
         onChange = function() ApplyLayout(); Update() end,

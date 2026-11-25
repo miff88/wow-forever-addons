@@ -153,6 +153,7 @@ function ns.BuildOptions()
         title = "Target Arrow",
         icon = "Interface\\Icons\\Ability_Hunter_SniperShot",
         about = "An arrow over your target's nameplate",
+        credit = "Created by Miff, supported by Claude",
         slash = "/tarrow",
         db = db,
         onChange = function() Update() end,

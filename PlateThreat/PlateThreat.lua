@@ -320,6 +320,7 @@ function ns.BuildOptions()
         title = "Plate Threat",
         icon = ICON,
         about = "Your threat % on enemy nameplates and the target frame",
+        credit = "Created by Miff, supported by Claude",
         slash = "/pth",
         db = db,
         onChange = function()

@@ -2,6 +2,9 @@
 
 ## 2026-11-25
 
+Overpower Plates 1.3.3, Battle Shout Reminder 1.1.3, Plate Threat 1.3.3, Target Arrow 1.1.3
+- Credit line on the settings page: "Created by Miff, supported by Claude".
+
 Mage Services 1.4.4
 - Credit line on the settings page: "Created by Miff, supported by Claude".
 
