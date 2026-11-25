@@ -2,6 +2,9 @@
 
 ## 2026-11-25
 
+All addons (Mage Services 1.4.2, Overpower Plates 1.3.1, Battle Shout Reminder 1.1.1, Plate Threat 1.3.1, Target Arrow 1.1.1)
+- Settings pages now scroll, with a scroll bar and mouse wheel, so long pages no longer spill out of the options window.
+
 Mage Services 1.4.1
 - Re-checks your zone straight after loading screens (hearth, portals, instances), not just on zone changes.
 - With a picked zone, the title also shows where you really are when they differ, e.g. "Thunder Bluff (picked, you're in Orgrimmar)".

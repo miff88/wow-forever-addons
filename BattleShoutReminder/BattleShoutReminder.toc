@@ -2,7 +2,7 @@
 ## Title: |cffff5533Battle Shout|r Reminder
 ## Notes: Shows a Battle Shout icon when the buff is missing or about to run out while you're fighting. Warrior only.
 ## Author: Mitch Brindle
-## Version: 1.1.0
+## Version: 1.1.1
 ## IconTexture: Interface\Icons\Ability_Warrior_BattleShout
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons

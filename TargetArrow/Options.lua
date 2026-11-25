@@ -37,6 +37,28 @@ function ns.CreateOptions(spec)
     local built = false
     local db = spec.db
 
+    -- Options live in a scrolling area so long pages never spill out of the window.
+    local ok, scroll = pcall(CreateFrame, "ScrollFrame", nil, panel, "ScrollFrameTemplate")
+    if not ok or not scroll then
+        scroll = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
+    end
+    scroll:SetPoint("TOPLEFT", 0, -4)
+    scroll:SetPoint("BOTTOMRIGHT", -28, 4)
+
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(560, 400)
+    scroll:SetScrollChild(content)
+
+    -- some clients only scroll with the wheel if the frame asks for it
+    scroll:EnableMouseWheel(true)
+    if not scroll:GetScript("OnMouseWheel") then
+        scroll:SetScript("OnMouseWheel", function(self, delta)
+            local maxV = math.max(0, content:GetHeight() - self:GetHeight())
+            local v = math.min(maxV, math.max(0, self:GetVerticalScroll() - delta * 40))
+            self:SetVerticalScroll(v)
+        end)
+    end
+
     local function Changed(key)
         if spec.onChange then spec.onChange(key) end
         for _, r in ipairs(refreshers) do r() end
@@ -46,33 +68,33 @@ function ns.CreateOptions(spec)
         if built then return end
         built = true
 
-        local icon = panel:CreateTexture(nil, "ARTWORK")
+        local icon = content:CreateTexture(nil, "ARTWORK")
         icon:SetSize(40, 40)
         icon:SetPoint("TOPLEFT", 16, -16)
         icon:SetTexture(spec.icon)
         icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-        local title = Label(panel, spec.title, "GameFontNormalLarge")
+        local title = Label(content, spec.title, "GameFontNormalLarge")
         title:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, -2)
 
-        local sub = Label(panel, "Version " .. ns.version .. (spec.about and ("  -  " .. spec.about) or ""), "GameFontHighlightSmall")
+        local sub = Label(content, "Version " .. ns.version .. (spec.about and ("  -  " .. spec.about) or ""), "GameFontHighlightSmall")
         sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
-        sub:SetPoint("RIGHT", panel, "RIGHT", -16, 0)
+        sub:SetPoint("RIGHT", content, "RIGHT", -16, 0)
         sub:SetJustifyH("LEFT")
 
         local y = -80
         for _, c in ipairs(spec.controls) do
             if c.type == "header" then
                 y = y - 6
-                local h = Label(panel, c.label, "GameFontNormal")
+                local h = Label(content, c.label, "GameFontNormal")
                 h:SetPoint("TOPLEFT", 16, y)
                 y = y - 22
 
             elseif c.type == "check" then
-                local cb = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+                local cb = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
                 cb:SetSize(26, 26)
                 cb:SetPoint("TOPLEFT", 20, y)
-                local l = Label(panel, c.label)
+                local l = Label(content, c.label)
                 l:SetPoint("LEFT", cb, "RIGHT", 4, 1)
                 cb:SetScript("OnClick", function(self)
                     db[c.key] = self:GetChecked() and true or false
@@ -82,19 +104,19 @@ function ns.CreateOptions(spec)
                 y = y - 30
 
             elseif c.type == "range" then
-                local l = Label(panel, c.label)
+                local l = Label(content, c.label)
                 l:SetPoint("TOPLEFT", 24, y - 4)
 
-                local minus = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+                local minus = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
                 minus:SetSize(26, 22)
                 minus:SetPoint("TOPLEFT", 240, y)
                 minus:SetText("-")
 
-                local value = Label(panel, "")
+                local value = Label(content, "")
                 value:SetWidth(44)
                 value:SetPoint("LEFT", minus, "RIGHT", 4, 0)
 
-                local plus = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+                local plus = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
                 plus:SetSize(26, 22)
                 plus:SetPoint("LEFT", value, "RIGHT", 4, 0)
                 plus:SetText("+")
@@ -113,9 +135,9 @@ function ns.CreateOptions(spec)
                 y = y - 30
 
             elseif c.type == "choice" then
-                local l = Label(panel, c.label)
+                local l = Label(content, c.label)
                 l:SetPoint("TOPLEFT", 24, y - 4)
-                local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+                local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
                 b:SetSize(110, 22)
                 b:SetPoint("TOPLEFT", 240, y)
                 b:SetScript("OnClick", function()
@@ -130,8 +152,69 @@ function ns.CreateOptions(spec)
                 end)
                 y = y - 30
 
+            elseif c.type == "dropdown" then
+                -- c.options() returns { { value = , label = }, ... }; c.preview(value) is optional
+                local l = Label(content, c.label)
+                l:SetPoint("TOPLEFT", 24, y - 4)
+
+                local function LabelFor(v)
+                    for _, o in ipairs(c.options()) do if o.value == v then return o.label end end
+                    return tostring(v)
+                end
+                local function Pick(v)
+                    db[c.key] = v
+                    if c.onSelect then c.onSelect(v) end
+                    Changed(c.key)
+                end
+
+                local ok, dd = pcall(CreateFrame, "DropdownButton", nil, content, "WowStyle1DropdownTemplate")
+                if ok and dd and dd.SetupMenu then
+                    dd:SetWidth(180)
+                    dd:SetPoint("TOPLEFT", 240, y + 2)
+                    dd:SetupMenu(function(_, root)
+                        if root.SetScrollMode then root:SetScrollMode(320) end
+                        for _, o in ipairs(c.options()) do
+                            root:CreateRadio(o.label,
+                                function() return db[c.key] == o.value end,
+                                function() Pick(o.value) end)
+                        end
+                    end)
+                    table.insert(refreshers, function() if dd.GenerateMenu then dd:GenerateMenu() end end)
+                else
+                    -- older clients: a button that steps through the list
+                    dd = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+                    dd:SetSize(180, 22)
+                    dd:SetPoint("TOPLEFT", 240, y)
+                    dd:SetScript("OnClick", function()
+                        local opts, idx = c.options(), 1
+                        for i, o in ipairs(opts) do if o.value == db[c.key] then idx = i end end
+                        Pick(opts[idx % #opts + 1].value)
+                    end)
+                    table.insert(refreshers, function() dd:SetText(LabelFor(db[c.key])) end)
+                end
+
+                if c.preview then
+                    local play = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+                    play:SetSize(50, 22)
+                    play:SetPoint("LEFT", dd, "RIGHT", 6, 0)
+                    play:SetText("Play")
+                    play:SetScript("OnClick", function() c.preview(db[c.key]) end)
+                end
+                y = y - 32
+
+            elseif c.type == "info" then
+                local fs = Label(content, "", "GameFontHighlightSmall")
+                fs:SetPoint("TOPLEFT", 24, y - 2)
+                fs:SetPoint("RIGHT", content, "RIGHT", -16, 0)
+                fs:SetJustifyH("LEFT")
+                table.insert(refreshers, function()
+                    local lines = c.lines()
+                    fs:SetText(type(lines) == "table" and table.concat(lines, "\n") or tostring(lines or ""))
+                end)
+                y = y - (c.height or 40)
+
             elseif c.type == "button" then
-                local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+                local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
                 b:SetSize(170, 24)
                 b:SetPoint("TOPLEFT", 20, y)
                 b:SetText(c.label)
@@ -147,12 +230,16 @@ function ns.CreateOptions(spec)
         end
 
         if spec.slash then
-            local foot = Label(panel, "Type " .. spec.slash .. " help in chat for slash commands.", "GameFontDisableSmall")
+            local foot = Label(content, "Type " .. spec.slash .. " help in chat for slash commands.", "GameFontDisableSmall")
             foot:SetPoint("TOPLEFT", 20, y - 10)
+            y = y - 30
         end
+        content:SetHeight(-y + 16)
     end
 
     panel:SetScript("OnShow", function()
+        local w = scroll:GetWidth()
+        if w and w > 100 then content:SetWidth(w) end
         Build()
         for _, r in ipairs(refreshers) do r() end
     end)
