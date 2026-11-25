@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-26
+
+Mage Services 1.9.0
+- Pause / Resume button on the window. Pausing stops taking requests on that character (no list, alerts, glows or replies) until you resume, without turning the addon off. While paused the window shrinks to a slim bar with Resume. Also /ms pause, /ms resume and a key binding. Saved per character.
+- Zone filter fixes: with your zone set to a city you're not standing in, people in your local General channel or using say/yell were counted as being in the picked city. They're now placed in the zone they're actually in.
+- Guildmates and friends are placed automatically from the guild and friends lists, no /who needed.
+- The two hide checkboxes are now one "Show requests from" setting: your city only, your city + unknown, or everywhere (rest dimmed). If neither box was ticked before, you get "your city + unknown". The window title shows how many requests were hidden. Also /ms filter here|nearby|all.
+
 ## 2026-11-25
 
 Overpower Plates 1.5.1

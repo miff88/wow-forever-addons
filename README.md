@@ -39,9 +39,13 @@ Also adds a retail-style threat box on top of the target frame, coloured by your
 Spots people asking for portals or water in chat and lists them in a small window, each with **Invite** and **Whisper** buttons. Whisper opens your chat box with a reply already typed, so you just press Enter. The replies are edited on the settings page (`{name}`, `{dest}` and `{zone}` are filled in), and there's an optional automatic reply for people who whisper you directly: never for Trade or General posts, at most once per player every few minutes, with a separate reply when you can't help. Matching is loose: it ignores case and punctuation, allows small typos, understands city shorthand (UC, TB, Org, SW, IF, Darn), and ignores other mages' adverts ("WTS portals"). Auto-invite is available but off by default. Works on any class, but it's made for mages.
 
 **Location priority.** Requests are ranked against where you are (detected automatically, or pick a city with `/ms zone`):
-- **Top, highlighted:** asked in your zone's General channel or in say/yell, said "from <your zone>", or a /who shows them in your zone.
-- **Middle:** location unknown (Trade, whispers, guild). Click **?** on the row to run a /who and re-rank it. The game only allows /who from a click, so this can't run automatically.
-- **Bottom, dimmed:** they're somewhere else, they want a port to the city you're already in, or they want a portal you don't have yet. Can be hidden instead, and there's a separate option to hide requests that don't say where the player is.
+- **Your zone:** asked in your zone's General or LocalDefense channel, in say/yell where you're standing, said "from <your zone>", is a guildmate or friend whose list entry shows your zone, or a /who shows them there.
+- **Unknown:** Trade chat reaches every city, so Trade (and whispers) only count as your zone if one of the above applies. Click **?** on the row to run a /who; the game only allows /who from a click, so it can't run automatically.
+- **Elsewhere:** they're in another zone, want a port to the city you're already in, or want a portal you don't have yet.
+
+**Show requests from** (settings, or `/ms filter here|nearby|all`): *Your city only*, *Your city + unknown* (the default), or *Everywhere* with the rest dimmed. The window title shows how many were hidden.
+
+**Pause.** The window's **Pause** button (or `/ms pause`, or a key binding) stops taking requests on that character: no list, alerts, glows or replies until you press **Resume**. While paused the window shrinks to a slim bar with the Resume button; close it with x if you like. Payment messages for people you've already served still work.
 
 **On-screen alerts.** The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4, ElvUI and Dominos), a message shows at the top of the screen, and the screen edges flash. Each can be turned off.
 
@@ -60,6 +64,8 @@ Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it on
 - `/ms paidmsg`, `/ms nopaymsg`, `/ms cancelmsg`, `/ms failmsg <text>` change them (`{name}`, `{amount}`, `{reason}` are filled in)
 - `/ms testtrade [complete|cancelled|failed]` preview a payment message (typed only, never sent)
 - `/ms zone [auto|city|zone]` show or set your location, e.g. `/ms zone uc`
+- `/ms pause`, `/ms resume` stop or start taking requests on this character
+- `/ms filter here|nearby|all` which requests to show
 - `/ms add <phrase>` watch for your own phrase too, e.g. `/ms add lf summon`; `/ms list`, `/ms remove <n>`
 - `/ms exclude <phrase>` never match lines containing it; `/ms excludes`, `/ms unexclude <n>`
 - `/ms portmsg <text>`, `/ms watermsg <text>`, `/ms custommsg <text>`, `/ms cantmsg <text>` change the replies

@@ -17,6 +17,7 @@ local ADDON_NAME, ns = ...
 -- Key Bindings > AddOns > Mage Services
 BINDING_HEADER_MAGESERVICES = "Mage Services"
 _G["BINDING_NAME_CLICK MageServicesCastButton:LeftButton"] = "Cast the requested portal"
+BINDING_NAME_MAGESERVICES_TOGGLEPAUSE = "Pause or resume the service"
 
 local defaults = {
     updateNotice = true,  -- "a newer version is out" chat notice (VersionCheck.lua)
@@ -36,8 +37,8 @@ local defaults = {
     expire = 120,         -- seconds a request stays in the list
     -- location
     zone = "auto",        -- "auto" = the zone you're in, or a city name you pick
-    hideLow = false,      -- hide requests you can't help with instead of dimming them
-    hideUnknown = false,  -- also hide requests that don't say where the player is
+    scope = "nearby",     -- which requests show: "here" (your city only), "nearby" (your city +
+                          -- unknown), "all" (everything, the rest dimmed)
     alertLow = false,     -- sound/flash/glow for low-priority requests too
     -- on-screen alerts
     glowBar = true,       -- glow the matching Portal / Conjure button on your action bars
@@ -271,6 +272,47 @@ end
 
 ns.CantCast = CantCast
 
+-- Where guildmates and friends are, read from the guild and friends lists (no /who needed).
+local rosterZones = {} -- [name key] = { zone = , how = "guild" or "friend" }
+local lastRoster = 0
+
+local function AddRoster(name, zone, how)
+    if type(name) ~= "string" or type(zone) ~= "string" or IsSecret(name) or IsSecret(zone) or zone == "" then return end
+    local entry = { zone = zone, how = how }
+    rosterZones[ns.NameKey(name)] = entry
+    if Ambiguate then
+        local ok, short = pcall(Ambiguate, name, "short")
+        if ok and type(short) == "string" and not IsSecret(short) then rosterZones[ns.NameKey(short)] = entry end
+    end
+end
+
+function ns.RebuildRoster(force)
+    local now = GetTime()
+    if not force and now - lastRoster < 5 then return end
+    lastRoster = now
+    wipe(rosterZones)
+    if IsInGuild and IsInGuild() and GetNumGuildMembers and GetGuildRosterInfo then
+        local ok, n = pcall(GetNumGuildMembers)
+        if ok and type(n) == "number" and not IsSecret(n) then
+            for i = 1, n do
+                local ok2, name, _, _, _, _, zone, _, _, online = pcall(GetGuildRosterInfo, i)
+                if ok2 and online and not IsSecret(online) then AddRoster(name, zone, "guild") end
+            end
+        end
+    end
+    if C_FriendList and C_FriendList.GetNumFriends and C_FriendList.GetFriendInfoByIndex then
+        local ok, n = pcall(C_FriendList.GetNumFriends)
+        if ok and type(n) == "number" and not IsSecret(n) then
+            for i = 1, n do
+                local ok2, f = pcall(C_FriendList.GetFriendInfoByIndex, i)
+                if ok2 and type(f) == "table" and f.connected and not IsSecret(f.connected) then
+                    AddRoster(f.name, f.area, "friend")
+                end
+            end
+        end
+    end
+end
+
 -- Returns priority and a short reason shown on the row.
 local function Rank(req)
     local info, here = req.info, ns.MyZone()
@@ -286,6 +328,11 @@ local function Rank(req)
         if SameZone(req.whoZone, here) then return HIGH, "in your zone (/who)" end
         return LOW, "they're in " .. req.whoZone .. " (/who)"
     end
+    local roster = rosterZones[req.key]
+    if roster then
+        if SameZone(roster.zone, here) then return HIGH, "in your zone (" .. roster.how .. ")" end
+        return LOW, "they're in " .. roster.zone .. " (" .. roster.how .. ")"
+    end
     if req.whoPending then return NORMAL, "looking up..." end
     if req.whoFailed then return NORMAL, "no /who reply, click ? again" end
 
@@ -295,10 +342,18 @@ local function Rank(req)
         return LOW, "they're in " .. origin
     end
 
-    if req.source == "say" then return HIGH, "near you" end
+    -- say/yell and General/LocalDefense come from where you actually are (or the channel's
+    -- zone), which isn't always the zone you picked
+    if req.source == "say" then
+        if req.heardIn and req.heardIn ~= "" and not SameZone(req.heardIn, here) then
+            return LOW, "they're in " .. req.heardIn
+        end
+        return HIGH, "near you"
+    end
     if req.source == "local" then
-        if SameZone(req.zoneAtReceive, here) then return HIGH, "in your zone" end
-        return LOW, "they're in " .. (req.zoneAtReceive or "another zone")
+        local zone = req.heardIn or req.zoneAtReceive
+        if SameZone(zone, here) then return HIGH, "in your zone" end
+        return LOW, "they're in " .. (zone or "another zone")
     end
 
     return NORMAL, nil
@@ -488,9 +543,12 @@ win.close:SetPoint("RIGHT", win.header, "RIGHT", -4, 0)
 win.clear = FlatButton(win, 46, 18, "Clear")
 win.clear:SetPoint("RIGHT", win.close, "LEFT", -4, 0)
 
+win.pause = FlatButton(win, 58, 18, "Pause")
+win.pause:SetPoint("RIGHT", win.clear, "LEFT", -4, 0)
+
 win.title = win:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 win.title:SetPoint("LEFT", win.header, "LEFT", 8, 0)
-win.title:SetPoint("RIGHT", win.clear, "LEFT", -8, 0)
+win.title:SetPoint("RIGHT", win.pause, "LEFT", -8, 0)
 win.title:SetJustifyH("LEFT")
 win.title:SetWordWrap(false)
 
@@ -618,9 +676,39 @@ function ns.ApplyTheme()
     if ns.ApplyBannerTheme then ns.ApplyBannerTheme(t) end
 end
 
+-- Paused is saved per character (MageServicesCharDB, set up in Service.lua).
+function ns.IsPaused()
+    return MageServicesCharDB and MageServicesCharDB.paused and true or false
+end
+
+local pausedClosed = false -- closed the paused bar with x: stay hidden until resume or /ms show
+
+local function UpdatePauseButton()
+    local p = ns.IsPaused()
+    win.pause.text:SetText(p and "Resume" or "Pause")
+    win.pause.primary = p
+    PaintButton(win.pause)
+    win.clear:SetShown(not p)
+    win.pause:ClearAllPoints()
+    win.pause:SetPoint("RIGHT", p and win.close or win.clear, "LEFT", -4, 0)
+end
+
 Refresh = function()
     if not db then return end
     local t = ns.Theme()
+    UpdatePauseButton()
+
+    if ns.IsPaused() then
+        -- a slim bar with Resume, so there's always a way back
+        for _, row in ipairs(rows) do row.req = nil; row:Hide() end
+        win.title:SetText("Mage Services  |cff" .. t.muted .. "paused, not watching chat|r")
+        win.footer:SetText(ns.EarningsLine and ns.EarningsLine() or "")
+        if ns.UpdateGlows then ns.UpdateGlows({}) end
+        if ns.UpdateCastButton then ns.UpdateCastButton({}) end
+        win:SetHeight(2 + HEADER_H + FOOTER_H + 1)
+        if pausedClosed then win:Hide() else win:Show() end
+        return
+    end
     local now = GetTime()
     for i = #requests, 1, -1 do
         if now - requests[i].time > db.expire then table.remove(requests, i) end
@@ -633,12 +721,13 @@ Refresh = function()
     end)
 
     local visible = requests
-    if db.hideLow or db.hideUnknown then
+    if db.scope ~= "all" then
         visible = {}
         for _, r in ipairs(requests) do
             if not ns.IsHidden(r) then visible[#visible + 1] = r end
         end
     end
+    local hiddenCount = #requests - #visible
 
     local shown = math.min(#visible, db.maxRows)
     for i = 1, math.max(shown, #rows) do
@@ -681,7 +770,8 @@ Refresh = function()
     end
     win.title:SetText("Mage Services"
         .. (where ~= "" and ("  |cff" .. t.muted .. where .. note .. "|r") or "")
-        .. (extra > 0 and ("  |cff" .. t.muted .. "+" .. extra .. " more|r") or ""))
+        .. (extra > 0 and ("  |cff" .. t.muted .. "+" .. extra .. " more|r") or "")
+        .. (hiddenCount > 0 and ("  |cff" .. t.muted .. hiddenCount .. " hidden|r") or ""))
     if ns.UpdateGlows then ns.UpdateGlows(visible) end
     if ns.UpdateCastButton then ns.UpdateCastButton(visible) end
     win.footer:SetText(ns.EarningsLine and ns.EarningsLine() or "")
@@ -691,7 +781,30 @@ end
 
 ns.Refresh = Refresh
 win.clear:SetScript("OnClick", function() wipe(requests); Refresh() end)
-win.close:SetScript("OnClick", function() win:Hide() end)
+win.close:SetScript("OnClick", function()
+    if ns.IsPaused() then pausedClosed = true end
+    win:Hide()
+end)
+
+function ns.SetPaused(on)
+    if not MageServicesCharDB then return end
+    MageServicesCharDB.paused = on and true or nil
+    pausedClosed = false
+    if on then
+        wipe(requests) -- drops their glows, alerts and the portal button too
+        Print("paused. Not watching chat until you resume (the Resume button, /ms resume or a key binding).")
+    else
+        Print("resumed, watching chat for requests again.")
+    end
+    Refresh()
+    if ns.RefreshOptions then ns.RefreshOptions() end
+end
+
+function MageServices_TogglePause()
+    ns.SetPaused(not ns.IsPaused())
+end
+
+win.pause:SetScript("OnClick", MageServices_TogglePause)
 
 local function ApplyPosition()
     if ns.PositionCast then
@@ -748,8 +861,9 @@ end
 -- Hidden by your settings: can't help (another zone, already there, no spell),
 -- or, with hideUnknown, no idea where they are and no /who lookup running.
 function ns.IsHidden(r)
-    if db.hideLow and r.priority == LOW then return true end
-    if db.hideUnknown and r.priority == NORMAL and not r.whoPending and not r.paid then return true end
+    if r.paid then return false end
+    if db.scope == "here" then return r.priority ~= HIGH and not r.whoPending end
+    if db.scope == "nearby" then return r.priority == LOW end
     return false
 end
 
@@ -759,7 +873,7 @@ local function Alert(req)
     if ns.ScreenAlert then ns.ScreenAlert(req) end
 end
 
-local function AddRequest(sender, msg, info, source, whispered)
+local function AddRequest(sender, msg, info, source, whispered, heardIn)
     -- same person again: refresh their entry instead of adding a second one
     for i, r in ipairs(requests) do
         if r.key == ns.NameKey(sender) then
@@ -769,7 +883,7 @@ local function AddRequest(sender, msg, info, source, whispered)
     end
     local req = { sender = sender, key = ns.NameKey(sender), display = ns.DisplayName(sender),
                   first = ns.FirstName(sender), msg = msg, info = info, time = GetTime(),
-                  source = source, zoneAtReceive = ns.MyZone() }
+                  source = source, zoneAtReceive = ns.MyZone(), heardIn = heardIn }
     req.priority, req.reason = Rank(req)
     ns.customers[req.key] = { time = GetTime(), kind = info.kind, dest = info.dest, sender = sender }
     table.insert(requests, 1, req)
@@ -784,8 +898,9 @@ end
 
 -- source: "say" (say/yell, so they're close), "local" (your zone's General or
 -- LocalDefense channel), or "other" (trade, whispers, guild: could be anywhere)
-function ns.HandleChat(msg, sender, source, whispered)
+function ns.HandleChat(msg, sender, source, whispered, heardIn)
     if not db then return end
+    if ns.IsPaused() and not testMode then return end -- paused: not taking requests
     if IsSecret(msg) or IsSecret(sender) then return end -- inside instances: unreadable
     if type(msg) ~= "string" or type(sender) ~= "string" or sender == "" then return end
 
@@ -794,7 +909,7 @@ function ns.HandleChat(msg, sender, source, whispered)
     if ns.InGroupWith(key) then return end                       -- already grouped
 
     local info = ns.Classify(msg, MatchOptions())
-    if info then AddRequest(sender, msg, info, source or "other", whispered) end
+    if info then AddRequest(sender, msg, info, source or "other", whispered, heardIn) end
 end
 
 local SOURCE = {
@@ -808,7 +923,12 @@ local function ChannelSource(channelName, channelBase)
               or (type(channelName) == "string" and not IsSecret(channelName) and channelName) or ""
     name = name:lower():gsub("^%d+%.%s*", "")
     if name:find("^general") or name:find("^localdefense") or name:find("^local defense") then
-        return "local"
+        -- "2. General - Durotar": the zone is in the channel's name
+        local zone
+        if type(channelName) == "string" and not IsSecret(channelName) then
+            zone = channelName:gsub("^%d+%.%s*", ""):match("%s%-%s(.+)$")
+        end
+        return "local", zone
     end
     return "other"
 end
@@ -922,8 +1042,10 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
     if setting then
         local whispered = event == "CHAT_MSG_WHISPER"
         if db and (db[setting] or (whispered and db.autoReply)) then
-            local source = SOURCE[event] or ChannelSource(arg4, arg9)
-            ns.HandleChat(arg1, arg2, source, whispered)
+            local source, heardIn = SOURCE[event], nil
+            if not source then source, heardIn = ChannelSource(arg4, arg9) end
+            if source == "say" or (source == "local" and not heardIn) then heardIn = ns.RealZone() end
+            ns.HandleChat(arg1, arg2, source, whispered, heardIn)
         end
 
     elseif event == "WHO_LIST_UPDATE" then
@@ -931,6 +1053,10 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
 
     elseif event == "CHAT_MSG_SYSTEM" then
         OnSystemMessage(arg1)
+
+    elseif event == "GUILD_ROSTER_UPDATE" or event == "FRIENDLIST_UPDATE" then
+        ns.RebuildRoster()
+        Refresh()
 
     elseif event == "SPELLS_CHANGED" then
         -- learned a portal, levelled up, changed spec: check the spells again
@@ -944,6 +1070,12 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
 
     elseif event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         MageServicesDB = MageServicesDB or {}
+        -- 1.9.0: the two hide checkboxes became one "Show requests from" setting
+        if MageServicesDB.scope == nil and (MageServicesDB.hideLow ~= nil or MageServicesDB.hideUnknown ~= nil) then
+            -- neither ticked was just the old default, so that gets the new default
+            MageServicesDB.scope = MageServicesDB.hideUnknown and "here" or "nearby"
+        end
+        MageServicesDB.hideLow, MageServicesDB.hideUnknown = nil, nil
         for k, v in pairs(defaults) do
             if MageServicesDB[k] == nil then
                 MageServicesDB[k] = type(v) == "table" and { unpack(v) } or v
@@ -961,6 +1093,20 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
         for e in pairs(CHANNEL_EVENTS) do SafeRegister(e) end
         SafeRegister("ZONE_CHANGED_NEW_AREA")
         SafeRegister("SPELLS_CHANGED")
+        SafeRegister("GUILD_ROSTER_UPDATE")
+        SafeRegister("FRIENDLIST_UPDATE")
+        -- keep the guild and friends lists fresh so their zones are current
+        local function AskRoster()
+            if ns.IsPaused() then return end
+            if C_GuildInfo and C_GuildInfo.GuildRoster then pcall(C_GuildInfo.GuildRoster)
+            elseif GuildRoster then pcall(GuildRoster) end
+            if C_FriendList and C_FriendList.ShowFriends then pcall(C_FriendList.ShowFriends) end
+        end
+        C_Timer.After(5, AskRoster)
+        C_Timer.NewTicker(60, AskRoster)
+        C_Timer.After(8, function()
+            if ns.IsPaused() then Print("paused on this character. Click Resume on the window, or type /ms resume.") end
+        end)
         SafeRegister("PLAYER_ENTERING_WORLD")
         SafeRegister("WHO_LIST_UPDATE")
         SafeRegister("CHAT_MSG_SYSTEM")
@@ -986,6 +1132,10 @@ local SAMPLES = {
 }
 
 local function RunTest()
+    if ns.IsPaused() then
+        Print("paused. Resume first (/ms resume) to try the test.")
+        return
+    end
     testMode = true
     local before = #requests
     for _, s in ipairs(SAMPLES) do ns.HandleChat(s[2], s[1], s[3]) end
@@ -1016,6 +1166,9 @@ function ns.BuildOptions()
         title = "Mage Services",
         updateNotice = true,
         changes = {
+            { "1.9.0", "Pause / Resume button on the window",
+                       "\"Show requests from\": your city only, your city + unknown, or everywhere",
+                       "Better at telling where people are: channel zones, guildmates, friends" },
             { "1.8.1", "This What's new list" },
             { "1.8.0", "Edit your replies on this page, with an example under each",
                        "Optional automatic reply when someone whispers you",
@@ -1031,6 +1184,12 @@ function ns.BuildOptions()
         db = db,
         onChange = function() ns.ApplyTheme(); Refresh() end,
         controls = {
+            { type = "header", label = "Service" },
+            { type = "button", label = "Pause the service",
+              dynamicLabel = function() return ns.IsPaused() and "Resume the service" or "Pause the service" end,
+              func = function() ns.SetPaused(not ns.IsPaused()) end },
+            { type = "info", height = 22, lines = function()
+                return "|cff999999" .. (ns.IsPaused() and "Paused on this character: not watching chat." or "Pausing stops watching chat on this character until you resume.") .. "|r" end },
             { type = "header", label = "Look for" },
             { type = "check", key = "ports", label = "Portal requests" },
             { type = "check", key = "water", label = "Water and food requests" },
@@ -1044,8 +1203,13 @@ function ns.BuildOptions()
             { type = "choice", key = "theme", label = "Window theme", values = { "dark", "light" } },
             { type = "header", label = "Your location" },
             { type = "choice", key = "zone", label = "Where you are (Auto = current zone)", values = ns.ZoneChoices() },
-            { type = "check", key = "hideLow", label = "Hide requests you can't help with: another zone, or a portal you don't have" },
-            { type = "check", key = "hideUnknown", label = "Also hide requests that don't say where they are (most Trade chat)" },
+            { type = "dropdown", key = "scope", label = "Show requests from", options = function() return {
+                { value = "here", label = "Your city only" },
+                { value = "nearby", label = "Your city + unknown" },
+                { value = "all", label = "Everywhere (rest dimmed)" },
+              } end },
+            { type = "info", height = 44, lines = function()
+                return "|cff999999Trade chat reaches every city, so a Trade request only counts as your city if it says so, they're a guildmate or friend, or you click ? on it. \"Your city only\" hides the rest; \"Your city + unknown\" keeps them so you can check.|r" end },
             { type = "check", key = "alertLow", label = "Alert for low-priority requests too" },
             { type = "header", label = "On screen" },
             { type = "check", key = "glowBar", label = "Glow the matching Portal / Conjure button" },
@@ -1178,7 +1342,18 @@ SlashCmdList.MAGESERVICES = function(msg)
     elseif cmd == "testtrade" then
         ns.TestTrade(rest ~= "" and rest:lower() or "complete")
     elseif cmd == "show" then
+        pausedClosed = false
         win:Show()
+    elseif cmd == "pause" then
+        ns.SetPaused(true)
+    elseif cmd == "resume" then
+        ns.SetPaused(false)
+    elseif cmd == "filter" and (rest == "here" or rest == "nearby" or rest == "all") then
+        db.scope = rest
+        Print(({ here = "showing requests from your city only",
+                 nearby = "showing requests from your city, plus ones that don't say where they are",
+                 all = "showing every request, others dimmed" })[rest])
+        Refresh()
     elseif cmd == "test" then
         RunTest()
     elseif cmd == "add" and rest ~= "" then
@@ -1207,6 +1382,8 @@ SlashCmdList.MAGESERVICES = function(msg)
         db.customMsg = rest; Print("custom reply: " .. rest)
     else
         Print("v" .. ns.version .. " commands (or just /ms for the settings page):")
+        Print("/ms pause, /ms resume - stop or start taking requests on this character (now " .. (ns.IsPaused() and "paused" or "on") .. ")")
+        Print("/ms filter here|nearby|all - show requests from your city only, your city + unknown, or everywhere (now " .. db.scope .. ")")
         Print("/ms add <phrase> - also watch for your own phrase, e.g. /ms add lf summon")
         Print("/ms list, /ms remove <number> - see or remove your phrases")
         Print("/ms exclude <phrase> - never match lines with this, e.g. /ms exclude ratchet")

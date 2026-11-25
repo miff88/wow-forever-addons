@@ -12,11 +12,15 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 - Ignores other mages' adverts ("WTS portals"), "water walking" and other false alarms.
 - Add your own phrases (`/ms add lf summon`) and words to ignore (`/ms exclude ratchet`).
 
-### Puts the best requests first
+### Only the requests you can serve
 - Knows where you are, automatically or from a city you pick.
-- **Top:** people near you, who asked in your zone's General channel or in say/yell, or said "from <your zone>".
-- **Middle:** Trade and whispers, where the location is unknown. Click **?** to run a /who and re-rank the request by their real zone.
-- **Bottom, dimmed:** people elsewhere, asking for a port to the city you're already in, or asking for a portal you don't have yet. Can be hidden instead, and there's a separate option to hide requests that don't say where the player is.
+- **Your city:** people who asked in your zone's General channel, nearby in say/yell, said "from <your zone>", or are guildmates and friends standing in your city.
+- **Unknown:** Trade chat reaches every city, so Trade requests that don't say where they are are marked unknown. Click **?** to run a /who and place them.
+- **Show requests from:** your city only, your city + unknown, or everywhere with the rest dimmed.
+- Requests for a city you're already in, or a portal you don't have yet, are counted as ones you can't help with.
+
+### Pause when you're busy
+- **Pause** on the window stops taking requests on that character, with no alerts or replies, until you press **Resume**. No need to turn the addon off.
 
 ### One-click service
 - **Portal button:** casts the requested portal (or Conjure Water) for the selected request. Click a row to pick another. Bindable to a key.
@@ -44,6 +48,8 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 | `/ms` | Open settings |
 | `/ms test` | Add sample requests to try the window |
 | `/ms zone [auto, city or zone]` | Show or set your location |
+| `/ms pause` / `/ms resume` | Stop or start taking requests on this character |
+| `/ms filter here, nearby or all` | Which requests to show |
 | `/ms earnings` | Show your earnings |
 | `/ms add <phrase>` / `/ms exclude <phrase>` | Watch for or ignore your own phrases |
 | `/ms portmsg`, `/ms watermsg`, `/ms cantmsg` `<text>` | Change the replies (`{name}`, `{dest}` and `{zone}` are filled in) |
