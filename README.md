@@ -87,4 +87,4 @@ Shows a Battle Shout icon when the buff is missing or under 10 seconds while you
 
 ## Releasing
 
-Pushing a tag named `<AddonFolder>-v<version>` (for example `MageServices-v1.4.4`) builds that addon's zip, attaches it to a GitHub release and, for addons listed in `curseforge.json`, uploads it to CurseForge as a WoW Forever (1.60.1) file. The tag must match the version in the addon's .toc. CurseForge uploads need the `CF_API_TOKEN` repository secret.
+Releases are automatic. When a new version (the `## Version:` line in an addon's .toc) reaches `main`, the "Release addons" workflow uploads it to CurseForge as a WoW Forever (1.60.1) file and creates a GitHub release and tag `<Addon>-v<version>` with the same zip. Only addons listed in `curseforge.json` are released. CurseForge uploads need the `CF_API_TOKEN` repository secret. The workflow can also be run by hand from the Actions tab, and a failed upload is retried on the next run.

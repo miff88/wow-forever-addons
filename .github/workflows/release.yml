@@ -1,21 +1,31 @@
-# Releases one addon when a tag like "MageServices-v1.4.4" is pushed:
-#  1. checks the tag matches the addon's .toc version
-#  2. zips the addon folder (MageServices/ at the top of the zip)
-#  3. attaches the zip to a GitHub release
-#  4. uploads it to CurseForge as a Forever (1.60.1) release, if the addon is in curseforge.json
-# If the CurseForge step fails (e.g. the token is missing), fix it and use "Re-run jobs" in GitHub.
+# Publishes new addon versions automatically.
 #
-# Needs the repository secret CF_API_TOKEN (a CurseForge API token) for step 3.
+# Runs when a version change reaches main (any .toc file, curseforge.json or this workflow),
+# or by hand from the Actions tab. For every addon in curseforge.json whose current .toc
+# version hasn't been released yet, it uploads the zip to CurseForge as a WoW Forever
+# (1.60.1) file, then creates a GitHub release and tag "<Addon>-v<version>" with the same zip.
+#
+# Needs the repository secret CF_API_TOKEN (a CurseForge API token).
+# If a CurseForge upload fails, nothing is marked released, so "Re-run jobs" retries it.
 
-name: Release addon
+name: Release addons
 
 on:
   push:
-    tags:
-      - "*-v*"
+    branches: [main]
+    paths:
+      - "**/*.toc"
+      - "curseforge.json"
+      - ".github/workflows/release.yml"
+      - ".github/scripts/**"
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-addons
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -23,74 +33,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Work out addon and version from the tag
-        id: meta
-        run: |
-          tag="${GITHUB_REF_NAME}"
-          addon="${tag%-v*}"
-          version="${tag##*-v}"
-          toc="${addon}/${addon}.toc"
-          if [ ! -f "$toc" ]; then echo "::error::No addon folder for tag $tag ($toc missing)"; exit 1; fi
-          toc_version="$(grep -m1 '^## Version:' "$toc" | sed 's/^## Version:[[:space:]]*//' | tr -d '\r')"
-          if [ "$toc_version" != "$version" ]; then
-            echo "::error::Tag says $version but $toc says $toc_version"; exit 1
-          fi
-          interface="$(grep -m1 '^## Interface:' "$toc" | sed 's/^## Interface:[[:space:]]*//' | tr -d '\r' | cut -d, -f1)"
-          # 16001 -> 1.60.1 (read from the right, like the BigWigs packager)
-          game_version="$((interface / 10000)).$(((interface / 100) % 100)).$((interface % 100))"
-          echo "addon=$addon" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "game_version=$game_version" >> "$GITHUB_OUTPUT"
-          echo "Addon $addon, version $version, game version $game_version"
-
-      - name: Build zip
-        run: |
-          zip -qr "${{ steps.meta.outputs.addon }}-${{ steps.meta.outputs.version }}.zip" "${{ steps.meta.outputs.addon }}"
-          unzip -l "${{ steps.meta.outputs.addon }}-${{ steps.meta.outputs.version }}.zip"
-
-      - name: Changelog for this version
-        run: python3 .github/scripts/changelog.py "${{ steps.meta.outputs.addon }}" "${{ steps.meta.outputs.version }}" CHANGELOG.md > notes.md && cat notes.md
-
-      - name: GitHub release
+      - name: Release any new versions
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          zip_name="${{ steps.meta.outputs.addon }}-${{ steps.meta.outputs.version }}.zip"
-          # safe to re-run: reuse the release if it already exists
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "$zip_name" --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" "$zip_name" \
-              --title "${{ steps.meta.outputs.addon }} ${{ steps.meta.outputs.version }}" \
-              --notes-file notes.md
-          fi
-
-      - name: Upload to CurseForge
-        env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          ADDON: ${{ steps.meta.outputs.addon }}
-          VERSION: ${{ steps.meta.outputs.version }}
-          GAME_VERSION: ${{ steps.meta.outputs.game_version }}
         run: |
-          project_id="$(jq -r --arg a "$ADDON" '.[$a] // empty' curseforge.json)"
-          if [ -z "$project_id" ]; then echo "$ADDON has no CurseForge project in curseforge.json, skipping."; exit 0; fi
-          if [ -z "$CF_API_TOKEN" ]; then echo "::error::CF_API_TOKEN secret is not set"; exit 1; fi
-
-          # find CurseForge's id for this game version; Forever's version type is 88568
-          curl -sf -H "X-Api-Token: $CF_API_TOKEN" https://wow.curseforge.com/api/game/versions > versions.json
-          version_id="$(jq -r --arg v "$GAME_VERSION" '
-              ([.[] | select(.name == $v and .gameVersionTypeID == 88568)] + [.[] | select(.name == $v)])
-              | .[0].id // empty' versions.json)"
-          if [ -z "$version_id" ]; then echo "::error::CurseForge has no game version $GAME_VERSION"; exit 1; fi
-          echo "CurseForge game version $GAME_VERSION is id $version_id"
-
-          metadata="$(jq -n --rawfile log notes.md --argjson gv "$version_id" --arg name "$ADDON $VERSION" \
-            '{changelog: $log, changelogType: "markdown", displayName: $name, gameVersions: [$gv], releaseType: "release"}')"
-          curl -sS --fail-with-body \
-            -H "X-Api-Token: $CF_API_TOKEN" \
-            --form-string "metadata=$metadata" \
-            -F "file=@${ADDON}-${VERSION}.zip" \
-            "https://wow.curseforge.com/api/projects/${project_id}/upload-file"
-          echo
-          echo "Uploaded to CurseForge project $project_id"
-
+          status=0
+          for addon in $(jq -r 'keys[]' curseforge.json); do
+            echo "::group::$addon"
+            .github/scripts/release.sh "$addon" || status=1
+            echo "::endgroup::"
+          done
+          exit $status
