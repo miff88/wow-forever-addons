@@ -429,7 +429,12 @@ local function Finish(result, reason)
             local paid = Money(trade.money)
             if (trade.money or 0) == 0 then paid = itemsText
             elseif itemsText ~= "" then paid = paid .. " + " .. itemsText end
-            Post(t, Fill(db.paidMsg, name, { amount = paid }))
+            -- the amount stays private unless you choose to share it
+            if db.hideAmount then
+                Post(t, Fill(db.paidMsgPrivate, name))
+            else
+                Post(t, Fill(db.paidMsg, name, { amount = paid }))
+            end
             if not t.test then RecordEarning(t.key, t.money or 0) end
             MarkPaid(t.key, t.money or 0)
             ns.Print("payment from " .. ns.DisplayName(t.sender) .. ": " .. paid)

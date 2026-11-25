@@ -46,6 +46,8 @@ local defaults = {
     receiptMode = "auto", -- "auto" posts by itself, "prefill" types it for you, "off"
     receiptAll  = false,  -- post for every trade, not just people who asked or are in your group
     paidMsg   = "Payment received from {name}: {amount}. Thanks, safe travels!",
+    hideAmount = true,    -- keep the gold amount out of payment messages
+    paidMsgPrivate = "Payment received, thanks {name}! Safe travels.",
     noPayMsg  = "Trade with {name} completed, but no payment was included.",
     cancelMsg = "Trade with {name} was cancelled. No payment received.",
     failMsg   = "Trade with {name} failed ({reason}). No payment received.",
@@ -906,6 +908,7 @@ function ns.BuildOptions()
             { type = "header", label = "Payments" },
             { type = "choice", key = "receiptMode", label = "Payment messages (Auto / Prefill / Off)", values = { "auto", "prefill", "off" } },
             { type = "check", key = "receiptAll", label = "Post for every trade, not just customers" },
+            { type = "check", key = "hideAmount", label = "Keep the gold amount out of payment messages" },
             { type = "button", label = "Test a payment message", func = function() ns.TestTrade("complete") end },
             { type = "header", label = "When someone asks" },
             { type = "check", key = "sound", label = "Play a sound" },
@@ -967,6 +970,11 @@ SlashCmdList.MAGESERVICES = function(msg)
         Refresh()
     elseif cmd == "paidmsg" and rest ~= "" then
         db.paidMsg = rest; Print("payment message: " .. rest)
+    elseif cmd == "amount" then
+        db.hideAmount = not db.hideAmount
+        Print(db.hideAmount and "payment messages won't mention the amount" or "payment messages will include the amount")
+    elseif cmd == "privatemsg" and rest ~= "" then
+        db.paidMsgPrivate = rest; Print("payment message without amount: " .. rest)
     elseif cmd == "nopaymsg" and rest ~= "" then
         db.noPayMsg = rest; Print("no-payment message: " .. rest)
     elseif cmd == "cancelmsg" and rest ~= "" then
@@ -1039,7 +1047,8 @@ SlashCmdList.MAGESERVICES = function(msg)
         Print("/ms sounds, /ms sound <number> - list the alert sounds and pick one")
         Print("/ms earnings - gold earned, all characters and this one; /ms earnings reset for options")
         Print("/ms receipts [auto|prefill|off] - payment messages: send them, type them for you, or off")
-        Print("/ms paidmsg, /ms nopaymsg, /ms cancelmsg, /ms failmsg <text> - {name}, {amount}, {reason} get filled in")
+        Print("/ms amount - include or leave out the gold amount in payment messages (now " .. (db.hideAmount and "left out" or "included") .. ")")
+        Print("/ms paidmsg, /ms privatemsg, /ms nopaymsg, /ms cancelmsg, /ms failmsg <text> - {name}, {amount}, {reason} get filled in")
         Print("/ms testtrade [complete|cancelled|failed] - try a payment message (only typed, never sent)")
         Print("/ms test - add sample requests, /ms show - show the window")
     end

@@ -28,7 +28,7 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 - Message at the top of the screen, screen-edge flash and a sound of your choice from the game's own sounds.
 
 ### Payments and earnings
-- After a trade with a customer, posts the result in party chat, or whispers them if they've left: payment received (gold and items), no payment, cancelled or failed with the reason. Send automatically, have it typed for you, or turn it off.
+- After a trade with a customer, posts the result in party chat, or whispers them if they've left: payment received, no payment, cancelled or failed with the reason. The gold amount is left out by default so your prices stay private. Send automatically, have it typed for you, or turn it off.
 - Earnings saved through logouts and split into **portals** and **food & water**: all characters all time, this character, this session, and portals by city. Plus a total of all gold from every trade while the addon is on.
 
 ### Looks the part
