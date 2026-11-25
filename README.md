@@ -85,6 +85,14 @@ Shows a Battle Shout icon when the buff is missing or under 10 seconds while you
 - `/bsr unlock`, `/bsr lock` move the icon
 - `/bsr test`, `/bsr time <n>`, `/bsr size <n>`, `/bsr sound`, `/bsr reset`
 
+## Problems and ideas
+
+Found a bug or want something changed? [Open an issue](https://github.com/miff88/wow-forever-addons/issues/new/choose) and pick the addon. For errors, include the Lua error text (type `/console scriptErrors 1`, then `/reload`, to see them).
+
+## Licence
+
+All rights reserved. The addons are free to download and use, but please don't copy or republish them. See [LICENSE](LICENSE).
+
 ## Releasing
 
 Releases are automatic. When a new version (the `## Version:` line in an addon's .toc) reaches `main`, the "Release addons" workflow uploads it to CurseForge as a WoW Forever (1.60.1) file and creates a GitHub release and tag `<Addon>-v<version>` with the same zip. Only addons listed in `curseforge.json` are released. CurseForge uploads need the `CF_API_TOKEN` repository secret. The workflow can also be run by hand from the Actions tab, and a failed upload is retried on the next run.

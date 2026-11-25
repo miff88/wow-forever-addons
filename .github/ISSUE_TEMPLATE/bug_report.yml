@@ -1,0 +1,42 @@
+name: Bug report
+description: Something in one of the addons isn't working
+labels: [bug]
+body:
+  - type: dropdown
+    id: addon
+    attributes:
+      label: Addon
+      options:
+        - Mage Services
+        - Plate Threat
+        - Overpower Plates
+        - Target Arrow
+        - Battle Shout Notice
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Addon version
+      description: Shown in the CurseForge app, or on the "## Version" line of the addon's .toc file.
+      placeholder: e.g. 1.7.0
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error text
+      description: If WoW showed a Lua error, paste it here. To see errors, type /console scriptErrors 1 and then /reload.
+      render: text
+  - type: input
+    id: where
+    attributes:
+      label: Where you were
+      description: Zone, and whether you were solo, in a group, dungeon, raid or battleground.

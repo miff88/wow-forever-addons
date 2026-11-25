@@ -1,0 +1,24 @@
+name: Idea or request
+description: Suggest a change to an addon, or a new one
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: addon
+    attributes:
+      label: Addon
+      options:
+        - Mage Services
+        - Plate Threat
+        - Overpower Plates
+        - Target Arrow
+        - Battle Shout Notice
+        - A new addon
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What you'd like it to do, and the situation in game where it would help.
+    validations:
+      required: true
