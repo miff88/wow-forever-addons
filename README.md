@@ -43,7 +43,7 @@ Spots people asking for portals or water in chat and lists them in a small windo
 - **Middle:** location unknown (Trade, whispers, guild). Click **?** on the row to run a /who and re-rank it. The game only allows /who from a click, so this can't run automatically.
 - **Bottom, dimmed:** they're somewhere else, they want a port to the city you're already in, or they want a portal you don't have yet. Can be hidden instead, and there's a separate option to hide requests that don't say where the player is.
 
-**On-screen alerts.** The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4 and ElvUI), a message shows at the top of the screen, and the screen edges flash. Each can be turned off.
+**On-screen alerts.** The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4, ElvUI and Dominos), a message shows at the top of the screen, and the screen edges flash. Each can be turned off.
 
 **Portal button.** A big icon at the top-left of the window casts the portal for the selected request (or Conjure Water for a water request). The top request is picked automatically; click a row to pick another. It can be bound to a key under Key Bindings > AddOns. It updates as soon as combat ends, since the game doesn't allow spell buttons to change during combat.
 
@@ -75,13 +75,13 @@ These do nothing on other classes.
 
 Puts an Overpower icon with a 5 second countdown above the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave. A nameplate dodge only counts when your Overpower charge (combo point) goes up at the same moment, so dodges against other players are ignored.
 
-While Overpower is up, a gold glow pulses around the icon and your Overpower button glows on the action bars (Blizzard bars, Bartender4 and ElvUI). There's also an optional big Overpower icon in the middle of the screen that you can move and resize.
+While Overpower is up, a gold glow pulses around the icon and your Overpower button glows on the action bars (Blizzard bars, Bartender4, ElvUI and Dominos). There's also an optional big Overpower icon in the middle of the screen that you can move and resize.
 
 - `/opp test` show the icon on every nameplate (and the glow and screen icon)
 - `/opp size <n>`, `/opp offset <n>`, `/opp window <n>`
 - `/opp sound` toggle the dodge sound
 - `/opp glow` toggle the action bar glow, `/opp screen` toggle the screen icon, `/opp move` place it
-- `/opp debug` print your current Overpower charge count
+- `/opp debug` print your Overpower charges and which action buttons hold Overpower
 
 ### Battle Shout Notice (`/bsr` or `/bsn`)
 <img src="logos/BattleShoutReminder.png" alt="Battle Shout Notice logo" width="96">

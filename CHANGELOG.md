@@ -2,6 +2,11 @@
 
 ## 2026-11-25
 
+Overpower Plates 1.5.1
+- The action bar glow now finds your Overpower button more ways: it asks the game which bar slots hold Overpower, reads each button's slot several ways, and matches any rank of Overpower or a macro that casts it. Dominos bars are covered too.
+- The glow is now part of the button, so it follows the bar's scale, and has a solid gold border that shows even if the glow texture is missing.
+- /opp debug lists which action buttons it found Overpower on, to help track down setups where the glow still doesn't show.
+
 Overpower Plates 1.5.0
 - A gold glow now pulses around the nameplate icon for as long as Overpower is up (can be turned off).
 - Your Overpower button on the action bars glows at the same time: Blizzard bars, Bartender4 and ElvUI. It follows the button when a stance swap pages your bars. On by default; /opp glow toggles it.

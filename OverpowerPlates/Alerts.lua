@@ -1,5 +1,5 @@
 -- Overpower Plates: the louder alerts.
---   * a gold glow on your Overpower button on the action bars while Overpower is up
+--   * a gold glow and border on your Overpower button on the action bars while Overpower is up
 --   * an optional big Overpower icon in the middle of the screen, with a countdown sweep
 -- The glow is its own frame laid over the button, so the action buttons themselves are
 -- never touched (they're protected in combat).
@@ -13,20 +13,23 @@ end
 local GOLD = { 1, 0.82, 0.1 }
 
 ---------------------------------------------------------------------------
--- Action buttons: Blizzard bars, plus Bartender4 and ElvUI
+-- Action buttons: Blizzard bars, Bartender4, ElvUI and Dominos
 ---------------------------------------------------------------------------
+local BUTTON_SETS = {
+    { "ActionButton", 12 }, { "MultiBarBottomLeftButton", 12 }, { "MultiBarBottomRightButton", 12 },
+    { "MultiBarRightButton", 12 }, { "MultiBarLeftButton", 12 }, { "MultiBar5Button", 12 },
+    { "MultiBar6Button", 12 }, { "MultiBar7Button", 12 }, { "BT4Button", 180 }, { "DominosActionButton", 180 },
+}
+
 local function AllButtons()
     local list = {}
     local function add(name)
         local b = _G[name]
-        if b then list[#list + 1] = b end
+        if type(b) == "table" and b.IsVisible then list[#list + 1] = b end
     end
-    for _, prefix in ipairs({ "ActionButton", "MultiBarBottomLeftButton", "MultiBarBottomRightButton",
-                              "MultiBarRightButton", "MultiBarLeftButton", "MultiBar5Button",
-                              "MultiBar6Button", "MultiBar7Button" }) do
-        for i = 1, 12 do add(prefix .. i) end
+    for _, set in ipairs(BUTTON_SETS) do
+        for i = 1, set[2] do add(set[1] .. i) end
     end
-    for i = 1, 180 do add("BT4Button" .. i) end
     for bar = 1, 15 do
         for i = 1, 12 do add("ElvUI_Bar" .. bar .. "Button" .. i) end
     end
@@ -40,57 +43,129 @@ local function SpellName(id)
     end
 end
 
-local function ButtonSpell(btn)
-    local slot
-    if btn.GetAction then
-        local ok, kind, action = pcall(btn.GetAction, btn)
-        if ok and kind == "action" then slot = action end
+-- Overpower's spell IDs: the one you know, plus every rank
+local function OverpowerIDs()
+    local ids, seen = {}, {}
+    local function add(id)
+        if type(id) == "number" and not IsSecret(id) and not seen[id] then seen[id] = true; ids[#ids + 1] = id end
     end
-    slot = slot or btn.action
-    if not slot and btn.CalculateAction then
-        local ok, a = pcall(btn.CalculateAction, btn)
-        if ok then slot = a end
+    if C_Spell and C_Spell.GetSpellInfo then
+        local ok, info = pcall(C_Spell.GetSpellInfo, ns.OVERPOWER_NAME)
+        if ok and type(info) == "table" then add(info.spellID) end
     end
-    if not slot or IsSecret(slot) or not GetActionInfo then return end
+    if C_Spell and C_Spell.GetSpellIDForSpellIdentifier then
+        local ok, id = pcall(C_Spell.GetSpellIDForSpellIdentifier, ns.OVERPOWER_NAME)
+        if ok then add(id) end
+    end
+    for _, id in ipairs({ 7384, 7887, 11584, 11585 }) do add(id) end
+    return ids, seen
+end
 
-    local ok, kind, id = pcall(GetActionInfo, slot)
+-- Action slots holding Overpower, straight from the game (no button reading needed)
+local function OverpowerSlots(ids)
+    local slots = {}
+    if C_ActionBar and C_ActionBar.FindSpellActionButtons then
+        for _, id in ipairs(ids) do
+            local ok, list = pcall(C_ActionBar.FindSpellActionButtons, id)
+            if ok and type(list) == "table" then
+                for _, slot in ipairs(list) do
+                    if not IsSecret(slot) then slots[slot] = true end
+                end
+            end
+        end
+    end
+    return slots
+end
+
+-- Which action slot a button shows, tried every way the bar addons expose it
+local function ButtonSlot(btn)
+    local function good(v) return type(v) == "number" and not IsSecret(v) and v > 0 end
+    if btn.GetAction then
+        local ok, a, b = pcall(btn.GetAction, btn)
+        if ok then
+            if a == "action" and good(b) then return b end
+            if good(a) then return a end
+        end
+    end
+    if good(btn.action) then return btn.action end
+    if btn.GetAttribute then
+        local ok, a = pcall(btn.GetAttribute, btn, "action")
+        if ok and good(a) then return a end
+    end
+    if btn.CalculateAction then
+        local ok, a = pcall(btn.CalculateAction, btn)
+        if ok and good(a) then return a end
+    end
+    if btn.GetPagedID then
+        local ok, a = pcall(btn.GetPagedID, btn)
+        if ok and good(a) then return a end
+    end
+end
+
+local function SlotInfo(slot)
+    local get = GetActionInfo or (C_ActionBar and C_ActionBar.GetActionInfo)
+    if not get then return end
+    local ok, kind, id = pcall(get, slot)
     if not ok or IsSecret(kind) or IsSecret(id) then return end
     if kind == "macro" and GetMacroSpell then
         local ok2, spellID = pcall(GetMacroSpell, id)
-        if ok2 and spellID and not IsSecret(spellID) then kind, id = "spell", spellID end
+        if ok2 and spellID and not IsSecret(spellID) then return "spell", spellID end
     end
-    if kind ~= "spell" or not id then return end
-    return SpellName(id)
+    return kind, id
+end
+
+local function IsOverpowerButton(btn, slots, idSet)
+    local slot = ButtonSlot(btn)
+    if not slot then return false end
+    if slots[slot] then return true end
+    local kind, id = SlotInfo(slot)
+    if kind ~= "spell" or not id then return false end
+    return idSet[id] or SpellName(id) == ns.OVERPOWER_NAME
 end
 
 local glows = {} -- [button] = glow frame
+
+local function Edge(g, a1, a2, horizontal)
+    local t = g:CreateTexture(nil, "OVERLAY", nil, 7)
+    t:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 1)
+    t:SetPoint(a1)
+    t:SetPoint(a2)
+    if horizontal then t:SetHeight(3) else t:SetWidth(3) end
+end
 
 local function GetGlow(btn)
     local g = glows[btn]
     if g then return g end
 
-    g = CreateFrame("Frame", nil, UIParent)
-    g:SetFrameStrata("HIGH")
-    g:SetPoint("CENTER", btn, "CENTER")
+    -- a child of the button, so it follows the button's scale and hides with its bar
+    g = CreateFrame("Frame", nil, btn)
+    g:SetAllPoints(btn)
+    g:SetFrameLevel((btn:GetFrameLevel() or 1) + 10)
 
+    -- soft glow ring around the button
     g.ring = g:CreateTexture(nil, "OVERLAY")
     g.ring:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
     g.ring:SetBlendMode("ADD")
     g.ring:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
-    g.ring:SetAllPoints()
+    g.ring:SetPoint("CENTER")
 
     g.fill = g:CreateTexture(nil, "OVERLAY")
     g.fill:SetTexture("Interface\\Buttons\\CheckButtonHilight")
     g.fill:SetBlendMode("ADD")
     g.fill:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
-    g.fill:SetPoint("TOPLEFT", btn, "TOPLEFT")
-    g.fill:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT")
+    g.fill:SetAllPoints()
+
+    -- solid gold border, which shows even if a texture file is missing on this client
+    Edge(g, "TOPLEFT", "TOPRIGHT", true)
+    Edge(g, "BOTTOMLEFT", "BOTTOMRIGHT", true)
+    Edge(g, "TOPLEFT", "BOTTOMLEFT", false)
+    Edge(g, "TOPRIGHT", "BOTTOMRIGHT", false)
 
     g.pulse = g:CreateAnimationGroup()
     g.pulse:SetLooping("BOUNCE")
     local a = g.pulse:CreateAnimation("Alpha")
     a:SetFromAlpha(1)
-    a:SetToAlpha(0.25)
+    a:SetToAlpha(0.3)
     a:SetDuration(0.35)
 
     g:Hide()
@@ -98,16 +173,18 @@ local function GetGlow(btn)
     return g
 end
 
--- Light or clear every visible Overpower button.
+-- Light or clear every Overpower button.
 function ns.SetButtonGlow(on)
     local lit = {}
     if on then
+        local ids, idSet = OverpowerIDs()
+        local slots = OverpowerSlots(ids)
         for _, btn in ipairs(AllButtons()) do
-            if btn:IsVisible() and ButtonSpell(btn) == ns.OVERPOWER_NAME then
+            if btn:IsVisible() and IsOverpowerButton(btn, slots, idSet) then
                 lit[btn] = true
                 local g = GetGlow(btn)
                 local w = btn:GetWidth() or 36
-                g:SetSize(w * 1.75, w * 1.75)
+                g.ring:SetSize(w * 1.75, w * 1.75)
                 if not g:IsShown() then
                     g:Show()
                     g.pulse:Play()
@@ -121,6 +198,33 @@ function ns.SetButtonGlow(on)
             g:Hide()
         end
     end
+end
+
+-- /opp debug: what the button search sees
+function ns.GlowDebug()
+    local ids, idSet = OverpowerIDs()
+    local slots = OverpowerSlots(ids)
+    local slotList = {}
+    for slot in pairs(slots) do slotList[#slotList + 1] = slot end
+    table.sort(slotList)
+    local buttons, visible, noSlot, found = AllButtons(), 0, 0, {}
+    for _, btn in ipairs(buttons) do
+        if btn:IsVisible() then
+            visible = visible + 1
+            if not ButtonSlot(btn) then noSlot = noSlot + 1 end
+            if IsOverpowerButton(btn, slots, idSet) then found[#found + 1] = btn:GetName() or "?" end
+        end
+    end
+    local idList = {}
+    for _, id in ipairs(ids) do idList[#idList + 1] = tostring(id) end
+    return {
+        ("spell: %s, IDs %s"):format(tostring(ns.OVERPOWER_NAME), table.concat(idList, ", ")),
+        ("game says Overpower is in action slots: %s"):format(#slotList > 0 and table.concat(slotList, ", ")
+            or (C_ActionBar and C_ActionBar.FindSpellActionButtons and "none" or "can't ask on this client")),
+        ("action buttons: %d found, %d visible, %d with no readable slot; GetActionInfo %s"):format(
+            #buttons, visible, noSlot, (GetActionInfo or (C_ActionBar and C_ActionBar.GetActionInfo)) and "works" or "missing"),
+        ("Overpower buttons: %s"):format(#found > 0 and table.concat(found, ", ") or "none found"),
+    }
 end
 
 ---------------------------------------------------------------------------

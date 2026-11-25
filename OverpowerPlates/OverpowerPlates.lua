@@ -393,6 +393,8 @@ function ns.BuildOptions()
         title = "Overpower Plates",
         updateNotice = true,
         changes = {
+            { "1.5.1", "Finds your Overpower button on more setups, with a gold border",
+                       "/opp debug shows which buttons it found" },
             { "1.5.0", "Gold glow pulses around the nameplate icon",
                        "Your Overpower button glows on the action bars",
                        "Optional big Overpower icon in the middle of the screen" },
@@ -465,6 +467,9 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
         Print(ns.screenUnlocked and "screen icon unlocked, drag it where you want it. /opp move again to lock." or "screen icon locked.")
     elseif cmd == "debug" then
         Print("Overpower charges: " .. tostring(ReadPoints()))
+        if ns.GlowDebug then
+            for _, line in ipairs(ns.GlowDebug()) do Print(line) end
+        end
     else
         Print("v" .. ns.version .. " commands (or just /opp for the settings page):")
         Print("/opp test - show the icon on every nameplate to check placement")
@@ -474,7 +479,7 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
         Print("/opp sound - dodge sound (now " .. (db.sound and "on" or "off") .. ")")
         Print("/opp glow - glow on your Overpower button (now " .. (db.barGlow and "on" or "off") .. ")")
         Print("/opp screen - big icon in the middle of the screen (now " .. (db.screenIcon and "on" or "off") .. "), /opp move to place it")
-        Print("/opp debug - show your current Overpower charge count")
+        Print("/opp debug - show your Overpower charges and which action buttons hold Overpower")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end
 end

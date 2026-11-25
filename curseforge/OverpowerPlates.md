@@ -16,7 +16,7 @@ Made for **World of Warcraft: Forever**. Warrior only.
 
 ### Hard to miss
 - The icon pops in and a gold glow pulses around it for as long as Overpower is up.
-- Your Overpower button glows on the action bars at the same time (Blizzard bars, Bartender4 and ElvUI), and follows it when you swap stance.
+- Your Overpower button glows on the action bars at the same time (Blizzard bars, Bartender4, ElvUI and Dominos), and follows it when you swap stance.
 - Optional big Overpower icon in the middle of the screen, with a countdown. Move it and size it to suit.
 - Optional sound when a mob dodges you.
 - Size, height above the health bar and how long it stays up are all adjustable.
@@ -37,7 +37,7 @@ Made for **World of Warcraft: Forever**. Warrior only.
 | `/opp sound` | Turn the dodge sound on or off |
 | `/opp glow` | Turn the action bar glow on or off |
 | `/opp screen` / `/opp move` | Turn the screen icon on or off / move it |
-| `/opp debug` | Show your current Overpower charge count |
+| `/opp debug` | Show your Overpower charges and which action buttons hold Overpower |
 | `/opp help` | All commands |
 
 ## Good to know

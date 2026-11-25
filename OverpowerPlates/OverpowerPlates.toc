@@ -2,7 +2,7 @@
 ## Title: |cffffd100Overpower|r Plates
 ## Notes: Shows an Overpower icon above the nameplate of the mob that dodged you, including off-target Whirlwind and Cleave dodges. Warrior only.
 ## Author: Mitch Brindle
-## Version: 1.5.0
+## Version: 1.5.1
 ## IconTexture: Interface\Icons\Ability_MeleeDamage
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons
