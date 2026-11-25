@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#3a1014"/>
+      <stop offset="1" stop-color="#120507"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ff4a4a" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ff4a4a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f6f8"/>
+      <stop offset="1" stop-color="#9aa3ad"/>
+    </linearGradient>
+    <linearGradient id="arc" x1="0" x2="1"><stop offset="0" stop-color="#4cd964"/><stop offset="0.55" stop-color="#ffcc33"/><stop offset="1" stop-color="#ff3b30"/></linearGradient>
+    <linearGradient id="hp" x1="0" x2="1"><stop offset="0" stop-color="#e5372f"/><stop offset="1" stop-color="#ff6a3d"/></linearGradient>
+  </defs>
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="url(#bg)"/>
+  <circle cx="200" cy="190" r="170" fill="url(#glow)"/>
+  
+  <path d="M 84 236 A 116 116 0 0 1 316 236" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="34" stroke-linecap="round"/>
+  <path d="M 84 236 A 116 116 0 0 1 316 236" fill="none" stroke="url(#arc)" stroke-width="34" stroke-linecap="round"/>
+  <g stroke="#120507" stroke-width="5">
+    <line x1="200" y1="104" x2="200" y2="138"/>
+    <line x1="118" y1="154" x2="140" y2="176"/>
+    <line x1="282" y1="154" x2="260" y2="176"/>
+  </g>
+  <g transform="translate(200 236) rotate(58)">
+    <path d="M -9 0 L 0 -104 L 9 0 Z" fill="#ffffff"/>
+  </g>
+  <circle cx="200" cy="236" r="20" fill="#ffffff" stroke="#3a1014" stroke-width="6"/>
+  <rect x="88" y="294" width="224" height="46" rx="12" fill="#1a1a1a" stroke="#ff4a4a" stroke-width="6"/>
+  <rect x="98" y="305" width="150" height="24" rx="6" fill="url(#hp)"/>
+  <text x="282" y="327" font-family="DejaVu Sans, Arial, sans-serif" font-weight="bold" font-size="30"
+        fill="#ffffff" text-anchor="middle">%</text>
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="none" stroke="#ff4a4a" stroke-width="10"/>
+  <rect x="22" y="22" width="356" height="356" rx="64" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
+</svg>

@@ -13,12 +13,16 @@ Every addon has a settings page under **Options > AddOns**, and an entry on the 
 ## Any class
 
 ### Target Arrow (`/tarrow`)
+<img src="logos/TargetArrow.png" alt="TargetArrow logo" width="96">
+
 A bobbing arrow above your target's nameplate so you can pick it out of a crowd. It sits high enough to clear the Overpower Plates icon if you use both.
 
 - `/tarrow colour <red|yellow|green|blue|white>`
 - `/tarrow size <n>`, `/tarrow offset <n>`, `/tarrow bob`, `/tarrow enemies`
 
 ### Plate Threat (`/pth`)
+<img src="logos/PlateThreat.png" alt="PlateThreat logo" width="96">
+
 Shows your threat percentage on the left of each enemy nameplate in combat (100% = you have aggro), clear of the level box. Forever returns threat as secret values, so the number is displayed directly and is only coloured when the game allows the value to be read. May not show in instances.
 
 Also adds a retail-style threat box on top of the target frame, coloured by your threat level. It can be moved or turned off on the settings page.
@@ -28,6 +32,8 @@ Also adds a retail-style threat box on top of the target frame, coloured by your
 ## Mage
 
 ### Mage Services (`/ms`)
+<img src="logos/MageServices.png" alt="MageServices logo" width="96">
+
 Spots people asking for portals or water in chat and lists them in a small window, each with **Invite** and **Whisper** buttons. Whisper opens your chat box with a reply already typed (`{name}` and `{dest}` filled in), so you just press Enter. Matching is loose: it ignores case and punctuation, allows small typos, understands city shorthand (UC, TB, Org, SW, IF, Darn), and ignores other mages' adverts ("WTS portals"). Auto-invite is available but off by default. Works on any class, but it's made for mages.
 
 **Location priority.** Requests are ranked against where you are (detected automatically, or pick a city with `/ms zone`):
@@ -62,6 +68,8 @@ Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it on
 These do nothing on other classes.
 
 ### Overpower Plates (`/opp`)
+<img src="logos/OverpowerPlates.png" alt="OverpowerPlates logo" width="96">
+
 Puts an Overpower icon with a 5 second countdown above the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave. A nameplate dodge only counts when your Overpower charge (combo point) goes up at the same moment, so dodges against other players are ignored.
 
 - `/opp test` show the icon on every nameplate
@@ -70,6 +78,8 @@ Puts an Overpower icon with a 5 second countdown above the nameplate of the mob 
 - `/opp debug` print your current Overpower charge count
 
 ### Battle Shout Reminder (`/bsr`)
+<img src="logos/BattleShoutReminder.png" alt="BattleShoutReminder logo" width="96">
+
 Shows a Battle Shout icon when the buff is missing or under 10 seconds while you're in combat or targeting an enemy. Forever hides buffs from addons in combat, so it times your own casts and checks the real buff out of combat.
 
 - `/bsr unlock`, `/bsr lock` move the icon
