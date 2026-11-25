@@ -25,6 +25,18 @@ Also adds a retail-style threat box on top of the target frame, coloured by your
 
 - `/pth test`, `/pth left`, `/pth right`, `/pth size <n>`, `/pth gap <n>`, `/pth portrait`
 
+## Mage
+
+### Mage Services (`/ms`)
+Spots people asking for portals or water in chat and lists them in a small window, each with **Invite** and **Whisper** buttons. Whisper opens your chat box with a reply already typed (`{name}` and `{dest}` filled in), so you just press Enter. Matching is loose: it ignores case and punctuation, allows small typos, understands city shorthand (UC, TB, Org, SW, IF, Darn), and ignores other mages' adverts ("WTS portals"). Auto-invite is available but off by default. Works on any class, but it's made for mages.
+
+Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it only works out in the world.
+
+- `/ms add <phrase>` watch for your own phrase too, e.g. `/ms add lf summon`; `/ms list`, `/ms remove <n>`
+- `/ms exclude <phrase>` never match lines containing it; `/ms excludes`, `/ms unexclude <n>`
+- `/ms portmsg <text>`, `/ms watermsg <text>`, `/ms custommsg <text>` change the reply
+- `/ms test` add sample requests, `/ms show` show the window
+
 ## Warrior only
 
 These do nothing on other classes.

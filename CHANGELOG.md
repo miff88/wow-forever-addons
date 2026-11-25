@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-25
+
+Mage Services 1.0.0
+- New addon: spots portal and water requests in chat with Invite and Whisper buttons, custom phrases, exclusions and optional auto-invite.
+
 ## 2026-11-24 (later)
 
 Plate Threat 1.3.0
