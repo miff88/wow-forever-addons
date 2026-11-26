@@ -12,6 +12,8 @@
 --          item (item procs), trinket (on-use items), racial
 --   double can be up twice at once (one per weapon); the icon glows when it is
 --   consume gone once you cast your next spell (Revelation)
+--   items  item IDs of the weapon that gives it (Strength procs are only read from your
+--          stats in combat while one of these is equipped)
 --   stat    { stat index, amount } for Strength-style procs, read in combat from your stats
 
 local _, ns = ...
@@ -32,17 +34,76 @@ ns.PROCS = {
     -- New in WoW Forever. Their buff IDs aren't published yet, so these match by name
     -- and Proc City learns the real ID and duration the first time it sees them out of combat.
     { key = "insight", name = "Insight", ids = {}, dur = 10, cat = "enchant",
-      icon = 135932, note = "Enchant Weapon - Insight: +100% Spirit" },
+      icon = "Interface\\Icons\\Spell_Holy_MindVision", note = "Enchant Weapon - Insight: +100% Spirit" },
     { key = "revelation", name = "Revelation", ids = {}, dur = 15, cat = "enchant",
-      icon = 135928, consume = true, note = "Enchant Weapon - Revelation: next spell +100% crit" },
+      icon = "Interface\\Icons\\Spell_Holy_SearingLight", consume = true, note = "Enchant Weapon - Revelation: next spell +100% crit" },
 
-    ---------------------------------------------------------------- item procs
-    { key = "untamedfury", name = "Untamed Fury", ids = { 23719 }, dur = 8, cat = "item",
+    ---------------------------------------------------------------- weapon procs
+    -- Every WoW Forever weapon whose chance on hit (or Use) puts a buff on you, from
+    -- Forever's item database. items = the weapons, so a Strength change in combat is
+    -- only read as that proc while you have the weapon on.
+    -- Strength
+    { key = "destiny", name = "Destiny", ids = { 17152 }, dur = 12, cat = "item", items = { 647 },
+      stat = { 1, 200 }, note = "Destiny: +200 Strength" },
+    { key = "championstr", name = "Strength of the Champion", ids = { 16916 }, dur = 30, cat = "item",
+      items = { 12790 }, stat = { 1, 120 }, note = "Arcanite Champion: +120 Strength" },
+    { key = "malown", name = "Malown's Slam", ids = { 17500 }, dur = 20, cat = "item", items = { 13393 },
+      stat = { 1, 53 }, note = "Malown's Slam: +53 Strength" },
+    { key = "wane", name = "Wane", ids = {}, dur = 10, cat = "item", items = { 280080 },
+      stat = { 1, 40 }, icon = "Interface\\Icons\\Spell_Nature_Strength", note = "Claymore of Two Moons: +40 Strength" },
+    { key = "untamedfury", name = "Untamed Fury", ids = { 23719 }, dur = 8, cat = "item", items = { 19334 },
       stat = { 1, 300 }, note = "Untamed Blade: +300 Strength" },
-    { key = "felstriker", name = "Felstriker", ids = { 16551 }, dur = 3, cat = "item",
+    -- attack power and speed
+    { key = "mcphaste", name = "Haste", ids = { 13494 }, dur = 30, cat = "item", items = { 9449 },
+      note = "Manual Crowd Pummeler (Use): +50% attack speed" },
+    { key = "haste", name = "Haste", ids = { 13533, 21165 }, dur = 10, cat = "item", items = { 9423, 17112 },
+      note = "The Jackhammer: +15% attack speed" },
+    { key = "ragehammer", name = "Enrage", ids = { 12686 }, dur = 15, cat = "item", items = { 10626 },
+      note = "Ragehammer: +102 attack power, +6% attack speed" },
+    { key = "lordgeneral", name = "Lord General's Sword", ids = { 15602 }, dur = 10, cat = "item", items = { 11817 },
+      note = "+84 attack power" },
+    { key = "argentavenger", name = "Argent Avenger", ids = { 17352 }, dur = 10, cat = "item", items = { 13246 },
+      note = "+100 attack power (+100 more against Undead)" },
+    { key = "zeal", name = "Zeal", ids = { 8191 }, dur = 15, cat = "item", items = { 6622 },
+      note = "Sword of Zeal: +10 damage, +150 armor" },
+    { key = "felstriker", name = "Felstriker", ids = { 16551 }, dur = 3, cat = "item", items = { 12590 },
       note = "Felstriker: 100% crit and hit" },
-    { key = "haste", name = "Haste", ids = { 21165, 13494 }, dur = 10, cat = "item",
-      note = "Empyrean Demolisher / Manual Crowd Pummeler" },
+    { key = "ancestorsvengeance", name = "Ancestor's Vengeance", ids = { 16939 }, dur = 20, cat = "item", items = { 12802 },
+      note = "Darkspear: +4% crit for the party" },
+    { key = "spicy", name = "Spicy!", ids = { 434488 }, dur = 30, cat = "item", items = { 213105 },
+      note = "Shawarmageddon (Use): melee hits add Fire damage" },
+    { key = "bladestorm", name = "Bladestorm", ids = { 9632 }, dur = 9, cat = "item", items = { 7717 },
+      note = "Ravager: spinning attack" },
+    -- defensive
+    { key = "sanctuary", name = "Sanctuary", ids = { 22850 }, dur = 10, cat = "item", items = { 18348 },
+      note = "Quel'Serrar: +13 Defense, +300 armor, +30 attack power" },
+    { key = "guardiansdurability", name = "Guardian's Durability", ids = { 1293345 }, dur = 12, cat = "item", items = { 273046 },
+      note = "Guardian's Dualblade: +1080 armor" },
+    { key = "jangthraze", name = "Jang'thraze", ids = { 11657 }, dur = 20, cat = "item", items = { 9380, 11086 },
+      note = "Jang'thraze the Protector: physical damage shield" },
+    { key = "deflecting", name = "Deflecting", ids = { 1294243 }, dur = 9, cat = "item", items = { 9379 },
+      note = "Sang'thraze the Deflector: +2% parry" },
+    { key = "basiliskskin", name = "Basilisk Skin", ids = { 10351 }, dur = 5, cat = "item", items = { 8223 },
+      note = "Blade of the Basilisk: +48 Defense" },
+    { key = "truesilver", name = "Holy Shield", ids = { 9800 }, dur = 60, cat = "item", items = { 7960 },
+      note = "Truesilver Champion: damage shield" },
+    { key = "flamewrath", name = "Flame Wrath", ids = { 16560 }, dur = 15, cat = "item", items = { 11809 },
+      note = "Flame Wrath: fire shield" },
+    { key = "giftofstone", name = "Gift of Stone", ids = { 16470 }, dur = 10, cat = "item", items = { 12532 },
+      note = "Spire of the Stoneshaper (Use): +4000 armor" },
+    { key = "reforgedspear", name = "Reforged Spear", ids = { 1297357 }, dur = 14, cat = "item", items = { 275645 },
+      note = "heal over time" },
+    { key = "julie", name = "Julie's Blessing", ids = { 8348 }, dur = 12, cat = "item", items = { 6660 },
+      note = "Julie's Dagger: heal over time" },
+    -- casters
+    { key = "focus", name = "Focus", ids = { 18803 }, dur = 4, cat = "item", items = { 2243 }, consume = true,
+      note = "Hand of Edward the Odd: next spell is instant" },
+    { key = "witsend", name = "Wit's End", ids = { 1300140 }, dur = 15, cat = "item", items = { 276632 }, consume = true,
+      note = "Wit's Edge: next damage spell costs no mana" },
+    { key = "whiteobsidian", name = "White Obsidian", ids = { 1294058 }, dur = 10, cat = "item", items = { 274425 }, consume = true,
+      note = "White Obsidian Wand: next spell costs less" },
+    { key = "speed", name = "Speed", ids = { 22863 }, dur = 10, cat = "item", items = { 18410 },
+      note = "Sprinter's Sword: +35% run speed" },
 
     ---------------------------------------------------------------- on-use trinkets
     -- Any equipped trinket with a Use is also picked up automatically; these just

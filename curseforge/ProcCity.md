@@ -9,7 +9,7 @@ Made for **World of Warcraft: Forever**. Every class.
 ### Every class
 - Talent procs: Flurry, Enrage, Clearcasting, Vengeance, Nature's Grace, Shadow Trance, Quick Shots, Spirit Tap, Remorseless Attacks, Redoubt.
 - Class cooldowns you cast: Death Wish, Recklessness, Arcane Power, Adrenaline Rush, Rapid Fire, Inner Focus, Elemental Mastery, Divine Favor, Tiger's Fury and more.
-- Crusader (Holy Strength), the new Forever enchants Insight and Revelation, weapon procs and racials (Blood Fury, Berserking, Perception, Stoneform).
+- Crusader (Holy Strength), the new Forever enchants Insight and Revelation, and every Forever weapon that buffs you on hit or on use (Destiny, Arcanite Champion, Claymore of Two Moons, Ragehammer, Quel'Serrar, Hand of Edward the Odd and more), and racials (Blood Fury, Berserking, Perception, Stoneform).
 - **Any equipped trinket with a Use** is picked up automatically, including Forever's new trinkets.
 
 ### Clear at a glance

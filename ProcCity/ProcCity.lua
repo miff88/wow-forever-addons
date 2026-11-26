@@ -62,8 +62,16 @@ end
 ---------------------------------------------------------------------------
 -- Lookups
 ---------------------------------------------------------------------------
-local byID, byName = {}, {}
+local byID, byName = {}, {}   -- byName[name] = list of entries with that buff name
 local playerClass
+local equipped = {}           -- item IDs in your weapon slots
+
+local function AddName(n, p)
+    local list = byName[n]
+    if not list then byName[n] = { p } return end
+    for _, q in ipairs(list) do if q == p then return end end
+    list[#list + 1] = p
+end
 
 local function BuildLookups()
     wipe(byID); wipe(byName)
@@ -73,9 +81,9 @@ local function BuildLookups()
             byID[id] = p
             -- the client's own name for the ID (other languages, or a renamed spell)
             local n = SpellName(id)
-            if n then byName[n] = p end
+            if n then AddName(n, p) end
         end
-        byName[p.name] = p
+        AddName(p.name, p)
     end
     -- IDs learned from your own buffs, for entries whose ID isn't published yet
     if db and db.learnedIDs then
@@ -86,7 +94,7 @@ local function BuildLookups()
             if p and not byID[id] then
                 byID[id] = p
                 local n = SpellName(id)
-                if n then byName[n] = p end
+                if n then AddName(n, p) end
             end
         end
     end
@@ -97,6 +105,25 @@ local function Wanted(p)
     if p.class and not p.class[playerClass] then return false end
     if not db.cats[p.cat] then return false end
     return not db.off[p.key]
+end
+
+local function HasItem(p)
+    if not p.items then return false end
+    for _, id in ipairs(p.items) do if equipped[id] then return true end end
+    return false
+end
+
+-- Several buffs share a name (Haste, Enrage, Holy Shield): prefer the one from a
+-- weapon you have on, then one that isn't from a weapon, then anything you track.
+local function FindByName(name)
+    local list = name and byName[name]
+    if not list then return nil end
+    local best, bestScore
+    for _, p in ipairs(list) do
+        local score = (Wanted(p) and 10 or 0) + (HasItem(p) and 2 or (not p.items and 1 or 0))
+        if not bestScore or score > bestScore then best, bestScore = p, score end
+    end
+    return best
 end
 
 ---------------------------------------------------------------------------
@@ -193,7 +220,7 @@ local function ScanAuras()
         if not ok then return false end
         if not aura then break end
         if IsSecret(aura) or IsSecret(aura.name) or IsSecret(aura.spellId) then return false end
-        local p = byID[aura.spellId] or byName[aura.name] or GenericForAura(aura.spellId, aura.name)
+        local p = byID[aura.spellId] or FindByName(aura.name) or GenericForAura(aura.spellId, aura.name)
         if p and not p.generic and aura.spellId and not byID[aura.spellId] then
             -- matched by name only: remember the real ID for next time
             byID[aura.spellId] = p
@@ -270,6 +297,11 @@ end
 local crusaderWeapons = 0
 local function ScanWeapons()
     crusaderWeapons = 0
+    wipe(equipped)
+    for _, slot in ipairs({ 16, 17, 18 }) do
+        local id = GetInventoryItemID and GetInventoryItemID("player", slot)
+        if id and not IsSecret(id) then equipped[id] = true end
+    end
     for _, slot in ipairs({ 16, 17 }) do
         local link = GetInventoryItemLink and GetInventoryItemLink("player", slot)
         if link and not IsSecret(link) then
@@ -286,7 +318,7 @@ local SAME_PROC = 0.75
 local function OnCast(spellID)
     if IsSecret(spellID) then Debug("cast: (hidden)") return end
     local name = SpellName(spellID)
-    local p = byID[spellID] or (name and byName[name])
+    local p = byID[spellID] or FindByName(name)
     local use = useSpells[spellID]
     Debug(("cast: %s %s%s"):format(tostring(spellID), tostring(name),
         p and (" -> " .. p.name) or (use and " -> trinket" or "")))
@@ -347,10 +379,11 @@ local function OnStats()
         -- only infer while the buffs themselves can't be read
         if not AurasReadable() then
             for _, p in ipairs(statProcs) do
-                if Wanted(p) and (p.key ~= "holystrength" or crusaderWeapons > 0) then
+                if Wanted(p) and (p.key ~= "holystrength" or crusaderWeapons > 0)
+                    and (not p.items or HasItem(p)) then
                     local amount = db.learned[p.key .. "Amount"] or p.stat[2]
                     -- allow for Strength multipliers (Kings, talents): 90% to 130%
-                    for n = 2, 1, -1 do
+                    for n = p.double and 2 or 1, 1, -1 do
                         local lo, hi = amount * n * 0.9, amount * n * 1.3
                         if delta >= lo and delta <= hi then
                             local a = active[p.key]
@@ -392,7 +425,7 @@ local function OnCombatText(kind)
     if not get then return end
     local ok, name = pcall(get)
     if not ok or IsSecret(name) or type(name) ~= "string" then Debug("combat text " .. kind .. ": (hidden)") return end
-    local p = byName[name]
+    local p = FindByName(name)
     Debug(("combat text %s %s%s"):format(kind, name, p and " -> tracked" or ""))
     if not p or not Wanted(p) then return end
     if kind == "SPELL_AURA_START" then
@@ -766,6 +799,9 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.2.0", "Tracks every Forever weapon that buffs you on hit or on use",
+                       "Destiny, Arcanite Champion, Claymore of Two Moons, Ragehammer, Hand of Edward the Odd and 23 more",
+                       "Shared buff names (Haste, Enrage) go to the weapon you have on" },
             { "1.1.0", "Tracks the new Forever enchants Insight and Revelation",
                        "Revelation clears when your next spell uses it" },
             { "1.0.0", "First version: procs, Crusader, trinkets and class buffs for every class",

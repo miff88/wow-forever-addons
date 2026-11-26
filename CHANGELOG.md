@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-27
+
+Proc City 1.2.0
+- Tracks every WoW Forever weapon whose chance on hit or Use puts a buff on you (28 weapons, taken from Forever's item database):
+  - Strength: Destiny, Arcanite Champion, Malown's Slam, Claymore of Two Moons (Wane).
+  - Attack power and speed: The Jackhammer, Manual Crowd Pummeler, Ragehammer, Lord General's Sword, Argent Avenger, Sword of Zeal, Felstriker, Darkspear, Shawarmageddon, Ravager.
+  - Defensive: Quel'Serrar, Guardian's Dualblade, Jang'thraze, Sang'thraze, Blade of the Basilisk, Truesilver Champion, Flame Wrath, Spire of the Stoneshaper, Reforged Spear, Julie's Dagger.
+  - Casters: Hand of Edward the Odd, Wit's Edge, White Obsidian Wand. These clear when your next spell uses them.
+  - Sprinter's Sword.
+- In combat, a Strength jump only counts as a weapon's proc while that weapon is equipped, so Destiny can't be mistaken for two Crusaders.
+- Buffs that share a name (Haste, Enrage, Holy Shield) are matched to the weapon you have on.
+
 ## 2026-11-26
 
 Proc City 1.1.0
