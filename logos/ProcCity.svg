@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#3a2108"/>
+      <stop offset="1" stop-color="#120a04"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ff8000" stop-opacity="0.45"/>
+    </radialGradient>
+    <linearGradient id="t1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fb7ff"/><stop offset="1" stop-color="#1f4f99"/></linearGradient>
+    <linearGradient id="t2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#d2861a"/></linearGradient>
+    <linearGradient id="t3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b98cff"/><stop offset="1" stop-color="#5a2ea6"/></linearGradient>
+  </defs>
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="url(#bg)"/>
+  <circle cx="200" cy="200" r="170" fill="url(#glow)"/>
+
+  <!-- the skyline: three proc icons as buildings -->
+  <!-- left: a short tower with a lightning bolt -->
+  <rect x="62" y="196" width="80" height="128" rx="10" fill="url(#t1)" stroke="#0e1a2e" stroke-width="7"/>
+  <path d="M 108 214 L 86 262 L 104 262 L 94 304 L 124 250 L 106 250 L 116 214 Z" fill="#eaf5ff" stroke="#0e1a2e" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- middle: the tallest tower, glowing gold (a proc that's up twice) -->
+  <rect x="146" y="84" width="108" height="240" rx="12" fill="none" stroke="#ffd23d" stroke-opacity="0.35" stroke-width="26"/>
+  <rect x="160" y="98" width="80" height="226" rx="10" fill="url(#t2)" stroke="#3a2108" stroke-width="7"/>
+  <g transform="translate(200 160)">
+    <polygon points="0,-40 9,-12 40,-14 15,4 26,34 0,16 -26,34 -15,4 -40,-14 -9,-12" fill="#fff6d0" stroke="#3a2108" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+  <rect x="180" y="222" width="14" height="18" rx="2" fill="#3a2108" opacity="0.55"/>
+  <rect x="206" y="222" width="14" height="18" rx="2" fill="#3a2108" opacity="0.55"/>
+  <rect x="180" y="256" width="14" height="18" rx="2" fill="#3a2108" opacity="0.55"/>
+  <rect x="206" y="256" width="14" height="18" rx="2" fill="#3a2108" opacity="0.55"/>
+
+  <!-- right: a medium tower with a sword -->
+  <rect x="258" y="150" width="80" height="174" rx="10" fill="url(#t3)" stroke="#1d0e33" stroke-width="7"/>
+  <g transform="translate(298 232) rotate(35)">
+    <path d="M -6 -62 L 6 -62 L 8 28 L 0 42 L -8 28 Z" fill="#f2eefa" stroke="#1d0e33" stroke-width="4"/>
+    <rect x="-20" y="26" width="40" height="8" rx="3" fill="#ffd23d" stroke="#1d0e33" stroke-width="3"/>
+    <rect x="-4" y="34" width="8" height="22" fill="#8a5a28" stroke="#1d0e33" stroke-width="3"/>
+  </g>
+
+  <!-- the street the row grows along -->
+  <rect x="44" y="322" width="312" height="10" rx="5" fill="#ff8000"/>
+
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="none" stroke="#ff8000" stroke-width="10"/>
+  <rect x="22" y="22" width="356" height="356" rx="64" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
+</svg>
