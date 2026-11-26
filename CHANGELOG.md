@@ -2,6 +2,12 @@
 
 ## 2026-11-26
 
+Proc City 1.0.0 (new)
+- A movable row of icons for your procs and short buffs, growing left or right, with the seconds left on each and an optional clock sweep.
+- Every class: talent procs (Flurry, Enrage, Clearcasting, Vengeance, Nature's Grace, Shadow Trance, Quick Shots, Spirit Tap, Remorseless Attacks, Redoubt), class cooldowns, racials, Crusader, item procs and on-use trinkets. Any equipped trinket with a Use is picked up automatically.
+- Crusader up on both weapons at once makes its icon glow.
+- Reads your buffs exactly out of combat and learns their real durations; in combat it works from your casts, your Strength and the game's combat text, and corrects itself after combat. /proc debug prints what it sees.
+
 Mage Services 1.9.0
 - Pause / Resume button on the window. Pausing stops taking requests on that character (no list, alerts, glows or replies) until you resume, without turning the addon off. While paused the window shrinks to a slim bar with Resume. Also /ms pause, /ms resume and a key binding. Saved per character.
 - Zone filter fixes: with your zone set to a city you're not standing in, people in your local General channel or using say/yell were counted as being in the picked city. They're now placed in the zone they're actually in.
