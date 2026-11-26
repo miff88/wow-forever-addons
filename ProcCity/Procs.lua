@@ -11,6 +11,7 @@
 --   cat    proc (talent procs), cooldown (buffs you cast), enchant (weapon enchants),
 --          item (item procs), trinket (on-use items), racial
 --   double can be up twice at once (one per weapon); the icon glows when it is
+--   consume gone once you cast your next spell (Revelation)
 --   stat    { stat index, amount } for Strength-style procs, read in combat from your stats
 
 local _, ns = ...
@@ -18,7 +19,7 @@ local _, ns = ...
 ns.CATEGORIES = {
     { key = "proc",     label = "Class procs (Flurry, Clearcasting, Vengeance...)" },
     { key = "cooldown", label = "Class cooldowns you cast (Death Wish, Arcane Power...)" },
-    { key = "enchant",  label = "Weapon enchants (Crusader)" },
+    { key = "enchant",  label = "Weapon enchants (Crusader, Insight, Revelation)" },
     { key = "item",     label = "Weapon and item procs" },
     { key = "trinket",  label = "On-use trinkets (any equipped trinket with a Use)" },
     { key = "racial",   label = "Racials (Blood Fury, Berserking...)" },
@@ -28,6 +29,12 @@ ns.PROCS = {
     ---------------------------------------------------------------- enchants
     { key = "holystrength", name = "Holy Strength", ids = { 20007 }, dur = 15, cat = "enchant",
       double = true, stat = { 1, 100 }, enchantID = 1900, note = "Crusader: +100 Strength" },
+    -- New in WoW Forever. Their buff IDs aren't published yet, so these match by name
+    -- and Proc City learns the real ID and duration the first time it sees them out of combat.
+    { key = "insight", name = "Insight", ids = {}, dur = 10, cat = "enchant",
+      icon = 135932, note = "Enchant Weapon - Insight: +100% Spirit" },
+    { key = "revelation", name = "Revelation", ids = {}, dur = 15, cat = "enchant",
+      icon = 135928, consume = true, note = "Enchant Weapon - Revelation: next spell +100% crit" },
 
     ---------------------------------------------------------------- item procs
     { key = "untamedfury", name = "Untamed Fury", ids = { 23719 }, dur = 8, cat = "item",

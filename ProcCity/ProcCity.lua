@@ -24,6 +24,7 @@ local defaults = {
     cats    = { proc = true, cooldown = true, enchant = true, item = true, trinket = true, racial = true },
     off     = {},       -- [key] = true for procs you've turned off
     learned = {},       -- [key] = real duration seen out of combat
+    learnedIDs = {},    -- [spellID] = key, for buffs matched by name (new Forever enchants)
     pos     = nil,
 }
 
@@ -76,6 +77,19 @@ local function BuildLookups()
         end
         byName[p.name] = p
     end
+    -- IDs learned from your own buffs, for entries whose ID isn't published yet
+    if db and db.learnedIDs then
+        local byKey = {}
+        for _, p in ipairs(ns.PROCS) do byKey[p.key] = p end
+        for id, key in pairs(db.learnedIDs) do
+            local p = byKey[key]
+            if p and not byID[id] then
+                byID[id] = p
+                local n = SpellName(id)
+                if n then byName[n] = p end
+            end
+        end
+    end
 end
 
 local function Wanted(p)
@@ -124,6 +138,7 @@ local function Start(p, source, opts)
     end
     a.icon = opts.icon or a.icon or p.icon
     a.source = source
+    a.seenAt = now
     a.duration = dur
     if opts.noTimer then
         a.expires = nil
@@ -179,6 +194,12 @@ local function ScanAuras()
         if not aura then break end
         if IsSecret(aura) or IsSecret(aura.name) or IsSecret(aura.spellId) then return false end
         local p = byID[aura.spellId] or byName[aura.name] or GenericForAura(aura.spellId, aura.name)
+        if p and not p.generic and aura.spellId and not byID[aura.spellId] then
+            -- matched by name only: remember the real ID for next time
+            byID[aura.spellId] = p
+            db.learnedIDs[aura.spellId] = p.key
+            Debug(("learned %s = spell %d"):format(p.name, aura.spellId))
+        end
         if p and Wanted(p) then
             local f = found[p.key]
             if not f then
@@ -269,6 +290,16 @@ local function OnCast(spellID)
     local use = useSpells[spellID]
     Debug(("cast: %s %s%s"):format(tostring(spellID), tostring(name),
         p and (" -> " .. p.name) or (use and " -> trinket" or "")))
+
+    -- buffs used up by your next spell (Revelation)
+    local now, removed = GetTime(), false
+    for key, a in pairs(active) do
+        if a.proc.consume and a.proc ~= p and now - (a.seenAt or now) > 0.2 then
+            Remove(key)
+            removed = true
+        end
+    end
+    if removed then Layout() end
 
     if p and Wanted(p) then
         local a = active[p.key]
@@ -735,6 +766,8 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.1.0", "Tracks the new Forever enchants Insight and Revelation",
+                       "Revelation clears when your next spell uses it" },
             { "1.0.0", "First version: procs, Crusader, trinkets and class buffs for every class",
                        "Movable, grows left or right, seconds left on each icon",
                        "Glows when Crusader is up on both weapons" },

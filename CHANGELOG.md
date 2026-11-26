@@ -2,6 +2,11 @@
 
 ## 2026-11-26
 
+Proc City 1.1.0
+- Tracks the new WoW Forever weapon enchants Insight (+100% Spirit for 10 sec) and Revelation (next spell +100% crit). Their buff IDs aren't published yet, so they're matched by name, and Proc City learns the real ID and duration the first time it sees them out of combat.
+- Revelation's icon goes away when you cast your next spell, since that spell uses it up.
+- Recovery isn't shown: it's an instant heal with no buff to time.
+
 Proc City 1.0.0 (new)
 - A movable row of icons for your procs and short buffs, growing left or right, with the seconds left on each and an optional clock sweep.
 - Every class: talent procs (Flurry, Enrage, Clearcasting, Vengeance, Nature's Grace, Shadow Trance, Quick Shots, Spirit Tap, Remorseless Attacks, Redoubt), class cooldowns, racials, Crusader, item procs and on-use trinkets. Any equipped trinket with a Use is picked up automatically.

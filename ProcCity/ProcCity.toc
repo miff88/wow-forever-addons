@@ -2,7 +2,7 @@
 ## Title: |cffff8000Proc|r City
 ## Notes: Your procs and short buffs as a movable row of icons with the time left: Flurry, Crusader, Clearcasting, trinkets and more. Any class.
 ## Author: Mitch Brindle
-## Version: 1.0.0
+## Version: 1.1.0
 ## IconTexture: Interface\Icons\Spell_Holy_BlessingOfStrength
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons
