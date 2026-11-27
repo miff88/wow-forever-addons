@@ -2,6 +2,10 @@
 
 ## 2026-11-27
 
+Kill Clock 1.1.0
+- A smaller second line shows how long until your target reaches execute range, e.g. `20% in 0:12`. On by default for warriors and paladins (Execute, Hammer of Wrath); turn it on for any class and set the percentage on the settings page or with `/kclock execute <n>`. Where the game allows it, it turns red once the target is in range.
+- An optional second clock beside the focus frame (`/kclock focus`). It hides while your focus is also your target.
+
 Plate Threat 1.5.0
 - Aggro warning in a party or raid: a big flashing message and a sound. Not tanking, "About to pull aggro" when you're above the tank and "You have aggro!" when a mob turns to you. Tanking, "Losing aggro" when someone is close to taking a mob and "Lost aggro!" when they have it, with a count when it's more than one mob.
 - Works out whether you're the tank from your group role, or Defensive Stance and Bear Form. Set it yourself on the settings page or with `/pth tank`, `/pth dps` and `/pth auto`.

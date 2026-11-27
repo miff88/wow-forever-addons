@@ -63,10 +63,13 @@ How it works on Forever: your own kicks are exact. Kick Tally sees you cast the 
 
 A countdown just right of the target frame's portrait showing roughly how long until your target dies (`1:24`), so you can time cooldowns and executes. It's how long the target will take at the pace it has lost health so far. Drag it anywhere; pick the text size, a colour (white, yellow, orange, red, green, blue, purple, pink, or any colour from the colour picker), an outline and an optional "Dies in" label. It can be limited to elites, rares and bosses.
 
+A smaller line underneath shows how long until the target reaches execute range (`20% in 0:12`), on by default for warriors and paladins; the percentage can be changed. An optional second clock sits beside the focus frame.
+
 How it works on Forever: the game hides enemy health from addons in combat, so they can show it but can't do maths with it. Kill Clock never reads the health. Twice a second it gives the game a lookup ("curve") from health left to time left at the current pace, and the game applies it to the hidden health and shows the answer. Keep enemy nameplates on so it knows when each mob started taking damage, even after you switch targets.
 
 - `/kclock test`, `/kclock move` (`/kclock lock` when done), `/kclock reset` (back beside the target frame)
 - `/kclock size <n>`, `/kclock colour <name>` (no name opens the colour picker), `/kclock debug`
+- `/kclock execute` the execute line on or off, `/kclock execute <n>` sets its percentage, `/kclock focus` the focus clock
 
 ### Buff Notice (`/bsn`, also `/bsr`)
 <img src="logos/BattleShoutReminder.png" alt="Buff Notice logo" width="96">

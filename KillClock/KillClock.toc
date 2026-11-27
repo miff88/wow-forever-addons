@@ -2,7 +2,7 @@
 ## Title: |cffff8000Kill|r Clock
 ## Notes: A countdown beside the target frame showing roughly how long until your target dies, to time your cooldowns. Any class.
 ## Author: Mitch Brindle
-## Version: 1.0.1
+## Version: 1.1.0
 ## IconTexture: Interface\Icons\Spell_Holy_BorrowedTime
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons
