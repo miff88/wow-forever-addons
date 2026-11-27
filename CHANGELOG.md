@@ -2,6 +2,9 @@
 
 ## 2026-11-27
 
+Proc City 1.5.3
+- Blood Craze is now tracked. It was never in Proc City's list, so it didn't show at all. It's the Fury talent that heals you over 6 seconds after you take a critical hit, and shows for warriors who have it (any rank).
+
 Buff Notice 2.1.0
 - Battle Shout works again. 2.0.0 only checked whether you know rank 1 of each buff, and Forever doesn't list rank 1 once you've learned a higher rank, so a level 60 warrior got no Battle Shout reminders at all. It now recognises any rank, or the spell's name in your spellbook. The same fix applies to every class's buffs (Arcane Intellect, Fortitude, Mark of the Wild, armors and the rest).
 - A clock-style sweep on the icon as a buff runs out, like Proc City.

@@ -1088,6 +1088,7 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.5.3", "Blood Craze is now tracked (warrior talent: heals you after you're crit)" },
             { "1.5.2", "Procs update in combat again: one buff the game hides in combat made it stop reading all of them",
                        "It now skips the hidden ones and reads the rest, and checks twice a second in combat" },
             { "1.5.1", "In combat, procs light up again: it asks the game about each proc directly instead of reading the hidden buff list",

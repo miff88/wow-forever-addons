@@ -136,6 +136,8 @@ ns.PROCS = {
       dur = 15, class = { WARRIOR = true, SHAMAN = true }, cat = "proc", note = "next 3 swings faster" },
     { key = "enrage", name = "Enrage", ids = { 12880, 14201, 14202, 14203, 14204 }, dur = 12,
       class = { WARRIOR = true }, cat = "proc" },
+    { key = "bloodcraze", name = "Blood Craze", ids = { 16488, 16490, 16491 }, dur = 6,
+      class = { WARRIOR = true }, cat = "proc", note = "heals you over 6 sec after you're crit" },
     { key = "deathwish", name = "Death Wish", ids = { 12328 }, dur = 30, class = { WARRIOR = true }, cat = "cooldown" },
     { key = "recklessness", name = "Recklessness", ids = { 1719 }, dur = 15, class = { WARRIOR = true }, cat = "cooldown" },
     { key = "sweeping", name = "Sweeping Strikes", ids = { 12292 }, dur = 20, class = { WARRIOR = true }, cat = "cooldown" },
