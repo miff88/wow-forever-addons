@@ -15,6 +15,7 @@ Made for **World of Warcraft: Forever**. Every class.
 ### Clear at a glance
 - Icons grow to the right or left as procs happen, with the seconds left and an optional clock sweep.
 - **Crusader on both weapons:** when both proc at once, the icon glows.
+- **Pinned procs:** pin the procs you build around and they keep their place, shown as a faint grey icon while they're down. Spot a missing Flurry or Crusader as easily as a running one. By default the grey icons only show in combat.
 - Stack counts, an optional sound, and adjustable icon size and gap.
 
 ### Easy to set up
@@ -32,6 +33,7 @@ Made for **World of Warcraft: Forever**. Every class.
 | `/proc grow left` or `right` | Which way the icons grow |
 | `/proc list` | What's tracked for your class |
 | `/proc off <name>` / `/proc on <name>` | Hide or show one proc |
+| `/proc pin <name>` / `/proc unpin <name>` | Keep a proc on screen, greyed out while it's down |
 | `/proc debug` | Print what Proc City sees in combat |
 
 ## Good to know

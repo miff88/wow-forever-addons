@@ -2,6 +2,10 @@
 
 ## 2026-11-27
 
+Proc City 1.3.0
+- Pinned procs: pin the procs you build around (Flurry, Crusader, Enrage, Clearcasting...) on the settings page or with `/proc pin <name>`. They come first, always in the same place, and show as a faint grey icon while they're down, so you can see at a glance when one's missing. By default the grey icons only show in combat; how faint they are is adjustable.
+- `/proc pin crusader` works as well as `/proc pin holy strength`.
+
 Kick Tally 1.4.0
 - Group members who also run Kick Tally send you their own kicks, so their counts are exact instead of matched by timing. Addons can't message each other during boss fights, M+ or PvP, so there it goes back to timing as before. Can be turned off on the settings page.
 - Interrupt cooldowns count down over the class icons on the window: yours, and those of group members who run Kick Tally (or whose kick the game shows). The tooltip says when it's ready. Can be turned off.

@@ -25,6 +25,9 @@ local defaults = {
     off     = {},       -- [key] = true for procs you've turned off
     learned = {},       -- [key] = real duration seen out of combat
     learnedIDs = {},    -- [spellID] = key, for buffs matched by name (new Forever enchants)
+    pins    = {},       -- keys always shown, greyed out while they're down, in this order
+    pinsInCombat = true,-- ...only greyed out in combat (out of combat they hide)
+    pinAlpha = 50,      -- how faint a pinned icon is while it's down
     pos     = nil,
 }
 
@@ -544,6 +547,36 @@ local function FormatTime(left)
     return ("%.1f"):format(left)
 end
 
+local byKey = {}
+for _, p in ipairs(ns.PROCS) do byKey[p.key] = p end
+
+local function IsPinned(key)
+    for _, k in ipairs(db.pins) do if k == key then return true end end
+    return false
+end
+
+-- pinned procs show greyed out while they're down (in combat, unless set otherwise)
+local function ShowPinned(p)
+    if not p or not Wanted(p) then return false end
+    if p.items and not HasItem(p) then return false end
+    if p.key == "holystrength" and crusaderWeapons == 0 then return false end -- no Crusader on
+    if testMode or unlocked then return true end
+    if db.pinsInCombat then
+        local ok, c = pcall(UnitAffectingCombat, "player")
+        return ok and not IsSecret(c) and c and true or false
+    end
+    return true
+end
+
+local function PinIcon(p)
+    if p.icon then return p.icon end
+    for _, id in ipairs(p.ids or {}) do
+        local tex = SpellIcon(id)
+        if tex then return tex end
+    end
+    return 134400
+end
+
 Layout = function()
     if not db then return end
     local size, gap = db.size, db.spacing
@@ -553,27 +586,56 @@ Layout = function()
     anchor.label:SetShown(unlocked)
     anchor:EnableMouse(unlocked)
 
+    -- pinned procs first, in the order you pinned them, then everything else that's up
+    local list, seen = {}, {}
+    for _, key in ipairs(db.pins) do
+        local p = byKey[key]
+        if active[key] then
+            list[#list + 1] = { key = key, a = active[key] }
+            seen[key] = true
+        elseif ShowPinned(p) then
+            list[#list + 1] = { key = key, p = p }
+        end
+    end
+    for _, key in ipairs(order) do
+        if not seen[key] then list[#list + 1] = { key = key, a = active[key] } end
+    end
+
     local shown = 0
-    for i, key in ipairs(order) do
-        local a = active[key]
+    for i, e in ipairs(list) do
+        local a = e.a
         local f = icons[i] or NewIcon()
         icons[i] = f
         f:SetSize(size, size)
         f.glow:SetSize(size * 1.8, size * 1.8)
         f:ClearAllPoints()
         f:SetPoint("CENTER", anchor, "CENTER", (i - 1) * (size + gap) * dir, 0)
-        f.tex:SetTexture(a.icon or 134400)
-        if a.expires and a.duration and db.swipe then
-            f.cd:SetCooldown(a.expires - a.duration, a.duration)
-            f.cd:Show()
+        if a then
+            f.tex:SetTexture(a.icon or 134400)
+            if f.tex.SetDesaturated then f.tex:SetDesaturated(false) end
+            f:SetAlpha(1)
+            if a.expires and a.duration and db.swipe then
+                f.cd:SetCooldown(a.expires - a.duration, a.duration)
+                f.cd:Show()
+            else
+                f.cd:Hide()
+            end
+            f.stacks:SetText((a.stacks and a.stacks > 1) and a.stacks or "")
+            SetGlow(f, db.glowDouble and (a.count or 1) >= 2)
+            if f.key ~= e.key then
+                f.key = e.key
+                if f.pop then f.pop:Stop(); f.pop:Play() end
+            end
         else
+            -- pinned and down: a faint grey icon holding its place
+            f.tex:SetTexture(PinIcon(e.p))
+            if f.tex.SetDesaturated then f.tex:SetDesaturated(true) end
+            f:SetAlpha((db.pinAlpha or 50) / 100)
             f.cd:Hide()
-        end
-        f.stacks:SetText((a.stacks and a.stacks > 1) and a.stacks or "")
-        SetGlow(f, db.glowDouble and (a.count or 1) >= 2)
-        if f.key ~= key then
-            f.key = key
-            if f.pop then f.pop:Stop(); f.pop:Play() end
+            f.stacks:SetText("")
+            f.time:SetText("")
+            SetGlow(f, false)
+            f.key = "down:" .. e.key
         end
         f:Show()
         shown = i
@@ -584,6 +646,7 @@ Layout = function()
         SetGlow(icons[i], false)
     end
 end
+ns.Layout = function() Layout() end
 
 -- seconds left on each icon, and dropping finished procs
 local ticker = CreateFrame("Frame")
@@ -615,9 +678,9 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
         end
     end
     if removed then Layout() end
-    for i, key in ipairs(order) do
-        local a, f = active[key], icons[i]
-        if f and a then
+    for _, f in ipairs(icons) do
+        local a = f.key and active[f.key]
+        if a then
             if db.timer and a.expires then
                 f.time:SetText(FormatTime(math.max(0, a.expires - now)))
             else
@@ -702,6 +765,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
         end
         db = ProcCityDB
         ns.db = db
+        if type(db.pins) ~= "table" then db.pins = {} end
         local _, class = UnitClass("player")
         playerClass = class
         BuildLookups()
@@ -728,10 +792,11 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
         BuildLookups()
         Refresh()
     elseif event == "PLAYER_REGEN_DISABLED" then
+        Layout() -- pinned procs appear greyed out
         Debug("combat started; buffs readable: " .. tostring(AurasReadable()) .. ", strength readable: " .. tostring(ReadStr() ~= nil))
     elseif event == "PLAYER_REGEN_ENABLED" then
         -- out of combat: trust the real buffs again
-        C_Timer.After(0.2, function() ScanAuras(); lastStr = ReadStr() end)
+        C_Timer.After(0.2, function() ScanAuras(); lastStr = ReadStr(); Layout() end)
     elseif event == "UNIT_AURA" then
         if not ScanAuras() then OnStats() end
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
@@ -776,6 +841,23 @@ function ns.BuildOptions()
     for _, c in ipairs(ns.CATEGORIES) do
         controls[#controls + 1] = { type = "check", key = "cat_" .. c.key, label = c.label }
     end
+    controls[#controls + 1] = { type = "header", label = "Always show (greyed out while down)" }
+    controls[#controls + 1] = { type = "dropdown", key = "pinPick", label = "Pin or unpin a proc",
+        options = function()
+            local out = {}
+            for _, p in ipairs(ns.PinChoices()) do
+                out[#out + 1] = { value = p.key, label = (IsPinned(p.key) and "|cff40ff40[pinned]|r " or "") .. p.name }
+            end
+            return out
+        end,
+        onSelect = function(key) ns.TogglePin(key) end }
+    controls[#controls + 1] = { type = "info", height = 30, lines = function()
+        local names = {}
+        for _, k in ipairs(db.pins) do names[#names + 1] = byKey[k] and byKey[k].name or k end
+        return "|cff999999" .. (#names > 0 and ("Pinned: " .. table.concat(names, ", ")) or "Nothing pinned. Pin the procs you build around, like Flurry or Crusader, to see at a glance when they're down.") .. "|r" end }
+    controls[#controls + 1] = { type = "check", key = "pinsInCombat", label = "Only show pinned procs that are down while I'm in combat" }
+    controls[#controls + 1] = { type = "range", key = "pinAlpha", label = "How faint a pinned proc is while down", min = 20, max = 100, step = 10, suffix = "%" }
+    controls[#controls + 1] = { type = "button", label = "Unpin all", func = function() wipe(db.pins); Layout() end }
     controls[#controls + 1] = { type = "info", height = 40, lines = function()
         return "|cff999999Turn single procs off with /proc off <name>, e.g. /proc off bloodrage. /proc list shows them all.|r" end }
     controls[#controls + 1] = { type = "header", label = "How it works on WoW Forever" }
@@ -799,14 +881,14 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.3.0", "Pin the procs you care about: they keep their place, greyed out while they're down",
+                       "Pick them on this page or with /proc pin <name>" },
             { "1.2.0", "Tracks every Forever weapon that buffs you on hit or on use",
                        "Destiny, Arcanite Champion, Claymore of Two Moons, Ragehammer, Hand of Edward the Odd and 23 more",
                        "Shared buff names (Haste, Enrage) go to the weapon you have on" },
             { "1.1.0", "Tracks the new Forever enchants Insight and Revelation",
                        "Revelation clears when your next spell uses it" },
-            { "1.0.0", "First version: procs, Crusader, trinkets and class buffs for every class",
-                       "Movable, grows left or right, seconds left on each icon",
-                       "Glows when Crusader is up on both weapons" },
+
         },
         icon = "Interface\\Icons\\Spell_Holy_BlessingOfStrength",
         about = "Your procs and short buffs as a row of icons",
@@ -825,11 +907,41 @@ function ProcCity_OnAddonCompartmentClick()
     if ns.OpenOptions then ns.OpenOptions() end
 end
 
+local function KnowsAny(ids)
+    if not IsPlayerSpell then return false end
+    for _, id in ipairs(ids or {}) do
+        local ok, known = pcall(IsPlayerSpell, id)
+        if ok and not IsSecret(known) and known then return true end
+    end
+    return false
+end
+
+-- what can be pinned: your class's procs and cooldowns, weapon enchants, racials you
+-- have, and procs from weapons you have on (plus anything already pinned)
+function ns.PinChoices()
+    local out = {}
+    for _, p in ipairs(ns.PROCS) do
+        local fits = (p.class and p.class[playerClass]) or p.cat == "enchant"
+            or (p.items and HasItem(p)) or (p.cat == "racial" and KnowsAny(p.ids))
+        if fits or IsPinned(p.key) then out[#out + 1] = p end
+    end
+    return out
+end
+
+function ns.TogglePin(key)
+    for i, k in ipairs(db.pins) do
+        if k == key then table.remove(db.pins, i); Layout() return false end
+    end
+    db.pins[#db.pins + 1] = key
+    Layout()
+    return true
+end
+
 local function FindProc(text)
     text = (text or ""):lower():gsub("[%s'%-]", "")
     if text == "" then return nil end
     for _, p in ipairs(ns.PROCS) do
-        if p.key == text or p.name:lower():gsub("[%s'%-]", "") == text then return p end
+        if p.key == text or p.alias == text or p.name:lower():gsub("[%s'%-]", "") == text then return p end
     end
 end
 
@@ -860,6 +972,12 @@ SlashCmdList.PROCCITY = function(msg)
         db.off[p.key] = (cmd == "off") or nil
         if cmd == "off" then Remove(p.key); Layout() end
         Print(p.name .. (cmd == "off" and " won't be shown." or " will be shown."))
+    elseif cmd == "pin" or cmd == "unpin" then
+        local p = FindProc(rest)
+        if not p then Print("no proc called \"" .. rest .. "\". /proc list shows them.") return end
+        local pinned = IsPinned(p.key)
+        if (cmd == "pin") ~= pinned then ns.TogglePin(p.key) end
+        Print(p.name .. (cmd == "pin" and " is pinned: it keeps its place, greyed out while it's down." or " is unpinned."))
     elseif cmd == "list" then
         local parts = {}
         for _, p in ipairs(ProcsForSettings()) do
@@ -881,6 +999,7 @@ SlashCmdList.PROCCITY = function(msg)
         Print("/proc grow left|right - which way the icons grow (now " .. db.grow .. ")")
         Print("/proc size <n> - icon size (now " .. db.size .. ")")
         Print("/proc list - what's tracked for your class; /proc off <name> or /proc on <name>")
+        Print("/proc pin <name>, /proc unpin <name> - always show it, greyed out while it's down")
         Print("/proc debug - print what Proc City sees in combat")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end

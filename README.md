@@ -39,11 +39,14 @@ Also adds a retail-style threat box on top of the target frame, coloured by your
 
 Your procs and short buffs as a movable row of icons, with the time left on each: Flurry, Enrage, Clearcasting, Vengeance, Shadow Trance, Quick Shots, Crusader (Holy Strength), the new Forever enchants Insight and Revelation, every Forever weapon that buffs you (Destiny, Arcanite Champion, Ragehammer, Hand of Edward the Odd and more), item procs, on-use trinkets, class cooldowns and racials, for every class. Icons grow to the right or left as procs happen. When Crusader is up on both weapons at once, its icon glows. Any equipped trinket with a Use is picked up automatically, even if it's new to Forever.
 
+**Pinned procs.** Pin the ones you build around (Flurry, Crusader, Enrage...) on the settings page or with `/proc pin <name>`. They come first, always in the same place, and stay as a faint grey icon while they're down, so a missing proc is as easy to spot as a running one. By default the grey icons only show in combat.
+
 Forever hides buff details from addons in combat. Out of combat Proc City reads your buffs exactly, and learns each buff's real Forever duration. In combat it works from what the game still shows: your own casts (trinkets, cooldowns), your Strength (Crusader and other Strength procs, which is also how it tells one Crusader from two) and the game's combat text, then corrects itself when combat ends. Procs it has no in-combat signal for may only appear out of combat; `/proc debug` prints what it sees during a fight, which tells us what to add.
 
 - `/proc test` show test icons, `/proc move` move them (`/proc lock` when done), `/proc reset`
 - `/proc grow left|right`, `/proc size <n>`
 - `/proc list` what's tracked for your class, `/proc off <name>` / `/proc on <name>`
+- `/proc pin <name>` / `/proc unpin <name>` keep it on screen, greyed out while it's down
 - `/proc debug` print casts, Strength changes and combat text in combat
 
 ### Kick Tally (`/ktally`, also `/kicks`)

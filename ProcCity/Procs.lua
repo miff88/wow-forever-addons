@@ -30,7 +30,7 @@ ns.CATEGORIES = {
 ns.PROCS = {
     ---------------------------------------------------------------- enchants
     { key = "holystrength", name = "Holy Strength", ids = { 20007 }, dur = 15, cat = "enchant",
-      double = true, stat = { 1, 100 }, enchantID = 1900, note = "Crusader: +100 Strength" },
+      double = true, stat = { 1, 100 }, enchantID = 1900, note = "Crusader: +100 Strength", alias = "crusader" },
     -- New in WoW Forever. Their buff IDs aren't published yet, so these match by name
     -- and Proc City learns the real ID and duration the first time it sees them out of combat.
     { key = "insight", name = "Insight", ids = {}, dur = 10, cat = "enchant",
