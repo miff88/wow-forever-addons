@@ -2,6 +2,10 @@
 
 ## 2026-11-27
 
+Target Arrow 1.3.0
+- An optional second arrow for your focus or a raid marker (skull by default), a little smaller and in its own colour (blue by default). It hides when it would point at your target. Set it up on the settings page, or with `/tarrow focus` and `/tarrow marker skull`.
+- Purple and orange arrows.
+
 Proc City 1.3.0
 - Pinned procs: pin the procs you build around (Flurry, Crusader, Enrage, Clearcasting...) on the settings page or with `/proc pin <name>`. They come first, always in the same place, and show as a faint grey icon while they're down, so you can see at a glance when one's missing. By default the grey icons only show in combat; how faint they are is adjustable.
 - `/proc pin crusader` works as well as `/proc pin holy strength`.

@@ -19,8 +19,11 @@ Every addon has a settings page under **Options > AddOns**, and an entry on the 
 
 A bobbing arrow above your target's nameplate so you can pick it out of a crowd. It sits high enough to clear the Overpower Plates icon if you use both.
 
-- `/tarrow colour <red|yellow|green|blue|white>`
+An optional second, smaller arrow marks your focus or a raid marker (skull by default) in its own colour, and hides when it would point at your target.
+
+- `/tarrow colour <red|yellow|green|blue|white|purple|orange>`
 - `/tarrow size <n>`, `/tarrow offset <n>`, `/tarrow bob`, `/tarrow enemies`
+- `/tarrow focus`, `/tarrow marker <skull|cross|square|moon|triangle|diamond|circle|star>`, `/tarrow second <colour|off>`
 
 ### Plate Threat (`/pth`)
 <img src="logos/PlateThreat.png" alt="PlateThreat logo" width="96">

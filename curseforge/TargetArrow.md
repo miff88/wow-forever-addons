@@ -7,7 +7,8 @@ Made for **World of Warcraft: Forever**. Works on every class.
 ## Features
 - A clear arrow above your current target's nameplate that follows you every time you change target.
 - Gentle bobbing animation so it catches your eye, or keep it still.
-- Five colours: red, yellow, green, blue and white.
+- **A second arrow** for your focus or a raid marker (skull by default), smaller and in its own colour. Keep an eye on the kill target or a crowd-controlled mob while you tab around. It hides when it would point at your target.
+- Seven colours: red, yellow, green, blue, white, purple and orange.
 - Adjustable size and height above the health bar.
 - Optionally only show it on enemies.
 - Sits high enough to clear Overpower Plates' icon if you use both.
@@ -18,7 +19,10 @@ Made for **World of Warcraft: Forever**. Works on every class.
 | Command | What it does |
 |---|---|
 | `/tarrow` | Open settings |
-| `/tarrow colour <red, yellow, green, blue, white>` | Arrow colour |
+| `/tarrow colour <red, yellow, green, blue, white, purple, orange>` | Arrow colour |
+| `/tarrow focus` | Second arrow on your focus (again to turn it off) |
+| `/tarrow marker <skull, cross, square, moon, triangle, diamond, circle, star>` | Second arrow on that raid marker |
+| `/tarrow second <colour>` / `/tarrow second off` | Second arrow colour, or turn it off |
 | `/tarrow size <n>` | Arrow size |
 | `/tarrow offset <n>` | Height above the health bar |
 | `/tarrow bob` | Turn bobbing on or off |
