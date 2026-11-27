@@ -7,7 +7,9 @@
 -- addon can't do maths on them. So the number is passed straight to the text, and the
 -- colour only changes when the game lets the addon read the value. No combat log is used.
 --
--- It also puts a retail-style threat box on top of the target frame.
+-- It also puts a retail-style threat box on top of the target frame, and in a group it
+-- warns you about aggro: as a tank when you lose a mob or someone is about to take it, and
+-- otherwise when you're about to pull or have pulled a mob off the tank.
 --
 -- Needs enemy nameplates on (V by default) for the nameplate numbers.
 
@@ -21,6 +23,12 @@ local defaults = {
     portrait = true,   -- threat box on top of the target frame
     portraitX = 0,
     portraitY = 0,
+    warn = true,       -- aggro warning in a group
+    role = "auto",     -- "auto", "tank" or "dps" (anyone who isn't tanking)
+    warnClose = true,  -- also warn before it happens (about to pull / someone close)
+    warnSound = true,
+    warnSize = 26,
+    warnPoint = { "CENTER", "CENTER", 0, 240 },
 }
 
 local db
@@ -159,6 +167,7 @@ local function RefreshAll()
         UpdatePlate(plate)
     end
     if UpdateTargetBoxRef then UpdateTargetBoxRef() end
+    if ns.CheckAggro then ns.CheckAggro() end
 end
 
 ---------------------------------------------------------------------------
@@ -254,6 +263,157 @@ end
 UpdateTargetBoxRef = UpdateTargetBox
 
 ---------------------------------------------------------------------------
+-- Aggro warning (in a group)
+---------------------------------------------------------------------------
+-- The game tells you each mob's threat "status" against you even when the numbers are
+-- hidden: 0 = low, 1 = above the tank but not pulled yet, 2 = tanking but someone is
+-- about to take it, 3 = securely tanking.
+local TANK_FORMS = { [5] = true, [8] = true, [18] = true } -- Bear, Dire Bear, Defensive Stance
+local warnState = {}        -- [unit] = { status, had = true once you tanked it }
+local warnLevel, lastSoundAt = 0, -10
+local warnUnlocked = false
+
+local warnFrame = CreateFrame("Frame", "PlateThreatWarning", UIParent)
+warnFrame:SetSize(360, 40)
+warnFrame:SetFrameStrata("HIGH")
+warnFrame:SetClampedToScreen(true)
+warnFrame:SetMovable(true)
+if warnFrame.RegisterForDrag then warnFrame:RegisterForDrag("LeftButton") end
+warnFrame:SetScript("OnDragStart", function(self) if warnUnlocked then self:StartMoving() end end)
+warnFrame:SetScript("OnDragStop", function(self)
+    self:StopMovingOrSizing()
+    local p, _, rp, x, y = self:GetPoint()
+    db.warnPoint = { p, rp, x, y }
+end)
+warnFrame:Hide()
+warnFrame.text = warnFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+warnFrame.text:SetPoint("CENTER")
+warnFrame.bg = warnFrame:CreateTexture(nil, "BACKGROUND")
+warnFrame.bg:SetAllPoints()
+warnFrame.bg:SetColorTexture(1, 0.82, 0, 0.25)
+warnFrame.bg:Hide()
+warnFrame.flash = warnFrame:CreateAnimationGroup()
+warnFrame.flash:SetLooping("BOUNCE")
+do
+    local a = warnFrame.flash:CreateAnimation("Alpha")
+    a:SetFromAlpha(1)
+    a:SetToAlpha(0.3)
+    a:SetDuration(0.35)
+end
+
+local function LayoutWarning()
+    warnFrame:ClearAllPoints()
+    local p = db.warnPoint
+    warnFrame:SetPoint(p[1], UIParent, p[2], p[3], p[4])
+    pcall(warnFrame.text.SetFont, warnFrame.text, STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", db.warnSize, "OUTLINE")
+end
+
+local function IsTank()
+    if db.role == "tank" then return true end
+    if db.role == "dps" then return false end
+    if UnitGroupRolesAssigned then
+        local ok, role = pcall(UnitGroupRolesAssigned, "player")
+        if ok and not IsSecret(role) and role == "TANK" then return true end
+        if ok and not IsSecret(role) and (role == "DAMAGER" or role == "HEALER") then return false end
+    end
+    if GetShapeshiftFormID then
+        local ok, id = pcall(GetShapeshiftFormID)
+        if ok and not IsSecret(id) and id and TANK_FORMS[id] then return true end
+    end
+    return false
+end
+ns.IsTank = IsTank
+
+local function Status(unit)
+    if not UnitThreatSituation then return nil end
+    local ok, s = pcall(UnitThreatSituation, "player", unit)
+    if not ok or IsSecret(s) then return nil end
+    return s
+end
+
+local function ShowWarning(level, msg)
+    if level == 0 then
+        warnFrame.flash:Stop()
+        warnFrame:SetShown(warnUnlocked)
+        if warnUnlocked then warnFrame.text:SetText("Aggro warning (drag me)") end
+        warnLevel = 0
+        return
+    end
+    warnFrame.text:SetText(msg)
+    if level >= 2 then
+        warnFrame.text:SetTextColor(1, 0.15, 0.15)
+    else
+        warnFrame.text:SetTextColor(1, 0.6, 0.1)
+    end
+    warnFrame:Show()
+    if level >= 2 and not warnFrame.flash:IsPlaying() then warnFrame.flash:Play() end
+    if level < 2 then warnFrame.flash:Stop(); warnFrame:SetAlpha(1) end
+    if level > warnLevel and db.warnSound and GetTime() - lastSoundAt > 2
+        and PlaySound and SOUNDKIT and SOUNDKIT.RAID_WARNING then
+        lastSoundAt = GetTime()
+        PlaySound(SOUNDKIT.RAID_WARNING, "SFX")
+    end
+    warnLevel = level
+end
+
+local function CheckAggro()
+    if warnUnlocked then
+        warnFrame.bg:Show()
+        ShowWarning(1, "About to pull aggro (drag me)")
+        return
+    end
+    warnFrame.bg:Hide()
+    if testMode then ShowWarning(2, "Lost aggro on 2!") return end
+    if not db.warn or not UnitAffectingCombat("player") or not (IsInGroup and IsInGroup()) then
+        ShowWarning(0)
+        return
+    end
+
+    local units = {}
+    for _, plate in ipairs(GetNamePlates()) do
+        local u = PlateUnit(plate)
+        if u then units[#units + 1] = u end
+    end
+    if UnitExists("target") and not GetNamePlateForUnit("target") then units[#units + 1] = "target" end
+
+    local tank = IsTank()
+    local pulled, close = 0, 0
+    for _, u in ipairs(units) do
+        local okA, attackable = pcall(UnitCanAttack, "player", u)
+        local s = (okA and not IsSecret(attackable) and attackable) and Status(u) or nil
+        local st = warnState[u] or {}
+        warnState[u] = st
+        if s then
+            if s >= 2 then st.had = true end
+            if tank then
+                if st.had and s <= 1 then pulled = pulled + 1
+                elseif s == 2 then close = close + 1 end
+            else
+                if s >= 2 then pulled = pulled + 1
+                elseif s == 1 then close = close + 1 end
+            end
+        end
+        st.status = s
+    end
+
+    local function On(what, n, bang) return what .. (n > 1 and (" on " .. n) or "") .. (bang and "!" or "") end
+    if pulled > 0 then
+        ShowWarning(2, On(tank and "Lost aggro" or "You have aggro", pulled, true))
+    elseif close > 0 and db.warnClose then
+        ShowWarning(1, On(tank and "Losing aggro" or "About to pull aggro", close))
+    else
+        ShowWarning(0)
+    end
+end
+ns.CheckAggro = CheckAggro
+
+local function ClearAggro()
+    wipe(warnState)
+    ShowWarning(0)
+end
+
+
+---------------------------------------------------------------------------
 -- Events
 ---------------------------------------------------------------------------
 local ev = CreateFrame("Frame")
@@ -269,7 +429,9 @@ ev:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         PlateThreatDB = PlateThreatDB or {}
         for k, v in pairs(defaults) do
-            if PlateThreatDB[k] == nil then PlateThreatDB[k] = v end
+            if PlateThreatDB[k] == nil then
+                PlateThreatDB[k] = type(v) == "table" and { unpack(v) } or v
+            end
         end
         db = PlateThreatDB
         if ns.StartVersionCheck then ns.StartVersionCheck(db, "Plate Threat") end
@@ -279,6 +441,7 @@ ev:SetScript("OnEvent", function(_, event, arg1)
             db.v = 2
         end
         ns.BuildOptions()
+        LayoutWarning()
 
     elseif event == "PLAYER_LOGIN" then
         SafeRegister("NAME_PLATE_UNIT_ADDED")
@@ -296,9 +459,15 @@ ev:SetScript("OnEvent", function(_, event, arg1)
     elseif event == "NAME_PLATE_UNIT_REMOVED" then
         local plate = GetNamePlateForUnit(arg1)
         if plate and labels[plate] then labels[plate]:Hide() end
+        warnState[arg1] = nil
 
     elseif event == "PLAYER_REGEN_ENABLED" then
+        ClearAggro()
         if testMode then RefreshAll() else HideAll() end
+
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        warnState.target = nil
+        RefreshAll()
 
     else
         RefreshAll()
@@ -322,9 +491,9 @@ function ns.BuildOptions()
         title = "Plate Threat",
         updateNotice = true,
         changes = {
+            { "1.5.0", "Aggro warning in a group: about to pull or pulled as DPS, losing or lost aggro as a tank" },
             { "1.4.1", "This What's new list" },
             { "1.4.0", "Tells you when a newer version is out" },
-            { "1.3.0", "Retail-style threat box on top of the target frame" },
         },
         icon = ICON,
         about = "Your threat % on enemy nameplates and the target frame",
@@ -333,6 +502,7 @@ function ns.BuildOptions()
         db = db,
         onChange = function()
             for _, f in pairs(labels) do f.fontSize = nil end
+            LayoutWarning()
             RefreshAll()
         end,
         controls = {
@@ -344,12 +514,31 @@ function ns.BuildOptions()
             { type = "check", key = "portrait", label = "Show a threat box on the target frame" },
             { type = "range", key = "portraitX", label = "Move left / right", min = -150, max = 150, step = 2 },
             { type = "range", key = "portraitY", label = "Move up / down", min = -100, max = 100, step = 2 },
+            { type = "header", label = "Aggro warning" },
+            { type = "check", key = "warn", label = "Warn me about aggro in a party or raid" },
+            { type = "dropdown", key = "role", label = "I'm playing as",
+              options = function() return {
+                  { value = "auto", label = "Work it out" },
+                  { value = "tank", label = "The tank" },
+                  { value = "dps", label = "Not the tank" },
+              } end },
+            { type = "info", height = 30, lines = function()
+                return "|cff999999Work it out: your group role if you have one, otherwise tank in Defensive Stance or Bear Form. Now: "
+                    .. (IsTank() and "tank" or "not the tank") .. ".|r" end },
+            { type = "check", key = "warnClose", label = "Warn before it happens (about to pull, or someone close to taking it)" },
+            { type = "check", key = "warnSound", label = "Play a sound" },
+            { type = "range", key = "warnSize", label = "Warning text size", min = 14, max = 48, step = 2 },
+            { type = "button", dynamicLabel = function() return warnUnlocked and "Lock the warning" or "Move the warning" end,
+              label = "Move the warning", func = function() warnUnlocked = not warnUnlocked; CheckAggro() end },
+            { type = "button", label = "Reset warning position", func = function()
+                db.warnPoint = { unpack(defaults.warnPoint) }; LayoutWarning() end },
             { type = "header", label = "Preview" },
             { type = "button", dynamicLabel = function() return testMode and "Stop test" or "Test on nameplates" end,
               label = "Test on nameplates",
               func = function()
                   testMode = not testMode
                   if not testMode then HideAll() end
+                  CheckAggro()
               end },
         },
     })
@@ -381,6 +570,15 @@ SlashCmdList.PLATETHREAT = function(msg)
         db.side = cmd; RefreshAll(); Print("shown on the " .. cmd .. " of the health bar")
     elseif cmd == "gap" and n then
         db.offsetX = n; RefreshAll(); Print("gap from the health bar " .. n)
+    elseif cmd == "warn" then
+        db.warn = not db.warn; RefreshAll(); Print("aggro warning " .. (db.warn and "on" or "off"))
+    elseif cmd == "tank" or cmd == "dps" or cmd == "auto" then
+        db.role = cmd; RefreshAll()
+        Print(cmd == "auto" and ("working out your role (now " .. (IsTank() and "tank" or "not the tank") .. ")")
+            or ("aggro warning treats you as " .. (cmd == "tank" and "the tank" or "not the tank")))
+    elseif cmd == "move" then
+        warnUnlocked = not warnUnlocked; CheckAggro()
+        Print(warnUnlocked and "drag the warning where you want it, then /pth move again" or "warning locked")
     else
         Print("v" .. ns.version .. " commands (or just /pth for the settings page):")
         Print("/pth test - show a sample on every nameplate")
@@ -388,6 +586,9 @@ SlashCmdList.PLATETHREAT = function(msg)
         Print("/pth size <n> - font size (now " .. db.size .. ")")
         Print("/pth gap <n> - gap from the health bar (now " .. db.offsetX .. ")")
         Print("/pth portrait - threat box on the target frame (now " .. (db.portrait and "on" or "off") .. ")")
+        Print("/pth warn - aggro warning in a group (now " .. (db.warn and "on" or "off") .. ")")
+        Print("/pth tank, /pth dps, /pth auto - who the warning treats you as (now " .. db.role .. ")")
+        Print("/pth move - move the warning")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end
 end

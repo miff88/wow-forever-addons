@@ -1,8 +1,8 @@
 ## Interface: 16001
 ## Title: |cffff4444Plate|r Threat
-## Notes: Shows your threat percentage on every enemy nameplate and on the target frame in combat. Any class.
+## Notes: Shows your threat percentage on every enemy nameplate and on the target frame in combat, and warns you about aggro in a group. Any class.
 ## Author: Mitch Brindle
-## Version: 1.4.1
+## Version: 1.5.0
 ## IconTexture: Interface\Icons\Ability_Warrior_Challange
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons

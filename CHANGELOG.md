@@ -2,6 +2,11 @@
 
 ## 2026-11-27
 
+Plate Threat 1.5.0
+- Aggro warning in a party or raid: a big flashing message and a sound. Not tanking, "About to pull aggro" when you're above the tank and "You have aggro!" when a mob turns to you. Tanking, "Losing aggro" when someone is close to taking a mob and "Lost aggro!" when they have it, with a count when it's more than one mob.
+- Works out whether you're the tank from your group role, or Defensive Stance and Bear Form. Set it yourself on the settings page or with `/pth tank`, `/pth dps` and `/pth auto`.
+- The early warning and the sound can each be turned off. Move the message with `/pth move` or from the settings page, and change its size.
+
 Buff Notice 2.0.0 (was Battle Shout Notice)
 - Now for every class. Reminds you about the buffs your class keeps up: Battle Shout, Arcane Intellect and mage armors, Fortitude, Inner Fire and Divine Spirit, Mark of the Wild, Omen of Clarity and Thorns, Blessings and Righteous Fury, Demon Skin/Armor, Lightning Shield and weapon imbues, Aspects and Trueshot Aura, and rogue poisons on each weapon. Only buffs you know are watched, and each can be turned off on the settings page.
 - Group buffs show how many nearby party or raid members are missing yours (Intellect and Spirit skip warriors and rogues).

@@ -29,7 +29,10 @@ Shows your threat percentage on the left of each enemy nameplate in combat (100%
 
 Also adds a retail-style threat box on top of the target frame, coloured by your threat level. It can be moved or turned off on the settings page.
 
+**Aggro warning** (in a party or raid): a big flashing message and a sound. Not tanking, it says "About to pull aggro" when you're above the tank and "You have aggro!" once a mob turns to you. Tanking, it says "Losing aggro" when someone is close to taking a mob and "Lost aggro!" when they have. It works out whether you're the tank from your group role, or Defensive Stance and Bear Form, and you can set it yourself.
+
 - `/pth test`, `/pth left`, `/pth right`, `/pth size <n>`, `/pth gap <n>`, `/pth portrait`
+- `/pth warn` aggro warning on or off, `/pth tank`, `/pth dps`, `/pth auto`, `/pth move` place the warning
 
 ### Proc City (`/proc`)
 <img src="logos/ProcCity.png" alt="ProcCity logo" width="96">
