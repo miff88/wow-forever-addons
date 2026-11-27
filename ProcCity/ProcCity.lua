@@ -225,37 +225,62 @@ local function AurasReadable()
 end
 
 -- Returns true if it could read your buffs (and updated the list from them).
+local ScanOne, ApplyFound
+local lastHidden = 0
 local function ScanAuras()
     if testMode or not AurasReadable() then return false end
-    local found = {}
+    local found, readable, hidden = {}, 0, 0
     for i = 1, 40 do
         local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
         if not ok then return false end
-        if not aura then break end
-        if IsSecret(aura) or IsSecret(aura.name) or IsSecret(aura.spellId) then return false end
-        local p = byID[aura.spellId] or FindByName(aura.name) or GenericForAura(aura.spellId, aura.name)
-        if p and not p.generic and aura.spellId and not byID[aura.spellId] then
-            -- matched by name only: remember the real ID for next time
-            byID[aura.spellId] = p
-            db.learnedIDs[aura.spellId] = p.key
-            Debug(("learned %s = spell %d"):format(p.name, aura.spellId))
-        end
-        if p and Wanted(p) then
-            local f = found[p.key]
-            if not f then
-                f = { p = p, count = 0, icon = p.generic and p.icon or aura.icon }
-                found[p.key] = f
-            end
-            f.count = f.count + 1
-            local exp, dur = aura.expirationTime, aura.duration
-            if not IsSecret(exp) and exp and exp > 0 and (not f.expires or exp > f.expires) then
-                f.expires, f.duration = exp, dur
-            end
-            if not IsSecret(aura.applications) and aura.applications and aura.applications > 1 then
-                f.stacks = aura.applications
-            end
+        -- in combat the game can hide some buffs and not others: skip the hidden ones
+        -- and read the rest (it used to give up on the whole list for one hidden buff)
+        if IsSecret(aura) then
+            hidden = hidden + 1
+        elseif aura == nil then
+            break
+        elseif IsSecret(aura.name) or IsSecret(aura.spellId) then
+            hidden = hidden + 1
+        else
+            readable = readable + 1
+            ScanOne(aura, found)
         end
     end
+    if hidden > 0 and readable == 0 then return false end -- nothing to go on
+    if hidden ~= lastHidden then
+        Debug(("buffs: %d readable, %d hidden"):format(readable, hidden))
+        lastHidden = hidden
+    end
+    return ApplyFound(found, hidden)
+end
+
+-- One readable buff: is it a proc you track?
+ScanOne = function(aura, found)
+    local p = byID[aura.spellId] or FindByName(aura.name) or GenericForAura(aura.spellId, aura.name)
+    if p and not p.generic and aura.spellId and not byID[aura.spellId] then
+        -- matched by name only: remember the real ID for next time
+        byID[aura.spellId] = p
+        db.learnedIDs[aura.spellId] = p.key
+        Debug(("learned %s = spell %d"):format(p.name, aura.spellId))
+    end
+    if p and Wanted(p) then
+        local f = found[p.key]
+        if not f then
+            f = { p = p, count = 0, icon = p.generic and p.icon or aura.icon }
+            found[p.key] = f
+        end
+        f.count = f.count + 1
+        local exp, dur = aura.expirationTime, aura.duration
+        if not IsSecret(exp) and exp and exp > 0 and (not f.expires or exp > f.expires) then
+            f.expires, f.duration = exp, dur
+        end
+        if not IsSecret(aura.applications) and aura.applications and aura.applications > 1 then
+            f.stacks = aura.applications
+        end
+    end
+end
+
+ApplyFound = function(found, hidden)
 
     -- oldest first, so the row keeps the order the procs happened in
     local keys = {}
@@ -279,10 +304,12 @@ local function ScanAuras()
             Start(p, "aura", { duration = f.duration, count = f.count, stacks = f.stacks, icon = f.icon,
                                expires = f.expires, noTimer = not f.expires })
         end
+        active[key].readable = true
     end
-    -- anything we were showing that isn't really there any more (abilities aren't buffs)
+    -- anything we were showing that isn't really there any more (abilities aren't buffs).
+    -- With some buffs hidden, only a proc we could read before is known to be gone.
     for key, a in pairs(active) do
-        if not found[key] and a.source ~= "react" then Remove(key) end
+        if not found[key] and a.source ~= "react" and (hidden == 0 or a.readable) then Remove(key) end
     end
     Layout()
     return true
@@ -783,7 +810,12 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
     -- in combat, ask about each proc twice a second (buff changes don't always say which)
     if probeSince >= 0.5 then
         probeSince = 0
-        if not testMode and not AurasReadable() then CombatScan() end
+        -- (buff changes don't always come with an event in combat, so look anyway)
+        if not testMode and InCombatLockdown() then
+            if not ScanAuras() then CombatScan() end
+        elseif not testMode and not AurasReadable() then
+            CombatScan()
+        end
     end
     local now = GetTime()
     local removed = false
@@ -1056,6 +1088,8 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.5.2", "Procs update in combat again: one buff the game hides in combat made it stop reading all of them",
+                       "It now skips the hidden ones and reads the rest, and checks twice a second in combat" },
             { "1.5.1", "In combat, procs light up again: it asks the game about each proc directly instead of reading the hidden buff list",
                        "/proc debug lists what the game says about each proc, if any still stay grey" },
             { "1.5.0", "Starter pins: the procs your class builds around are pinned for you (if you have them)",

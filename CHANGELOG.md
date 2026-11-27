@@ -2,6 +2,10 @@
 
 ## 2026-11-27
 
+Proc City 1.5.2
+- Procs update in combat again. Your debug screenshot showed the game still lets addons read your buffs in combat, but it hides some of them. One hidden buff made Proc City give up on the whole list, so nothing changed until combat ended. It now skips the hidden ones and reads the rest, and checks twice a second in combat as well as when your buffs change.
+- `/proc debug` says how many of your buffs are readable and how many are hidden.
+
 Proc City 1.5.1
 - Procs show in combat again. The game hides your buff list from addons in combat, so pinned procs stayed grey until combat ended. Proc City now also asks the game about each proc you track by its spell, which it still answers in combat. Where the game gives the timer and stacks they're exact; where it only says the buff is there, the timer runs from when it appeared, using the duration learned out of combat.
 - `/proc debug` now lists, for each proc you track, what the game says about it right now. If any still stay grey in combat, run it in combat with that proc up.
