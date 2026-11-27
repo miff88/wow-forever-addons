@@ -2,6 +2,11 @@
 
 ## 2026-11-27
 
+Kick Tally 1.2.0
+- Resize the window by dragging its bottom-right corner, with the damage meter's own corner handle (it shows while your mouse is over the window). The window lists as many players as fit; scroll with the mouse wheel to see the rest.
+- Thinner bars (20, was 25) and a see-through background, closer to how the meter looks. Bar height, background opacity and window height are new settings, next to width and window opacity.
+- "Reset position" also resets the size.
+
 Kick Tally 1.1.0
 - The tally window now looks like the game's own damage meter, using its art: the gold title bar, class-coloured bars with class icons, "1. Name" and the count with each player's share of the group's kicks.
 - Title bar buttons like the meter's: C / O for this fight or overall, a gear menu (lock, only in a group, hide, settings) and a minimise button. The arrow by the title posts the tally, resets the counts or runs the test.

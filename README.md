@@ -51,7 +51,7 @@ Announces your successful interrupts in chat ("Interrupted Defias Pillager's Fir
 How it works on Forever: your own kicks are exact. Kick Tally sees you cast the interrupt and the enemy's cast being interrupted. In combat the game hides which spells other players cast, so a party or raid member's kick is counted when their cast lands at the same moment an enemy's cast is interrupted. Keep enemy nameplates on so it sees every enemy. The game blocks addon chat messages during boss fights, so there your kicks go to your own chat window, and the fight's tally can be posted to the group when the boss dies.
 
 - Announce to auto (instance, raid or party chat), party, raid, instance, say or yell (say and yell only inside instances), or only yourself. The message is editable: `{target}`, `{spell}`, `{ability}`, `{count}`.
-- Show or hide the window, or only show it in a party or raid; width, opacity and how many players it lists are on the settings page.
+- Drag the bottom-right corner to resize it; the mouse wheel scrolls when there are more players than fit. Show or hide the window, or only show it in a party or raid. Bar height, background and window opacity are on the settings page.
 - `/kicks test`, `/kicks report` (or `report total`) post the tally to the group, `/kicks lock|unlock`, `/kicks show|hide`, `/kicks reset` (or `reset position`)
 - `/kicks debug` print the casts and interrupts it sees
 

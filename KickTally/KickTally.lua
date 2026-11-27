@@ -31,8 +31,10 @@ local defaults = {
     mode       = "fight",    -- the window shows this fight ("fight") or overall ("total")
     collapsed  = false,      -- minimised to just its title bar
     width      = 250,
+    height     = 140,        -- drag the bottom-right corner to resize
+    barHeight  = 20,
+    bgOpacity  = 60,         -- the window's background, like the meter's
     opacity    = 100,
-    rows       = 8,
     locked     = false,
     reportAfterBoss = false, -- post the fight's kicks to the group after a boss
     total      = {},         -- [name] = kicks in total
@@ -252,7 +254,9 @@ ns.Fill = Fill
 ---------------------------------------------------------------------------
 -- The window: built to look like the game's own damage meter, using its art
 ---------------------------------------------------------------------------
-local BAR_HEIGHT, BAR_SPACING, HEADER = 25, 4, 32
+local BAR_SPACING, HEADER = 4, 32
+local sizing = false    -- the corner is being dragged
+local scroll = 0        -- rows scrolled past, when there are more players than fit
 local recent = {}       -- [name] = { "Defias Pillager (Fireball)", ... } this fight, newest last
 
 -- the game's art; on a client without it, a plain colour stands in
@@ -393,11 +397,7 @@ local rows = {}
 local function Row(i)
     if rows[i] then return rows[i] end
     local r = CreateFrame("Button", nil, win)
-    r:SetHeight(BAR_HEIGHT)
-    r:SetPoint("TOPLEFT", 5, -HEADER + 2 - (i - 1) * (BAR_HEIGHT + BAR_SPACING))
-    r:SetPoint("RIGHT", -1, 0)
     r.icon = r:CreateTexture(nil, "ARTWORK")
-    r.icon:SetSize(BAR_HEIGHT, BAR_HEIGHT)
     r.icon:SetPoint("LEFT")
     r.bar = CreateFrame("StatusBar", nil, r)
     r.bar:SetPoint("LEFT", r.icon, "RIGHT", 0, 0)
@@ -424,6 +424,7 @@ local function Row(i)
     r.name:SetJustifyH("LEFT")
     if r.name.SetWordWrap then r.name:SetWordWrap(false) end
     r:SetScript("OnEnter", function(self)
+        if ns.GripFade then ns.GripFade() end
         if not self.who or not GameTooltip then return end
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine(self.who)
@@ -483,7 +484,10 @@ end
 local function Layout()
     if not db then return end
     if not WindowWanted() then win:Hide() return end
-    win:SetWidth(db.width)
+    if not sizing then
+        win:SetWidth(db.width)
+        win:SetHeight(db.collapsed and HEADER or db.height)
+    end
     MiniArt()
     session.label:SetText(db.mode == "total" and "O" or "C")
     title:SetText(db.mode == "total" and "Kicks (overall)" or "Kicks")
@@ -512,16 +516,26 @@ local function Layout()
     local sum, top = 0, 0
     for _, e in ipairs(list) do sum = sum + e.n; if e.n > top then top = e.n end end
 
-    local n = db.collapsed and 0 or math.min(#list, db.rows)
+    -- as many rows as fit the window; the mouse wheel scrolls the rest
+    local bh = db.barHeight
+    local fit = math.max(1, math.floor((db.height - HEADER - 2) / (bh + BAR_SPACING)))
+    scroll = math.max(0, math.min(scroll, #list - fit))
+    local n = db.collapsed and 0 or math.min(#list - scroll, fit)
     for i = 1, math.max(n, #rows) do
         local r = Row(i)
-        local e = list[i]
+        local index = i + scroll
+        local e = list[index]
+        r:ClearAllPoints()
+        r:SetHeight(bh)
+        r:SetPoint("TOPLEFT", 5, -HEADER + 2 - (i - 1) * (bh + BAR_SPACING))
+        r:SetPoint("RIGHT", -1, 0)
+        r.icon:SetSize(bh, bh)
         if e and i <= n then
             local c = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
             r.bar.tex:SetVertexColor(c and c.r or 0.6, c and c.g or 0.6, c and c.b or 0.6)
             r.bar:SetMinMaxValues(0, math.max(top, 1))
             r.bar:SetValue(e.n)
-            r.name:SetText(i .. ". " .. e.name)
+            r.name:SetText(index .. ". " .. e.name)
             r.value:SetText(sum > 0 and ("%d (%d%%)"):format(e.n, math.floor(e.n / sum * 100 + 0.5)) or "0")
             ClassIcon(r.icon, e.class)
             r.who = e.name
@@ -531,13 +545,11 @@ local function Layout()
             r:Hide()
         end
     end
+    win.listSize, win.fit = #list, fit
     body:SetShown(not db.collapsed)
+    body:SetAlpha((db.bgOpacity or 60) / 100)
     empty:SetShown(not db.collapsed and n == 0)
-    if db.collapsed then
-        win:SetHeight(HEADER)
-    else
-        win:SetHeight(HEADER + math.max(n, 1) * (BAR_HEIGHT + BAR_SPACING) + 4)
-    end
+    if win.grip then win.grip:SetShown(not db.locked and not db.collapsed) end
     win:SetAlpha((db.opacity or 100) / 100)
     win:Show()
 end
@@ -550,6 +562,76 @@ end
 ns.ResetCounts = ResetCounts
 
 mini:SetScript("OnClick", function() db.collapsed = not db.collapsed; Layout() end)
+
+-- resizing: the meter's corner handle, shown while the mouse is over the window
+if win.SetResizable then win:SetResizable(true) end
+if win.SetResizeBounds then
+    pcall(win.SetResizeBounds, win, 160, HEADER + 30, 600, 800)
+elseif win.SetMinResize then
+    win:SetMinResize(160, HEADER + 30); win:SetMaxResize(600, 800)
+end
+local grip = CreateFrame("Button", nil, win)
+grip:SetFrameLevel((win:GetFrameLevel() or 1) + 10)
+do
+    local n, h, p = grip:CreateTexture(nil, "OVERLAY"), grip:CreateTexture(nil, "HIGHLIGHT"), grip:CreateTexture(nil, "OVERLAY")
+    n:SetAllPoints(); h:SetAllPoints(); p:SetAllPoints()
+    if Atlas(n, "damagemeters-scalehandle", 0.8, 0.6, 0.2, 0.6) then
+        grip:SetSize(60, 60)               -- the meter's own size and spot
+        grip:SetPoint("BOTTOMRIGHT", 9, -8)
+    else
+        grip:SetSize(16, 16)
+        grip:SetPoint("BOTTOMRIGHT", -2, 2)
+        n:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    end
+    if not Atlas(h, "damagemeters-scalehandle-hover", 1, 1, 1, 0.2) then h:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight") end
+    if not Atlas(p, "damagemeters-scalehandle-pressed", 0.6, 0.4, 0.1, 0.6) then p:SetTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down") end
+    grip:SetNormalTexture(n); grip:SetHighlightTexture(h); grip:SetPushedTexture(p)
+end
+grip:SetAlpha(0)
+win.grip = grip
+
+local function SavePos()
+    local point, _, rel, x, y = win:GetPoint()
+    if point then db.pos = { point, rel, x, y } end
+end
+grip:SetScript("OnMouseDown", function(_, button)
+    if button ~= "LeftButton" or db.locked or db.collapsed then return end
+    sizing = true
+    win:StartSizing("BOTTOMRIGHT")
+end)
+grip:SetScript("OnMouseUp", function()
+    if not sizing then return end
+    win:StopMovingOrSizing()
+    sizing = false
+    db.width = math.floor(win:GetWidth() + 0.5)
+    db.height = math.floor(win:GetHeight() + 0.5)
+    SavePos()
+    Layout()
+    if ns.RefreshOptions then ns.RefreshOptions() end
+end)
+win:SetScript("OnSizeChanged", function()
+    if sizing then
+        db.width, db.height = win:GetWidth(), win:GetHeight()
+        Layout()
+    end
+end)
+
+-- show the corner handle while the mouse is over the window, like the meter
+local function GripFade()
+    if sizing then return end
+    local over = win:IsMouseOver()
+    grip:SetAlpha(over and 1 or 0)
+    if over then C_Timer.After(0.3, GripFade) end
+end
+win:SetScript("OnEnter", GripFade)
+ns.GripFade = GripFade
+
+win:EnableMouseWheel(true)
+win:SetScript("OnMouseWheel", function(_, delta)
+    if not win.listSize or not win.fit or win.listSize <= win.fit then return end
+    scroll = math.max(0, math.min(scroll - delta, win.listSize - win.fit))
+    Layout()
+end)
 
 local function SetMode(mode) db.mode = mode; Layout() end
 if session.SetupMenu then
@@ -851,6 +933,9 @@ function ns.BuildOptions()
         title = "Kick Tally",
         updateNotice = true,
         changes = {
+            { "1.2.0", "Resize the window by dragging its bottom-right corner",
+                       "Scroll with the mouse wheel when more players than fit",
+                       "Thinner bars and a see-through background, like the meter; both adjustable" },
             { "1.1.0", "The window now looks like the game's damage meter",
                        "Current fight or overall (C / O), settings and minimise buttons on its title bar",
                        "Show or hide the window, or only show it in a party or raid" },
@@ -882,11 +967,14 @@ function ns.BuildOptions()
             { type = "check", key = "showWindow", label = "Show the tally window" },
             { type = "check", key = "groupOnly", label = "Only while I'm in a party or raid" },
             { type = "check", key = "trackGroup", label = "Count party and raid members' kicks too" },
-            { type = "range", key = "rows", label = "Players shown", min = 3, max = 20, step = 1 },
-            { type = "range", key = "width", label = "Width", min = 180, max = 400, step = 10 },
-            { type = "range", key = "opacity", label = "Opacity", min = 30, max = 100, step = 10, suffix = "%" },
+            { type = "range", key = "width", label = "Width (or drag the bottom-right corner)", min = 160, max = 600, step = 10 },
+            { type = "range", key = "height", label = "Height", min = 60, max = 800, step = 10 },
+            { type = "range", key = "barHeight", label = "Bar height", min = 12, max = 32, step = 1 },
+            { type = "range", key = "bgOpacity", label = "Background opacity", min = 0, max = 100, step = 10, suffix = "%" },
+            { type = "range", key = "opacity", label = "Window opacity", min = 30, max = 100, step = 10, suffix = "%" },
             { type = "check", key = "locked", label = "Lock the window (otherwise drag its title bar to move it)" },
-            { type = "button", label = "Reset position", func = function() db.pos = nil; PlaceWindow() end },
+            { type = "button", label = "Reset position and size", func = function()
+                db.pos = nil; db.width, db.height = defaults.width, defaults.height; PlaceWindow(); Layout() end },
             { type = "button", label = "Reset the counts", func = function() ResetCounts() end },
             { type = "button", label = "Test",
               dynamicLabel = function() return testMode and "Stop the test" or "Test" end,
@@ -931,7 +1019,8 @@ SlashCmdList.KICKTALLY = function(msg)
         end
     elseif cmd == "reset" then
         if rest == "position" then
-            db.pos = nil; PlaceWindow(); Print("window position reset.")
+            db.pos = nil; db.width, db.height = defaults.width, defaults.height; PlaceWindow(); Layout()
+            Print("window position and size reset.")
         else
             ResetCounts(); Print("counts reset.")
         end
@@ -950,7 +1039,7 @@ SlashCmdList.KICKTALLY = function(msg)
         Print("/kicks report [total] - post this fight's (or all) kicks to the group")
         Print("/kicks lock | unlock - lock or move the window")
         Print("/kicks show | hide - show or hide the window")
-        Print("/kicks reset [position] - reset the counts (or the window position)")
+        Print("/kicks reset [position] - reset the counts (or the window's position and size)")
         Print("/kicks debug - print what it sees, to check it on Forever")
     end
 end
