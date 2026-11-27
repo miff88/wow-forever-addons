@@ -832,6 +832,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
     if event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_EQUIPMENT_CHANGED" then
         BuildLookups()
         Refresh()
+        if event == "PLAYER_ENTERING_WORLD" and ns.SeedPins then C_Timer.After(4, ns.SeedPins) end
     elseif event == "PLAYER_REGEN_DISABLED" then
         Layout() -- pinned procs appear greyed out
         Debug("combat started; buffs readable: " .. tostring(AurasReadable()) .. ", strength readable: " .. tostring(ReadStr() ~= nil))
@@ -935,14 +936,13 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.5.0", "Starter pins: the procs your class builds around are pinned for you (if you have them)",
+                       "Unpin any you don't want with /proc unpin <name> or on this page" },
             { "1.4.0", "Proc Plates is now part of Proc City: Overpower, Revenge, Riposte, Counterattack and Mongoose Bite",
                        "Overpower also marks the mob that dodged you on its nameplate",
                        "Lights the matching action buttons, including Shadow Bolt during Shadow Trance" },
             { "1.3.0", "Pin the procs you care about: they keep their place, greyed out while they're down",
                        "Pick them on this page or with /proc pin <name>" },
-            { "1.2.0", "Tracks every Forever weapon that buffs you on hit or on use",
-                       "Destiny, Arcanite Champion, Claymore of Two Moons, Ragehammer, Hand of Edward the Odd and 23 more",
-                       "Shared buff names (Haste, Enrage) go to the weapon you have on" },
 
         },
         icon = "Interface\\Icons\\Spell_Holy_BlessingOfStrength",
@@ -983,6 +983,62 @@ function ns.PinChoices()
         if fits or IsPinned(p.key) then out[#out + 1] = p end
     end
     return out
+end
+
+-- Starter pins: the first time each class logs in with nothing pinned, pin the procs that
+-- class usually builds around, if this character has them (the talent or the ability, or
+-- Crusader on a weapon right now). Unpin any you don't want; they aren't added back.
+local STARTER = {
+    WARRIOR = { { key = "overpower" }, { key = "flurry", talent = { 12319, 12971, 12972, 12973, 12974 } },
+                { key = "holystrength", crusader = true } },
+    ROGUE   = { { key = "riposte" }, { key = "remorseless", talent = { 14144, 14148 } },
+                { key = "holystrength", crusader = true } },
+    HUNTER  = { { key = "quickshots", talent = { 19552, 19553, 19554, 19555, 19556 } }, { key = "mongoose" } },
+    MAGE    = { { key = "clearcasting", talent = { 11213, 12574, 12575, 12576, 12577 } } },
+    PRIEST  = { { key = "spirittap", talent = { 15270, 15335, 15336, 15337, 15338 } } },
+    WARLOCK = { { key = "shadowtrance", talent = { 18094, 18095 } } },
+    PALADIN = { { key = "vengeance", talent = { 20049, 20056, 20057, 20058, 20059 } },
+                { key = "holystrength", crusader = true } },
+    SHAMAN  = { { key = "flurry", talent = { 16256, 16281, 16282, 16283, 16284 } },
+                { key = "clearcasting", talent = { 16164 } } },
+    DRUID   = { { key = "clearcasting", talent = { 16864 } }, { key = "naturesgrace", talent = { 16880 } } },
+}
+ns.STARTER = STARTER
+
+function ns.SeedPins()
+    if not db or testMode then return end
+    if type(db.seeded) ~= "table" then db.seeded = {} end
+    if db.seeded[playerClass] then return end
+    -- you've already pinned something for this class yourself
+    for _, k in ipairs(db.pins) do
+        local p = byKey[k]
+        if p and p.class and p.class[playerClass] then db.seeded[playerClass] = true return end
+    end
+    local picks, classPicks = {}, 0
+    for _, st in ipairs(STARTER[playerClass] or {}) do
+        local p = byKey[st.key]
+        local has
+        if not p then has = false
+        elseif st.crusader then has = crusaderWeapons > 0
+        elseif st.talent then has = KnowsAny(st.talent)
+        else has = KnowsAny(p.ids) end
+        if has and not IsPinned(st.key) then
+            picks[#picks + 1] = p
+            if not st.crusader then classPicks = classPicks + 1 end
+        end
+    end
+    -- nothing for your class yet (low level, or talents not picked): try again next login
+    if classPicks == 0 then return end
+    local added = {}
+    for _, p in ipairs(picks) do
+        db.pins[#db.pins + 1] = p.key
+        added[#added + 1] = p.name
+    end
+    db.seeded[playerClass] = true
+    Layout()
+    local list = #added == 1 and added[1] or (table.concat(added, ", ", 1, #added - 1) .. " and " .. added[#added])
+    local verb = #added == 1 and "it keeps its place and shows" or "they keep their place and show"
+    Print(("pinned %s for you: %s greyed out in combat while down. /proc unpin <name> to remove one."):format(list, verb))
 end
 
 function ns.TogglePin(key)

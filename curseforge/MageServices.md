@@ -31,6 +31,11 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 - **Optional group tidy-up:** after your portal, customers who went through are removed from the group so there's room for the next lot. Only people you invited from Mage Services or who asked you in chat, and only while you lead.
 - Optional auto-invite.
 
+### Advertise
+- One click on **Advertise** posts your own line in Trade (or General, say, yell): "Mage in Orgrimmar selling portals to UC and TB, plus food and water. Whisper me!", listing the portals this character has.
+- At most once every 3 minutes (adjustable), with a countdown on the button, so you never spam.
+- Edit the text on the settings page. Also `/ms ad` or a key binding, and an optional slim bar keeps the button handy while you wait for customers.
+
 ### Runes
 - Your Runes of Teleportation and Runes of Portals counts at the bottom of the window.
 - A chat warning when Runes of Portals run low (below 5 by default, adjustable), so you restock before you run dry mid-service.
@@ -52,6 +57,7 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 | Command | What it does |
 |---|---|
 | `/ms` | Open settings |
+| `/ms ad` | Post your advert |
 | `/ms test` | Add sample requests to try the window |
 | `/ms zone [auto, city or zone]` | Show or set your location |
 | `/ms pause` / `/ms resume` | Stop or start taking requests on this character |

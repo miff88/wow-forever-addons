@@ -1,4 +1,5 @@
 <Bindings>
     <Binding name="CLICK MageServicesCastButton:LeftButton" header="MAGESERVICES" category="ADDONS"/>
     <Binding name="MAGESERVICES_TOGGLEPAUSE" category="ADDONS">MageServices_TogglePause()</Binding>
+    <Binding name="MAGESERVICES_ADVERTISE" category="ADDONS">MageServices_Advertise()</Binding>
 </Bindings>

@@ -18,6 +18,7 @@ local ADDON_NAME, ns = ...
 BINDING_HEADER_MAGESERVICES = "Mage Services"
 _G["BINDING_NAME_CLICK MageServicesCastButton:LeftButton"] = "Cast the requested portal"
 BINDING_NAME_MAGESERVICES_TOGGLEPAUSE = "Pause or resume the service"
+BINDING_NAME_MAGESERVICES_ADVERTISE = "Post your advert"
 
 local defaults = {
     updateNotice = true,  -- "a newer version is out" chat notice (VersionCheck.lua)
@@ -71,6 +72,11 @@ local defaults = {
     runeCount = true,     -- rune counts at the bottom right of the window
     runeLow = 5,          -- warn when Runes of Portals fall below this
     kickAfterPort = false,-- remove customers from the group once they've gone through your portal
+    -- your own advert (the Advertise button, /ms ad or a key binding)
+    adMsg     = "Mage in {zone} selling {services}. Whisper me!",
+    adChannel = "trade",  -- trade, general, say or yell
+    adGap     = 3,        -- minutes between adverts
+    idleBar   = false,    -- keep a slim bar (with Advertise) when there are no requests
 }
 
 ns.defaults = defaults
@@ -392,6 +398,102 @@ local function SameTrip(req, list)
 end
 ns.SameTrip = SameTrip
 
+---------------------------------------------------------------------------
+-- Advertise: post your own line ("Mage in Orgrimmar: portals to UC and TB, food and water.")
+-- Posting to a chat channel needs a click or key press, so it only goes out from the
+-- Advertise button, /ms ad or the key binding, and at most once every few minutes.
+---------------------------------------------------------------------------
+local CITY_SHORT = { Orgrimmar = "Org", Undercity = "UC", ["Thunder Bluff"] = "TB",
+                     Stormwind = "SW", Ironforge = "IF", Darnassus = "Darn" }
+local FACTION_CITIES = { Horde = { "Orgrimmar", "Undercity", "Thunder Bluff" },
+                         Alliance = { "Stormwind", "Ironforge", "Darnassus" } }
+local AD_CHANNELS = { trade = "Trade", general = "General", say = "Say", yell = "Yell" }
+local lastAd = -1e9
+
+local function JoinList(list)
+    if #list <= 1 then return list[1] or "" end
+    return table.concat(list, ", ", 1, #list - 1) .. " and " .. list[#list]
+end
+
+-- "UC, Org and TB", and "portals to UC, Org and TB, food and water"
+function ns.AdParts()
+    local cities = {}
+    for _, c in ipairs(FACTION_CITIES[Faction()]) do
+        if KnowsSpell("Portal: " .. c) ~= false then cities[#cities + 1] = CITY_SHORT[c] end
+    end
+    local water = KnowsSpell("Conjure Water") ~= false or KnowsSpell("Conjure Food") ~= false
+    local services = ""
+    if #cities > 0 and water then
+        services = "portals to " .. JoinList(cities) .. ", plus food and water"
+    elseif #cities > 0 then
+        services = "portals to " .. JoinList(cities)
+    elseif water then
+        services = "food and water"
+    end
+    return JoinList(cities), services
+end
+
+function ns.FillAd(template)
+    local portals, services = ns.AdParts()
+    local zone = ns.MyZone()
+    if zone == "" then zone = "town" end
+    local values = { services = services, portals = portals, zone = zone }
+    return ((template or ""):gsub("{(%a+)}", function(k) return values[k] end))
+end
+
+local function FindChannel(prefix)
+    if not GetChannelList then return nil end
+    local list = { GetChannelList() }
+    for i = 1, #list, 3 do
+        local id, name = list[i], list[i + 1]
+        if type(name) == "string" and not IsSecret(name) and name:lower():find("^" .. prefix) then return id end
+    end
+end
+
+-- seconds until the next advert is allowed (0 = now)
+function ns.AdWait()
+    return math.max(0, (db.adGap or 3) * 60 - (GetTime() - lastAd))
+end
+
+function ns.Advertise()
+    if not db then return end
+    if ns.IsPaused() then Print("paused: resume first (the Resume button or /ms resume).") return end
+    local wait = ns.AdWait()
+    if wait > 0 then
+        Print(("you can advertise again in %d:%02d (every %d min, set on the settings page)."):format(
+            math.floor(wait / 60), math.ceil(wait) % 60, db.adGap))
+        return
+    end
+    local _, services = ns.AdParts()
+    if services == "" and db.adMsg:find("{services}") then
+        Print("nothing to advertise: no portals or Conjure Water on this character.")
+        return
+    end
+    local text = ns.FillAd(db.adMsg)
+    local ch = db.adChannel or "trade"
+    local ok
+    if ch == "say" or ch == "yell" then
+        ok = ns.SendChat(text, ch:upper())
+    else
+        local id = FindChannel(ch)
+        if not id then
+            Print(("you're not in %s chat here. Try it in a city, or pick another channel on the settings page."):format(AD_CHANNELS[ch] or ch))
+            return
+        end
+        ok = ns.SendChat(text, "CHANNEL", id)
+    end
+    if ok then
+        lastAd = GetTime()
+        if ns.Refresh then ns.Refresh() end
+    else
+        Print("the game didn't let that go out.")
+    end
+end
+
+function MageServices_Advertise()
+    if ns.Advertise then ns.Advertise() end
+end
+
 local function InviteTrip(req, list)
     local trip = SameTrip(req, list)
     for _, r in ipairs(trip) do Invite(r.sender) end
@@ -577,9 +679,24 @@ win.clear:SetPoint("RIGHT", win.close, "LEFT", -4, 0)
 win.pause = FlatButton(win, 58, 18, "Pause")
 win.pause:SetPoint("RIGHT", win.clear, "LEFT", -4, 0)
 
+win.ad = FlatButton(win, 70, 18, "Advertise")
+win.ad:SetPoint("RIGHT", win.pause, "LEFT", -4, 0)
+win.ad:SetScript("OnClick", function() MageServices_Advertise() end)
+win.ad:HookScript("OnEnter", function(self)
+    if not db then return end
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:AddLine("Post your advert in " .. (({ trade = "Trade", general = "General", say = "Say", yell = "Yell" })[db.adChannel] or db.adChannel))
+    GameTooltip:AddLine(ns.FillAd(db.adMsg), 1, 1, 1, true)
+    local wait = ns.AdWait()
+    if wait > 0 then GameTooltip:AddLine(("Again in %d:%02d"):format(math.floor(wait / 60), math.ceil(wait) % 60), 0.7, 0.7, 0.7) end
+    GameTooltip:AddLine("Edit it on the settings page. Also /ms ad or a key binding.", 0.7, 0.7, 0.7, true)
+    GameTooltip:Show()
+end)
+win.ad:HookScript("OnLeave", function() GameTooltip:Hide() end)
+
 win.title = win:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 win.title:SetPoint("LEFT", win.header, "LEFT", 8, 0)
-win.title:SetPoint("RIGHT", win.pause, "LEFT", -8, 0)
+win.title:SetPoint("RIGHT", win.ad, "LEFT", -8, 0)
 win.title:SetJustifyH("LEFT")
 win.title:SetWordWrap(false)
 
@@ -727,6 +844,7 @@ function ns.IsPaused()
 end
 
 local pausedClosed = false -- closed the paused bar with x: stay hidden until resume or /ms show
+local idleClosed = false   -- closed the idle bar with x: stay hidden until a request comes in
 
 local function UpdatePauseButton()
     local p = ns.IsPaused()
@@ -734,6 +852,11 @@ local function UpdatePauseButton()
     win.pause.primary = p
     PaintButton(win.pause)
     win.clear:SetShown(not p)
+    win.ad:SetShown(not p)
+    if db then
+        local wait = ns.AdWait()
+        win.ad.text:SetText(wait > 0 and ("Ad %d:%02d"):format(math.floor(wait / 60), math.ceil(wait) % 60) or "Advertise")
+    end
     win.pause:ClearAllPoints()
     win.pause:SetPoint("RIGHT", p and win.close or win.clear, "LEFT", -4, 0)
 end
@@ -829,13 +952,21 @@ Refresh = function()
     if ns.UpdateCastButton then ns.UpdateCastButton(visible) end
     win.footer:SetText(ns.EarningsLine and ns.EarningsLine() or "")
     win:SetHeight(2 + HEADER_H + shown * ROW_H + FOOTER_H + 1)
-    if shown == 0 then win:Hide() else win:Show() end
+    if shown > 0 then
+        idleClosed = false
+        win:Show()
+    elseif db.idleBar and not idleClosed then
+        win:Show() -- a slim bar with Advertise while you wait
+    else
+        win:Hide()
+    end
 end
 
 ns.Refresh = Refresh
 win.clear:SetScript("OnClick", function() wipe(requests); Refresh() end)
 win.close:SetScript("OnClick", function()
     if ns.IsPaused() then pausedClosed = true end
+    if #requests == 0 then idleClosed = true end
     win:Hide()
 end)
 
@@ -1219,15 +1350,15 @@ function ns.BuildOptions()
         title = "Mage Services",
         updateNotice = true,
         changes = {
+            { "2.1.0", "Advertise button: posts your own advert in Trade (or General, say, yell), at most every few minutes",
+                       "It lists the portals you have; edit it on this page. Also /ms ad or a key binding",
+                       "Optional slim bar with the button when there are no requests" },
             { "2.0.0", "\"All\" button invites everyone going to the same city at once",
                        "Rune counts on the window, with a warning when Runes of Portals run low",
                        "Optional: remove customers from the group once they've gone through your portal" },
             { "1.9.0", "Pause / Resume button on the window",
                        "\"Show requests from\": your city only, your city + unknown, or everywhere",
                        "Better at telling where people are: channel zones, guildmates, friends" },
-            { "1.8.0", "Edit your replies on this page, with an example under each",
-                       "Optional automatic reply when someone whispers you",
-                       "Tells you when a newer version is out" },
         },
         icon = "Interface\\Icons\\Spell_Arcane_PortalOrgrimmar",
         about = "Spots portal and water requests in chat",
@@ -1296,6 +1427,20 @@ function ns.BuildOptions()
               onSelect = function(v) ns.PlayAlertSound(v) end, preview = function(v) ns.PlayAlertSound(v) end },
             { type = "check", key = "flash", label = "Flash the WoW icon on the taskbar" },
             { type = "check", key = "autoInvite", label = "Invite them automatically" },
+            { type = "header", label = "Advertise" },
+            { type = "text", key = "adMsg", label = "Your advert", default = defaults.adMsg,
+              preview = function(t) return ns.FillAd(t) end },
+            { type = "info", height = 44, lines = function()
+                return "|cff999999{services} is the portals you have and food and water, {portals} just the cities, {zone} where you are. Keep \"selling\" or \"WTS\" in it, so other mages' Mage Services don't list it as a request. Press Enter to save.|r" end },
+            { type = "dropdown", key = "adChannel", label = "Post it in", options = function() return {
+                { value = "trade", label = "Trade" }, { value = "general", label = "General" },
+                { value = "say", label = "Say" }, { value = "yell", label = "Yell" },
+              } end },
+            { type = "range", key = "adGap", label = "At most once every", min = 1, max = 15, step = 1, suffix = " min" },
+            { type = "check", key = "idleBar", label = "Keep a slim bar with the Advertise button when there are no requests" },
+            { type = "button", label = "Advertise now", func = function() MageServices_Advertise() end },
+            { type = "info", height = 30, lines = function()
+                return "|cff999999The game only lets an addon post in a channel from a click or key press: the Advertise button, /ms ad, or a key binding (Key Bindings > AddOns).|r" end },
             { type = "header", label = "Runes and your group" },
             { type = "check", key = "runeCount", label = "Show your rune counts at the bottom of the window" },
             { type = "range", key = "runeLow", label = "Warn when Runes of Portals fall below", min = 0, max = 20, step = 1 },
@@ -1402,6 +1547,8 @@ SlashCmdList.MAGESERVICES = function(msg)
     elseif cmd == "show" then
         pausedClosed = false
         win:Show()
+    elseif cmd == "ad" or cmd == "advertise" then
+        ns.Advertise()
     elseif cmd == "pause" then
         ns.SetPaused(true)
     elseif cmd == "resume" then
@@ -1441,6 +1588,7 @@ SlashCmdList.MAGESERVICES = function(msg)
     else
         Print("v" .. ns.version .. " commands (or just /ms for the settings page):")
         Print("/ms pause, /ms resume - stop or start taking requests on this character (now " .. (ns.IsPaused() and "paused" or "on") .. ")")
+        Print("/ms ad - post your advert (edit it on the settings page)")
         Print("/ms filter here|nearby|all - show requests from your city only, your city + unknown, or everywhere (now " .. db.scope .. ")")
         Print("/ms add <phrase> - also watch for your own phrase, e.g. /ms add lf summon")
         Print("/ms list, /ms remove <number> - see or remove your phrases")

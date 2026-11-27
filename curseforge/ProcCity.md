@@ -24,6 +24,7 @@ Made for **World of Warcraft: Forever**. Every class.
 - Icons grow to the right or left as procs happen, with the seconds left and an optional clock sweep.
 - **Crusader on both weapons:** when both proc at once, the icon glows.
 - **Pinned procs:** pin the procs you build around and they keep their place, shown as a faint grey icon while they're down. Spot a missing Flurry or Crusader as easily as a running one. By default the grey icons only show in combat.
+- **Starter pins:** the first time each class logs in, the procs it usually builds around are pinned for you, if you have them (warriors get Overpower, Flurry and Crusader). Unpin any you don't want.
 - **Button glow:** your Overpower, Revenge, Riposte, Counterattack and Mongoose Bite buttons light up while they're usable, and Shadow Bolt lights up during Shadow Trance.
 - Stack counts, an optional sound, and adjustable icon size and gap.
 

@@ -44,7 +44,7 @@ Your procs and short buffs as a movable row of icons, with the time left on each
 
 **After a dodge, parry or block.** Overpower, Revenge (warriors), Riposte (rogues), Counterattack and Mongoose Bite (hunters) join the row for their 5 second window, and their buttons glow on your action bars. Overpower also puts an icon on the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave: a nameplate dodge only counts when your Overpower charge goes up at the same moment, so dodges against other players are ignored. The others only show while the game says you can cast them, and go away once you use them. Mongoose Bite only shows when the game confirms it, since your target dodging your pet looks the same as dodging you. This used to be Proc Plates (Overpower Plates). Shadow Trance also lights your Shadow Bolt buttons.
 
-**Pinned procs.** Pin the ones you build around (Flurry, Crusader, Enrage...) on the settings page or with `/proc pin <name>`. They come first, always in the same place, and stay as a faint grey icon while they're down, so a missing proc is as easy to spot as a running one. By default the grey icons only show in combat.
+**Pinned procs.** Pin the ones you build around (Flurry, Crusader, Enrage...) on the settings page or with `/proc pin <name>`. They come first, always in the same place, and stay as a faint grey icon while they're down, so a missing proc is as easy to spot as a running one. By default the grey icons only show in combat. The first time each class logs in, a few starter pins are set for it if the character has them (warriors: Overpower, Flurry and Crusader; mages: Clearcasting; and so on); unpin any you don't want and they stay unpinned.
 
 Forever hides buff details from addons in combat. Out of combat Proc City reads your buffs exactly, and learns each buff's real Forever duration. In combat it works from what the game still shows: your own casts (trinkets, cooldowns), your Strength (Crusader and other Strength procs, which is also how it tells one Crusader from two) and the game's combat text, then corrects itself when combat ends. Procs it has no in-combat signal for may only appear out of combat; `/proc debug` prints what it sees during a fight, which tells us what to add.
 
@@ -110,6 +110,8 @@ Spots people asking for portals or water in chat and lists them in a small windo
 
 **Group trips.** When two or more people want the same city, their rows get an **All** button (e.g. "All 3") that invites everyone going there at once, so one portal serves them all. Optionally (off by default), once your portal is up, customers who were standing with you are removed from the group as they go through, so there's room for the next lot. It only removes people you invited from Mage Services or who asked you in chat, and only while you lead the group.
 
+**Advertise.** The **Advertise** button on the window (or `/ms ad`, or a key binding) posts your own advert in Trade, General, say or yell: by default "Mage in Orgrimmar selling portals to UC and TB, plus food and water. Whisper me!", listing the portals this character actually has. It goes out at most once every 3 minutes (adjustable), and the button counts down until the next one. The game only lets addons post in channels from a click or key press, so it never posts by itself. The text is edited on the settings page, and an optional slim bar keeps the button on screen when there are no requests.
+
 **Runes.** The bottom right of the window shows how many Runes of Teleportation and Runes of Portals you carry, and you get a chat warning when Runes of Portals drop below 5 (adjustable). The warning starts once it has seen a portal use a rune.
 
 **On-screen alerts.** The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4, ElvUI and Dominos), a message shows at the top of the screen, and the screen edges flash. Each can be turned off.
@@ -135,6 +137,7 @@ Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it on
 - `/ms exclude <phrase>` never match lines containing it; `/ms excludes`, `/ms unexclude <n>`
 - `/ms portmsg <text>`, `/ms watermsg <text>`, `/ms custommsg <text>`, `/ms cantmsg <text>` change the replies
 - `/ms autoreply` turns automatic replies to whispers on or off
+- `/ms ad` post your advert
 - `/ms test` add sample requests, `/ms show` show the window
 
 ## Retired

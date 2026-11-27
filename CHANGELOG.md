@@ -2,6 +2,13 @@
 
 ## 2026-11-27
 
+Proc City 1.5.0
+- Starter pins: the first time each class logs in with nothing pinned, the procs it usually builds around are pinned for you, if the character has them. Warriors get Overpower, Flurry and Crusader; rogues Riposte and Remorseless Attacks; hunters Quick Shots and Mongoose Bite; mages Clearcasting; priests Spirit Tap; warlocks Shadow Trance; paladins Vengeance and Crusader; shamans Flurry and Clearcasting; druids Clearcasting and Nature's Grace. A chat line says what was pinned. Unpin any you don't want and they stay unpinned.
+
+Mage Services 2.1.0
+- Advertise: a button on the window (also `/ms ad` and a key binding) posts your own advert in Trade, General, say or yell. By default it reads "Mage in Orgrimmar selling portals to UC and TB, plus food and water. Whisper me!", listing the portals this character has. At most once every 3 minutes (adjustable), and the button counts down to the next one. Edit the text on the settings page.
+- Optional slim bar that keeps the window (and the Advertise button) on screen when there are no requests.
+
 Proc City 1.4.0
 - Proc Plates (formerly Overpower Plates) is now part of Proc City. Warriors get Overpower when a mob dodges you and Revenge after a block, dodge or parry; rogues get Riposte; hunters get Counterattack and Mongoose Bite. They join the icon row for their 5 second window, can be pinned, and only show while the game says you can cast them.
 - Overpower also puts an icon on the nameplate of the mob that dodged you, as Proc Plates did (on by default, `/proc plates` to turn it off).
