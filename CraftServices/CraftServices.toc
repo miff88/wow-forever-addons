@@ -1,0 +1,22 @@
+## Interface: 16001
+## Title: |cffffb347Craft|r Services
+## Notes: Spots people asking for enchants, crafts and lockboxes in chat, knows your recipes and mats, and lists them with Invite and Whisper buttons. Works for every profession.
+## Author: Mitch Brindle
+## Version: 1.0.0
+## IconTexture: Interface\Icons\Trade_BlackSmithing
+## Category: Professions
+## X-Website: https://github.com/miff88/wow-forever-addons
+## AddonCompartmentFunc: CraftServices_OnAddonCompartmentClick
+## SavedVariables: CraftServicesDB
+## SavedVariablesPerCharacter: CraftServicesCharDB
+
+Options.lua
+VersionCheck.lua
+Data.lua
+Book.lua
+Matcher.lua
+Alerts.lua
+CraftServices.lua
+Service.lua
+TradePanel.lua
+Group.lua

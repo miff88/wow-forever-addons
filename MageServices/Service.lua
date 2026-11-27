@@ -422,6 +422,8 @@ local function Finish(result, reason)
     if not trade or trade.done then return end
     trade.done = true
     local t, db = trade, ns.db
+    -- the window can empty as the trade goes through: use what was there when you accepted
+    if result == "complete" and t.snap then t.money, t.items = t.snap.money, t.snap.items end
     if result == "complete" and not t.test then RecordAnyTrade(t.money or 0) end
     if not t.key or not IsCustomer(t.key) then trade = nil return end
     local name = t.first
@@ -452,6 +454,13 @@ local function Finish(result, reason)
     trade = nil
 end
 
+-- A game format string ("%s is busy.") as a Lua pattern that matches the filled-in text.
+local function FormatPattern(fmt)
+    local p = fmt:gsub("([%^%$%(%)%.%[%]%*%+%-%?%%])", "%%%1")
+    p = p:gsub("%%%%%%%%", "%%%%"):gsub("%%%%s", ".+"):gsub("%%%%d", "%%d+")
+    return "^" .. p .. "$"
+end
+
 -- Any of the game's ERR_TRADE_* messages counts as a failed trade.
 local tradeErrors
 function ns.IsTradeError(msg)
@@ -460,8 +469,7 @@ function ns.IsTradeError(msg)
         for k, v in pairs(_G) do
             if type(k) == "string" and k:find("^ERR_TRADE_") and type(v) == "string"
                 and k ~= "ERR_TRADE_COMPLETE" and k ~= "ERR_TRADE_CANCELLED" then
-                local pattern = "^" .. v:gsub("([%(%)%.%+%-%*%?%[%]%^%$])", "%%%1"):gsub("%%%%s", ".+"):gsub("%%%%d", "%%d+") .. "$"
-                tradeErrors[#tradeErrors + 1] = pattern
+                tradeErrors[#tradeErrors + 1] = FormatPattern(v)
             end
         end
     end
@@ -492,6 +500,13 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
 
     elseif event == "TRADE_MONEY_CHANGED" or event == "TRADE_TARGET_ITEM_CHANGED" or event == "TRADE_ACCEPT_UPDATE" then
         ReadTrade()
+        if event == "TRADE_ACCEPT_UPDATE" and trade then
+            -- once you accept, nothing can change without the game clearing both accepts,
+            -- so what's in the window now is what will be traded
+            trade.iAccepted = (arg1 == 1 or arg1 == true)
+            trade.theyAccepted = (arg2 == 1 or arg2 == true)
+            trade.snap = trade.iAccepted and { money = trade.money, items = trade.items } or nil
+        end
 
     elseif event == "UI_INFO_MESSAGE" then
         -- arg2 = message text
@@ -510,11 +525,12 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
         if trade then Finish("cancelled") end
 
     elseif event == "TRADE_CLOSED" then
-        -- the complete/cancel message can arrive just after the window closes
+        -- the complete/cancel message can arrive just after the window closes; if both
+        -- of you had accepted and no error came, the trade went through
         local t = trade
         if t then
             C_Timer.After(0.6, function()
-                if trade == t and not t.done then Finish("cancelled") end
+                if trade == t and not t.done then Finish((t.iAccepted and t.theyAccepted) and "complete" or "cancelled") end
             end)
         end
     end

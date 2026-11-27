@@ -1,0 +1,5 @@
+<Bindings>
+    <Binding name="CLICK CraftServicesCastButton:LeftButton" header="CRAFTSERVICES" category="ADDONS"/>
+    <Binding name="CRAFTSERVICES_TOGGLEPAUSE" category="ADDONS">CraftServices_TogglePause()</Binding>
+    <Binding name="CRAFTSERVICES_ADVERTISE" category="ADDONS">CraftServices_Advertise()</Binding>
+</Bindings>

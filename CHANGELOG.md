@@ -2,6 +2,17 @@
 
 ## 2026-11-27
 
+Craft Services 1.0.0
+- New addon: Mage Services for every profession. Spots people asking for enchants, crafts and lockboxes in chat (Enchanting, Blacksmithing, Leatherworking, Tailoring, Alchemy, Engineering, Jewelcrafting, Inscription, Cooking, First Aid, and Lockpicking for rogues) and lists them with Invite and Whisper buttons.
+- Reads your recipes when you open a profession window, so it knows what you can make and whether you have the mats. Understands links, recipe names and enchant nicknames like "crusader" or "+7 agi gloves".
+- Replies fill in the recipe, your price, the mats and their place in the queue. Optional automatic replies to whispers and automatic invites (only when you can do it).
+- Follows each customer from invite to paid. A helper beside the trade window checks mats, their item and the payment, and has buttons to enchant their item, pick their lockbox, open the recipe, and ask for payment or missing mats.
+- Prices, a featured-recipe advert, payment messages, earnings by profession and recipe, and customer history.
+
+Mage Services 2.1.1
+- Payment messages are more reliable: a trade both of you accepted now counts as completed even if the game doesn't send its "Trade complete" message (before, it could be reported as cancelled). The amount is taken from when you accepted, in case the window empties first.
+- Trade errors that include a player's name are now recognised as failed trades.
+
 Proc City 1.5.0
 - Starter pins: the first time each class logs in with nothing pinned, the procs it usually builds around are pinned for you, if the character has them. Warriors get Overpower, Flurry and Crusader; rogues Riposte and Remorseless Attacks; hunters Quick Shots and Mongoose Bite; mages Clearcasting; priests Spirit Tap; warlocks Shadow Trance; paladins Vengeance and Crusader; shamans Flurry and Clearcasting; druids Clearcasting and Nature's Grace. A chat line says what was pinned. Unpin any you don't want and they stay unpinned.
 

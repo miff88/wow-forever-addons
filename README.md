@@ -1,6 +1,6 @@
 # WoW Forever Addons
 
-Small addons for World of Warcraft: Forever (Interface 16001). They all work on any class; Mage Services is made for mages. None of them use the combat log, which Forever blocks for addons.
+Small addons for World of Warcraft: Forever (Interface 16001). They all work on any class; Craft Services is for anyone with a profession (and rogues, for lockboxes), and Mage Services is made for mages. None of them use the combat log, which Forever blocks for addons.
 
 ## Install
 
@@ -91,6 +91,45 @@ Formerly Battle Shout Notice. Shows an icon when a buff your class keeps up is m
 - Optional food and flask/elixir reminder in dungeons and raids.
 - Quiet in cities and inns. Forever hides buffs from addons in combat, so it checks them out of combat and times them from your own casts in between.
 - `/bsn unlock`, `/bsn lock` move the icons, `/bsn test`, `/bsn list` the buffs it watches, `/bsn time <n>`, `/bsn size <n>`, `/bsn sound`, `/bsn reset`
+
+## Professions
+
+### Craft Services (`/cs`)
+<img src="logos/CraftServices.png" alt="CraftServices logo" width="96">
+
+Spots people asking for enchants, crafts and lockboxes in chat, for every profession: Enchanting, Blacksmithing, Leatherworking, Tailoring, Alchemy, Engineering, Jewelcrafting, Inscription, Cooking and First Aid, plus Lockpicking for rogues. Requests are listed in a small window with **Invite** and **Whisper** buttons, like Mage Services.
+
+**It knows your recipes.** Open each profession window once and it reads every recipe you've learned, with its materials and description (it updates whenever you learn something). That's how it tells "you know this and have the mats" from "you don't have this recipe".
+
+**Matching.** It understands links (recipe, item or enchant), recipe names ("runecloth bag"), and enchant nicknames: "crusader", "+7 agi gloves", "minor speed boots", "2h int". When a nickname could mean two enchants it asks what they want rather than guessing. It notices who brings the mats ("have mats", "your mats"), ignores other crafters' adverts ("WTS", "LFW") and only lists professions you have (or all of them, dimmed, if you prefer).
+
+**Replies** fill in the recipe, your price, the mats, what you're short of and their place in the queue: "Hi Ana, I can do Enchant Weapon - Crusader for you for 5g. You're #2 in line. Sending you an invite." Edit them on the settings page. Automatic replies (whispers only) and automatic invites (only when you know the recipe and have the mats, or they bring them) are there but off by default.
+
+**Customers, start to finish.** Each request moves through *replied*, *invited*, *in your group*, *mats received*, *trading* and *paid*, and the title shows how many are in your queue. People you're helping stay listed while you work, and come back to the list if they leave and return. Repeat customers are tagged "regular".
+
+**Trade helper.** A panel beside the trade window shows what they asked for, a mats checklist (what's in your bags and what they're handing over), their item in the "will not be traded" slot (whether the enchant fits it, or for a lockbox whether it's locked and your lockpicking is high enough), and what they're offering against your price. Its buttons:
+- **Enchant their item**: the first click opens the recipe, the next one puts the enchant on their item.
+- **Pick Lock**: casts it on their box.
+- **Open recipe**: opens your profession at the recipe.
+- **Ask to pay** and **Ask for mats**: a whisper (or party message) with your price or what's still missing.
+
+**Profession button.** The big icon at the top-left of the window opens your profession at the recipe the selected request wants (or casts Pick Lock for a lockbox). Bind it to a key under Key Bindings > AddOns.
+
+**Prices and advert.** Set prices with `/cs price crusader 5g` or on the settings page; they go into replies and the trade panel. Mark recipes to feature with `/cs feature crusader`, and the **Advertise** button posts "LFW Enchanter and Tailor in Orgrimmar: Crusader, Minor Speed. Whisper me!" in Trade (at most every 3 minutes; the game only allows it from a click or key press). Featured recipes you don't have the mats for are left out unless you choose otherwise.
+
+**Payments and earnings.** After a trade it posts the result (payment received, mats received, cancelled or failed) in party chat or a whisper, and totals your earnings by profession and by recipe, per character and across all characters. Optionally (off by default) customers who've paid are removed from your group after a short wait, but only people you invited, only while you lead, and never in combat.
+
+Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it only works out in the world.
+
+- `/cs recipes` what it knows of your professions; `/cs can <recipe>` do you know it and have the mats
+- `/cs price <recipe> <amount>`, `/cs prices`; `/cs feature <recipe>`, `/cs featured`
+- `/cs ad` post your advert; `/cs shopping` mats you're short of for the current requests
+- `/cs customers` your best customers (`/cs customers forget yes` clears them)
+- `/cs autoreply`, `/cs autoinvite` turn those on or off
+- `/cs pause`, `/cs resume`; `/cs filter here|nearby|all`; `/cs zone [auto|city]`
+- `/cs add <phrase>`, `/cs list`, `/cs remove <n>`; `/cs exclude <phrase>`, `/cs excludes`, `/cs unexclude <n>`
+- `/cs earnings`, `/cs receipts [auto|prefill|off]`, `/cs theme`, `/cs sounds`
+- `/cs test` add sample requests, `/cs testtrade [complete|mats|cancelled|failed]` preview a payment message, `/cs show`
 
 ## Mage
 

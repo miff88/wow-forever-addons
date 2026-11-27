@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#3a220c"/>
+      <stop offset="1" stop-color="#120a04"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffb347" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f6f8"/>
+      <stop offset="1" stop-color="#8d969f"/>
+    </linearGradient>
+    <linearGradient id="metalDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9aa3ad"/>
+      <stop offset="1" stop-color="#5b636b"/>
+    </linearGradient>
+    <linearGradient id="handle" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#a8692a"/>
+      <stop offset="1" stop-color="#6b3c12"/>
+    </linearGradient>
+    <radialGradient id="spark" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.4" stop-color="#ffe29a"/>
+      <stop offset="1" stop-color="#ff9a1f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="coin" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#fff1b0"/>
+      <stop offset="1" stop-color="#d9a21b"/>
+    </radialGradient>
+  </defs>
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="url(#bg)"/>
+  <circle cx="200" cy="200" r="175" fill="url(#glow)"/>
+
+  <!-- hammer, raised over the anvil -->
+  <g transform="rotate(-38 230 140)">
+    <rect x="222" y="92" width="22" height="150" rx="9" fill="url(#handle)"/>
+    <rect x="178" y="62" width="110" height="46" rx="10" fill="url(#metal)" stroke="#3a3f44" stroke-width="4"/>
+    <rect x="178" y="62" width="22" height="46" rx="6" fill="url(#metalDark)"/>
+  </g>
+
+  <!-- anvil -->
+  <g stroke="#2a2e33" stroke-width="5" stroke-linejoin="round">
+    <path d="M 86 216 L 300 216 Q 326 216 340 200 L 352 186 L 308 186 L 300 196 L 120 196 Q 96 196 86 216 Z" fill="url(#metal)"/>
+    <path d="M 128 216 L 272 216 L 260 248 Q 250 262 232 266 L 168 266 Q 150 262 140 248 Z" fill="url(#metalDark)"/>
+    <path d="M 160 266 L 240 266 L 254 300 L 146 300 Z" fill="url(#metalDark)"/>
+    <rect x="124" y="300" width="152" height="24" rx="8" fill="url(#metal)"/>
+  </g>
+  <path d="M 104 205 L 296 205" stroke="#ffffff" stroke-opacity="0.55" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- sparks where the hammer strikes: the enchant -->
+  <circle cx="192" cy="190" r="46" fill="url(#spark)"/>
+  <g fill="#fff4cf">
+    <path d="M 192 150 L 198 182 L 230 188 L 198 194 L 192 226 L 186 194 L 154 188 L 186 182 Z"/>
+    <path d="M 252 158 L 255 170 L 267 173 L 255 176 L 252 188 L 249 176 L 237 173 L 249 170 Z" opacity="0.9"/>
+    <path d="M 136 160 L 139 170 L 149 173 L 139 176 L 136 186 L 133 176 L 123 173 L 133 170 Z" opacity="0.8"/>
+  </g>
+
+  <!-- payment coin -->
+  <g transform="translate(318 318)">
+    <circle r="44" fill="url(#coin)" stroke="#8a5a00" stroke-width="5"/>
+    <circle r="30" fill="none" stroke="#b07a0a" stroke-width="3"/>
+    <text x="0" y="13" text-anchor="middle" font-family="Georgia, serif" font-size="38" font-weight="bold" fill="#7a4d00">g</text>
+  </g>
+</svg>

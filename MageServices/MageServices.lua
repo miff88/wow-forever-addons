@@ -1350,6 +1350,8 @@ function ns.BuildOptions()
         title = "Mage Services",
         updateNotice = true,
         changes = {
+            { "2.1.1", "Payment messages: a trade you both accepted counts as completed even without the game's \"Trade complete\" message",
+                       "More trade errors recognised" },
             { "2.1.0", "Advertise button: posts your own advert in Trade (or General, say, yell), at most every few minutes",
                        "It lists the portals you have; edit it on this page. Also /ms ad or a key binding",
                        "Optional slim bar with the button when there are no requests" },
