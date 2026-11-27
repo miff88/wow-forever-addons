@@ -2,6 +2,10 @@
 
 ## 2026-11-27
 
+Kick Tally 1.4.0
+- Group members who also run Kick Tally send you their own kicks, so their counts are exact instead of matched by timing. Addons can't message each other during boss fights, M+ or PvP, so there it goes back to timing as before. Can be turned off on the settings page.
+- Interrupt cooldowns count down over the class icons on the window: yours, and those of group members who run Kick Tally (or whose kick the game shows). The tooltip says when it's ready. Can be turned off.
+
 Mage Services 2.0.0
 - When two or more people want the same city, their rows get an **All** button ("All 3") that invites everyone going there at once.
 - Rune counts at the bottom right of the window (Runes of Teleportation and Runes of Portals), and a chat warning when Runes of Portals drop below 5. The threshold is on the settings page; the warning starts once it has seen a portal use a rune.

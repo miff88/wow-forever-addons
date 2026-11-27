@@ -38,6 +38,9 @@ local defaults = {
     opacity    = 100,
     locked     = false,
     reportAfterBoss = false, -- post the fight's kicks to the group after a boss
+    sync       = true,       -- swap kicks with other Kick Tally users in the group
+    cooldowns  = true,       -- show interrupt cooldowns on the rows
+    cds        = {},         -- [spellID] = cooldown read from the game
     total      = {},         -- [name] = kicks in total
     classes    = {},         -- [name] = class token, for colours
     pos        = nil,
@@ -59,6 +62,8 @@ local casts = {}        -- recent casts that could be kicks
 local lastEvent         -- the latest enemy interrupt, to merge the same one seen on two units
 local sentTarget        -- target name of your last cast, from UNIT_SPELLCAST_SENT
 local inEncounter = false
+local cooldowns = {}    -- [name] = { id, start, dur } the interrupt they last used
+local synced = {}       -- [name] = when they last told us they run Kick Tally
 
 ---------------------------------------------------------------------------
 -- Helpers
@@ -418,6 +423,18 @@ local function Row(i)
     local r = CreateFrame("Button", nil, win)
     r.icon = r:CreateTexture(nil, "ARTWORK")
     r.icon:SetPoint("LEFT")
+    -- the interrupt on cooldown, over the class icon, with seconds left
+    r.cd = r:CreateTexture(nil, "OVERLAY")
+    r.cd:SetAllPoints(r.icon)
+    r.cd:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    r.cd:Hide()
+    r.cdShade = r:CreateTexture(nil, "OVERLAY", nil, 1)
+    r.cdShade:SetAllPoints(r.icon)
+    r.cdShade:SetColorTexture(0, 0, 0, 0.55)
+    r.cdShade:Hide()
+    r.cdText = r:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    r.cdText:SetPoint("CENTER", r.icon, "CENTER", 0, 0)
+    r.cdText:Hide()
     r.bar = CreateFrame("StatusBar", nil, r)
     r.bar:SetPoint("LEFT", r.icon, "RIGHT", 0, 0)
     r.bar:SetPoint("TOP", 0, -1)
@@ -448,6 +465,13 @@ local function Row(i)
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine(self.who)
         GameTooltip:AddLine(("%d this fight, %d in total"):format(fight[self.who] or 0, db.total[self.who] or 0), 1, 1, 1)
+        local cd = cooldowns[self.who]
+        if cd and cd.dur > 0 then
+            local left = cd.start + cd.dur - GetTime()
+            GameTooltip:AddLine(((SpellName(cd.id) or "Interrupt") .. (left > 0 and (" ready in %ds"):format(math.ceil(left)) or " ready")),
+                left > 0 and 1 or 0.4, left > 0 and 0.6 or 1, 0.4)
+        end
+        if synced[self.who] then GameTooltip:AddLine("Runs Kick Tally: their kicks are sent to you", 0.6, 0.6, 0.6) end
         local list = recent[self.who]
         if list and #list > 0 then
             GameTooltip:AddLine(" ")
@@ -499,6 +523,31 @@ local function WindowWanted()
     if not db.showWindow then return false end
     return not db.groupOnly or InGroup()
 end
+
+local function SpellIcon(id)
+    if C_Spell and C_Spell.GetSpellTexture then
+        local ok, tex = pcall(C_Spell.GetSpellTexture, id)
+        if ok and not IsSecret(tex) and tex then return tex end
+    end
+    return "Interface\\Icons\\Ability_Kick"
+end
+
+local function UpdateCooldowns()
+    local now = GetTime()
+    for _, r in ipairs(rows) do
+        local cd = r.who and db.cooldowns and cooldowns[r.who]
+        local left = cd and cd.dur > 0 and (cd.start + cd.dur - now) or 0
+        if testMode and r.who == "Grunk" then left, cd = 6, { id = 1766 } end
+        if left > 0 then
+            r.cd:SetTexture(SpellIcon(cd.id))
+            r.cdText:SetText(math.ceil(left))
+            r.cd:Show(); r.cdShade:Show(); r.cdText:Show()
+        else
+            r.cd:Hide(); r.cdShade:Hide(); r.cdText:Hide()
+        end
+    end
+end
+ns.UpdateCooldowns = UpdateCooldowns
 
 local function Layout()
     if not db then return end
@@ -570,6 +619,7 @@ local function Layout()
     empty:SetShown(not db.collapsed and n == 0)
     if win.grip then win.grip:SetShown(not db.locked and not db.collapsed) end
     win:SetAlpha((db.opacity or 100) / 100)
+    UpdateCooldowns()
     win:Show()
 end
 ns.Layout = Layout
@@ -762,6 +812,7 @@ local function OwnKick(e, cast)
     Debug("own kick: " .. msg .. (sent and " (posted)" or (" (not posted: " .. tostring(why) .. ")")))
 end
 
+local SendSyncRef, CleanRef -- set once the sync code below exists
 local function Credit(who, e, cast)
     fight[who] = (fight[who] or 0) + 1
     db.total[who] = (db.total[who] or 0) + 1
@@ -771,9 +822,110 @@ local function Credit(who, e, cast)
     table.insert(recent[who], what)
     if #recent[who] > 10 then table.remove(recent[who], 1) end
     Debug(("kick credited to %s%s"):format(who, cast and cast.id and (" with " .. tostring(SpellName(cast.id))) or " (spell hidden)"))
-    if who == playerName then OwnKick(e, cast) end
+    if who == playerName then
+        OwnKick(e, cast)
+        if SendSyncRef then SendSyncRef(("K:%d:%s:%s"):format(cast and cast.id or 0, CleanRef(e.target or ""), CleanRef(e.spell or ""))) end
+    end
     Layout()
 end
+
+---------------------------------------------------------------------------
+-- Cooldowns and syncing with other Kick Tally users
+---------------------------------------------------------------------------
+-- Other players' spells are hidden in combat, so a party member's kick is normally
+-- matched by timing. When they run Kick Tally too, their copy sends each kick it is sure
+-- of (their own) and yours trusts that instead. The game blocks addon messages during
+-- boss fights, M+ and PvP, so there everyone falls back to timing.
+local PREFIX = "KickTally"
+local lastHello = 0
+
+local function SyncChannel()
+    if not InGroup() then return nil end
+    if IsInGroup and IsInGroup(LE_PARTY_CATEGORY_INSTANCE or 2) then return "INSTANCE_CHAT" end
+    if IsInRaid and IsInRaid() then return "RAID" end
+    return "PARTY"
+end
+
+local function SyncOn()
+    return db.sync and InGroup() and not ChatLocked()
+end
+
+local function SendSync(msg)
+    if not SyncOn() then return end
+    local ch = SyncChannel()
+    local f = C_ChatInfo and C_ChatInfo.SendAddonMessage
+    if ch and f then pcall(f, PREFIX, msg, ch) end
+end
+
+local function Hello(force)
+    if not force and GetTime() - lastHello < 10 then return end
+    lastHello = GetTime()
+    SendSync("H")
+end
+
+-- "Name-Realm" from the message -> the name in your group list
+local function RosterName(sender)
+    if type(sender) ~= "string" then return nil end
+    local short = Ambiguate and Ambiguate(sender, "none") or sender:match("^[^%-]+")
+    for _, n in pairs(roster) do
+        if n == sender or n == short then return n end
+    end
+    for _, n in pairs(roster) do
+        if short:find(n, 1, true) == 1 or n:find(short, 1, true) == 1 then return n end
+    end
+end
+
+local function IsSynced(name)
+    return name and synced[name] and db.sync and not ChatLocked()
+end
+
+local function StartCooldown(name, id, dur)
+    if not name or not id then return end
+    local info = KICKS[id]
+    if not info or info.kind ~= "kick" then return end
+    cooldowns[name] = { id = id, start = GetTime(), dur = dur or db.cds[id] or info.cd or 0 }
+end
+
+-- after your own kick, read its real cooldown when the game shares it
+local function ReadOwnCooldown(id)
+    if not (C_Spell and C_Spell.GetSpellCooldown) then return end
+    local ok, cd = pcall(C_Spell.GetSpellCooldown, id)
+    if not ok or type(cd) ~= "table" or IsSecret(cd.duration) or IsSecret(cd.startTime) then return end
+    if type(cd.duration) == "number" and cd.duration > 1.6 then
+        db.cds[id] = cd.duration
+        local mine = cooldowns[playerName]
+        if mine and mine.id == id then mine.start, mine.dur = cd.startTime, cd.duration end
+    end
+end
+
+local function Clean(s)
+    return (tostring(s or ""):gsub("[:\n]", " "))
+end
+
+local function OnSync(text, sender)
+    local who = RosterName(sender)
+    if not who or who == playerName then return end
+    local first = synced[who] == nil
+    synced[who] = GetTime()
+    local parts = {}
+    for piece in (text .. ":"):gmatch("([^:]*):") do parts[#parts + 1] = piece end
+    local kind, a, b, c, d = parts[1], parts[2], parts[3], parts[4], parts[5]
+    if kind == "H" then
+        if first then Hello(true) end
+    elseif kind == "C" then
+        -- their kick went out: show its cooldown on their row
+        StartCooldown(who, tonumber(a), tonumber(b))
+        Layout()
+    elseif kind == "K" then
+        if who ~= playerName and not db.trackGroup then return end
+        local e = { t = GetTime(), target = (c ~= "" and c or nil), spell = (d ~= "" and d or nil) }
+        Credit(who, e, { id = tonumber(a) })
+    end
+end
+ns.OnSync = OnSync
+SendSyncRef, CleanRef = SendSync, Clean
+ns.Synced = function() return synced end
+ns.Cooldowns = function() return cooldowns end
 
 local function Resolve(e)
     local who, cast
@@ -794,6 +946,11 @@ local function Resolve(e)
     end
     if cast then cast.used = true end
     if who ~= playerName and not db.trackGroup then return end
+    -- they run Kick Tally too: their own copy sends this kick, so don't count it twice
+    if who ~= playerName and IsSynced(who) then
+        Debug(who .. " runs Kick Tally; waiting for their copy to send it")
+        return
+    end
     Credit(who, e, cast)
 end
 
@@ -814,6 +971,14 @@ local function OnCast(unit, spellID)
     if own and sentTarget and now - sentTarget.t < 2 then c.target = sentTarget.name end
     casts[#casts + 1] = c
     Debug(("cast by %s: %s"):format(name, id and tostring(SpellName(id)) or "(hidden spell)"))
+    if info and info.kind == "kick" then
+        StartCooldown(name, id)
+        if own then
+            C_Timer.After(0.1, function() ReadOwnCooldown(id); Layout() end)
+            SendSync(("C:%d:%s"):format(id, tostring(cooldowns[name] and cooldowns[name].dur or 0)))
+        end
+        Layout()
+    end
     if own and info and info.kind == "kick" then
         C_Timer.After(MISS_WAIT, function() Missed(c) end)
     end
@@ -947,7 +1112,18 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         SafeRegister("UNIT_SPELLCAST_SUCCEEDED")
         SafeRegister("UNIT_SPELLCAST_INTERRUPTED")
         SafeRegister("UNIT_SPELLCAST_CHANNEL_STOP")
+        SafeRegister("CHAT_MSG_ADDON")
+        if C_ChatInfo and C_ChatInfo.RegisterAddonMessagePrefix then
+            pcall(C_ChatInfo.RegisterAddonMessagePrefix, PREFIX)
+        end
+        -- count down the interrupt cooldowns on the rows
+        if C_Timer and C_Timer.NewTicker then C_Timer.NewTicker(0.25, UpdateCooldowns) end
         Layout()
+        return
+    end
+
+    if event == "CHAT_MSG_ADDON" then
+        if a1 == PREFIX and type(a2) == "string" and not IsSecret(a2) then OnSync(a2, a4) end
         return
     end
 
@@ -969,6 +1145,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         Layout()
     elseif event == "ENCOUNTER_END" then
         inEncounter = false
+        C_Timer.After(3, function() Hello(true) end)
         C_Timer.After(2, function() ReportAfterBoss(0) end)
     elseif event == "PLAYER_TARGET_CHANGED" then
         unitNames.target = NameOf("target")
@@ -983,6 +1160,11 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         else UpdateRoster() end
     else -- PLAYER_ENTERING_WORLD, GROUP_ROSTER_UPDATE
         UpdateRoster()
+        -- forget Kick Tally users who have left the group
+        local here = {}
+        for _, n in pairs(roster) do here[n] = true end
+        for n in pairs(synced) do if not here[n] then synced[n] = nil end end
+        if InGroup() and C_Timer then C_Timer.After(2, function() Hello() end) end
         Layout()
     end
 end)
@@ -1005,6 +1187,8 @@ function ns.BuildOptions()
         title = "Kick Tally",
         updateNotice = true,
         changes = {
+            { "1.4.0", "Group members who run Kick Tally send you their kicks, so their counts are exact",
+                       "Interrupt cooldowns over the class icons: yours, and theirs when they run it" },
             { "1.3.2", "The chat command is now /ktally (/kicks and /kicktally still work). /kick is the game's own" },
             { "1.3.1", "Reset all data: in the C / O menu and the gear menu on the window, asks first" },
             { "1.3.0", "Kick posts name the enemy more often: names read before the pull, raid markers",
@@ -1046,6 +1230,8 @@ function ns.BuildOptions()
             { type = "check", key = "showWindow", label = "Show the tally window" },
             { type = "check", key = "groupOnly", label = "Only while I'm in a party or raid" },
             { type = "check", key = "trackGroup", label = "Count party and raid members' kicks too" },
+            { type = "check", key = "sync", label = "Swap kicks with group members who run Kick Tally (more accurate counts)" },
+            { type = "check", key = "cooldowns", label = "Show interrupt cooldowns over the class icons" },
             { type = "range", key = "width", label = "Width (or drag the bottom-right corner)", min = 160, max = 600, step = 10 },
             { type = "range", key = "height", label = "Height", min = 60, max = 800, step = 10 },
             { type = "range", key = "barHeight", label = "Bar height", min = 12, max = 32, step = 1 },
@@ -1060,11 +1246,12 @@ function ns.BuildOptions()
               func = function() SetTest(not testMode) end },
             { type = "check", key = "reportAfterBoss", label = "After a boss fight, post that fight's kicks to the group" },
             { type = "header", label = "How it works on WoW Forever" },
-            { type = "info", height = 96, lines = function()
+            { type = "info", height = 124, lines = function()
                 return "|cff999999Your own kicks are exact: Kick Tally sees you cast Pummel and the enemy's cast being interrupted. "
                     .. "In combat the game hides which spells other players cast, so a party member's kick is counted when their cast "
                     .. "and an enemy's interrupted cast happen at the same moment. Keep enemy nameplates on so it sees every enemy. "
-                    .. "Addons can't post in chat during boss fights, so there your kicks show in your own chat window.|r" end },
+                    .. "Group members who run Kick Tally send their own kicks to you instead, which is exact. "
+                    .. "Addons can't post in chat or send to each other during boss fights, so there it goes back to timing and your kicks show in your own chat window.|r" end },
         },
     })
 end

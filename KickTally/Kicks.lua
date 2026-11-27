@@ -6,6 +6,13 @@
 
 local _, ns = ...
 
+-- Cooldowns (seconds) are the usual ones, shown on your row until Kick Tally has read the
+-- real one from the game; 0 = not known until then.
+local COOLDOWN = {
+    Pummel = 10, ["Shield Bash"] = 12, Kick = 10, Counterspell = 24, ["Earth Shock"] = 6,
+    ["Spell Lock"] = 24, ["Feral Charge"] = 15, Silence = 45, ["Skull Bash"] = 0, Rebuke = 0,
+}
+
 local list = {
     -- true interrupts
     { "kick", "Pummel",          6552, 6554 },
@@ -39,6 +46,6 @@ local list = {
 ns.KICKS = {}
 for _, row in ipairs(list) do
     for i = 3, #row do
-        ns.KICKS[row[i]] = { kind = row[1], name = row[2] }
+        ns.KICKS[row[i]] = { kind = row[1], name = row[2], cd = COOLDOWN[row[2]] }
     end
 end
