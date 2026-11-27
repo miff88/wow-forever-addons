@@ -553,6 +553,7 @@ function ns.BuildOptions()
         title = "Kill Clock",
         updateNotice = true,
         changes = {
+            { "1.1.1", "Settings page: long labels no longer run into their buttons" },
             { "1.1.0", "A second line: how long until the target reaches execute range (20%, or your own)",
                        "Optional second clock beside the focus frame" },
             { "1.0.1", "Now starts just right of the target frame's portrait (drag it anywhere as before)" },

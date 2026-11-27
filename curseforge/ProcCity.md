@@ -7,13 +7,14 @@ Made for **World of Warcraft: Forever**. Every class.
 ## Features
 
 ### Every class
-- Talent procs: Flurry, Enrage, Blood Craze, Clearcasting, Vengeance, Nature's Grace, Shadow Trance, Quick Shots, Spirit Tap, Remorseless Attacks, Redoubt.
-- Class cooldowns you cast: Death Wish, Recklessness, Arcane Power, Adrenaline Rush, Rapid Fire, Inner Focus, Elemental Mastery, Divine Favor, Tiger's Fury and more.
-- Crusader (Holy Strength), the new Forever enchants Insight and Revelation, and every Forever weapon that buffs you on hit or on use (Destiny, Arcanite Champion, Claymore of Two Moons, Ragehammer, Quel'Serrar, Hand of Edward the Odd and more), and racials (Blood Fury, Berserking, Perception, Stoneform).
+- Talent procs: Flurry, Enrage, Blood Craze, Clearcasting, Vengeance, Redoubt, Reckoning, Nature's Grace, Shadow Trance, Quick Shots, Spirit Tap, Focused Casting, Remorseless Attacks, Elemental Devastation.
+- The new WoW Forever talents: Reckless Swings, Gore Drinker, Victorious (Victory Rush), Heating Up, Fingers of Frost, Missile Barrage, Arcane Blast, Eclipse, Infusion of Light, Unsealed Wrath, Maelstrom Weapon, Stormstrike, Rapid Killing, Decimation, Dark Inspiration and more. Proc City learns each one's Forever spell ID and icon the first time it sees it.
+- Class cooldowns you cast: Death Wish, Recklessness, Shield Wall, Arcane Power, Ice Block, Adrenaline Rush, Evasion, Rapid Fire, Deterrence, Inner Focus, Elemental Mastery, Divine Shield, Barkskin, Tiger's Fury and more.
+- Crusader (Holy Strength), the new Forever enchants Insight and Revelation, and every Forever weapon that buffs you on hit or on use (Destiny, Arcanite Champion, Claymore of Two Moons, Ragehammer, Quel'Serrar, Hand of Edward the Odd and more), and racials (Blood Fury, Berserking, Perception, Stoneform, Will of the Forsaken).
 - **Any equipped trinket with a Use** is picked up automatically, including Forever's new trinkets.
 
 ### After a dodge, parry or block (formerly Proc Plates)
-- **Warriors:** Overpower when a mob dodges you, and Revenge after you block, dodge or parry.
+- **Warriors:** Overpower when a mob dodges you (or Bloodthrill gives you a charge), and Revenge after you block, dodge or parry.
 - **Rogues:** Riposte after you parry. **Hunters:** Counterattack after you parry, and Mongoose Bite after your target dodges.
 - They join the row for their 5 second window, and their buttons glow on your action bars (Blizzard bars, Bartender4, ElvUI and Dominos).
 - **Overpower on the right mob:** an Overpower icon also sits above the nameplate of the mob that dodged you, including Whirlwind and Cleave dodges on mobs you aren't targeting. Dodges against other players are ignored.

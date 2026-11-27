@@ -2,6 +2,25 @@
 
 ## 2026-11-27
 
+Proc City 1.6.0
+- Tracks the WoW Forever talents and abilities that put a buff on you, for every class. Warrior: Shield Wall, Reckless Swings, Gore Drinker, Victorious (Victory Rush ready). Rogue: Evasion, Sprint, Ghostly Strike, Venom. Hunter: Deterrence, Rapid Killing, Rapid Recuperation, Resourcefulness, Expose Prey. Mage: Ice Block, Heating Up, Fingers of Frost, Missile Barrage, Arcane Blast. Priest: Focused Casting, Blessed Recovery, Dark Inspiration, Searing Light, Vampiric Embrace. Shaman: Elemental Devastation, Maelstrom Weapon, Stormstrike, Lightning Mastery, Rage of the Farseer. Paladin: Reckoning, Divine Shield, Divine Protection, Infusion of Light, Unsealed Wrath, Iron Creed, Shieldsworn, Templar's Bulwark, Voice of Truth. Druid: Eclipse, Barkskin, Dash, Frenzied Regeneration, Enrage (Bear). Warlock: Decimation, Shadow and Flame, Soul Harvest. Racial: Will of the Forsaken.
+- Spells that are new in Forever are matched by name, and Proc City learns their spell ID, icon and duration the first time it sees them, so they also work in combat after that.
+- Nature's Grace uses Forever's 3 second duration.
+- Overpower shows for every charge you get. Before, a charge only showed if a mob's nameplate reported the dodge at the same moment, so Bloodthrill procs (Rend) and dodges from mobs without a nameplate never appeared. They now show in the row and light your buttons, just without a nameplate icon.
+- Weapon procs only count while that weapon is on. A Swiftness Potion (its buff is also called "Speed") no longer shows as a Sprinter's Sword proc, and a druid's Enrage no longer shows as Ragehammer.
+- `/proc debug` says which procs are new in Forever and not seen yet.
+- Settings page: long labels no longer run into their buttons.
+
+Proc Plates 2.1.1
+- The same Overpower fix as Proc City 1.6.0: a charge from Bloodthrill or from a mob without a nameplate now lights your Overpower buttons and the screen icon.
+
+Kick Tally 1.4.1
+- Kicks are also recognised by the spell's name, so a kick whose Forever spell ID isn't in Kick Tally's list (a new rank or a reworked spell) still counts instead of being ignored.
+- Settings page: long labels ("Width (or drag the bottom-right corner)") no longer run into their buttons.
+
+Kill Clock 1.1.1, Mage Services 2.1.3, Craft Services 1.1.2
+- Settings page: long labels no longer run into their buttons (Kill Clock's "Seconds of damage before the first estimate", Mage Services' "Warn when Runes of Portals fall below", Craft Services' "Where you are").
+
 Proc City 1.5.3
 - Blood Craze is now tracked. It was never in Proc City's list, so it didn't show at all. It's the Fury talent that heals you over 6 seconds after you take a critical hit, and shows for warriors who have it (any rank).
 

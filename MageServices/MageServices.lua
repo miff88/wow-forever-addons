@@ -1350,6 +1350,7 @@ function ns.BuildOptions()
         title = "Mage Services",
         updateNotice = true,
         changes = {
+            { "2.1.3", "Settings page: long labels no longer run into their buttons" },
             { "2.1.2", "Settings page: the \"Payment messages\" label is no longer cut off" },
             { "2.1.1", "Payment messages: a trade you both accepted counts as completed even without the game's \"Trade complete\" message",
                        "More trade errors recognised" },

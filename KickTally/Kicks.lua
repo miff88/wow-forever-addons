@@ -44,8 +44,11 @@ local list = {
 }
 
 ns.KICKS = {}
+ns.KICK_NAMES = {} -- by English name, for a rank or version whose ID isn't listed here
 for _, row in ipairs(list) do
+    local info = { kind = row[1], name = row[2], cd = COOLDOWN[row[2]] }
+    ns.KICK_NAMES[row[2]] = info
     for i = 3, #row do
-        ns.KICKS[row[i]] = { kind = row[1], name = row[2], cd = COOLDOWN[row[2]] }
+        ns.KICKS[row[i]] = info
     end
 end

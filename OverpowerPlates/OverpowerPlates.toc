@@ -2,7 +2,7 @@
 ## Title: |cffffd100Proc|r Plates
 ## Notes: Now part of Proc City: install Proc City and it takes over with your settings. Overpower on the mob that dodged you, plus Revenge, Riposte, Counterattack and Mongoose Bite.
 ## Author: Mitch Brindle
-## Version: 2.1.0
+## Version: 2.1.1
 ## IconTexture: Interface\Icons\Ability_Warrior_Revenge
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons

@@ -277,10 +277,24 @@ local function TakeRecentDodge(now)
     return best
 end
 
+-- A new charge that no nameplate dodge claimed in time is still an Overpower you can use
+-- (Bloodthrill, a mob without a nameplate): it lights the buttons and the screen icon,
+-- just not a plate. Stored under "charge:n", which is never a nameplate unit.
+local loose = 0
 local function PruneGains(now)
+    local moved = false
     for i = #unmatchedGains, 1, -1 do
-        if now - unmatchedGains[i] > MATCH_WINDOW then table.remove(unmatchedGains, i) end
+        local t = unmatchedGains[i]
+        if now - t > MATCH_WINDOW then
+            table.remove(unmatchedGains, i)
+            if t + db.window > now then
+                loose = loose + 1
+                procs["charge:" .. loose] = t + db.window
+                moved = true
+            end
+        end
     end
+    return moved
 end
 
 -- A nameplate reported a dodge. Only counts if a new combo point turns up with it.
@@ -310,6 +324,10 @@ local function ClearTargetOrOldest()
 end
 
 local function CheckPoints()
+    if #unmatchedGains > 0 and PruneGains(GetTime()) then
+        RefreshAll()
+        C_Timer.After(db.window + 0.05, RefreshAll)
+    end
     local points = ReadPoints()
     if not points then return end
 
@@ -326,8 +344,13 @@ local function CheckPoints()
     elseif points < lastPoints then
         if points == 0 then
             wipe(procs)
+            wipe(unmatchedGains)
         else
             for _ = 1, lastPoints - points do ClearTargetOrOldest() end
+            -- a charge spent before its nameplate dodge turned up
+            local n = 0
+            for _ in pairs(procs) do n = n + 1 end
+            while #unmatchedGains > 0 and n + #unmatchedGains > points do table.remove(unmatchedGains, 1) end
         end
         RefreshAll()
     end
@@ -506,6 +529,7 @@ function ns.BuildOptions()
         title = "Proc Plates",
         updateNotice = true,
         changes = {
+            { "2.1.1", "Overpower lights your buttons and the screen icon for every charge, including Bloodthrill procs and mobs without a nameplate" },
             { "2.1.0", "Proc Plates is now part of Proc City. Install Proc City and it takes over with your settings",
                        "This is the last Proc Plates update" },
             { "2.0.2", "Now called Proc Plates (/procplates or /opp)" },

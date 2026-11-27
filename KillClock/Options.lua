@@ -19,6 +19,14 @@ local function Label(parent, text, template)
     return fs
 end
 
+-- Where a row's buttons start: the usual column, or further right if the label is long,
+-- so the two never overlap.
+local function ControlX(label)
+    local w = label and label.GetStringWidth and label:GetStringWidth() or 0
+    if type(w) ~= "number" then w = 0 end
+    return math.max(240, math.floor(24 + w + 12))
+end
+
 -- spec = {
 --   title = "Overpower Plates", icon = "Interface\\Icons\\...", about = "one line",
 --   slash = "/opp", db = table, onChange = function(key) end,
@@ -180,7 +188,7 @@ function ns.CreateOptions(spec)
 
                 local minus = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
                 minus:SetSize(26, 22)
-                minus:SetPoint("TOPLEFT", 240, y)
+                minus:SetPoint("TOPLEFT", ControlX(l), y)
                 minus:SetText("-")
 
                 local value = Label(content, "")
@@ -210,7 +218,7 @@ function ns.CreateOptions(spec)
                 l:SetPoint("TOPLEFT", 24, y - 4)
                 local b = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
                 b:SetSize(110, 22)
-                b:SetPoint("TOPLEFT", 240, y)
+                b:SetPoint("TOPLEFT", ControlX(l), y)
                 b:SetScript("OnClick", function()
                     local idx = 1
                     for i, v in ipairs(c.values) do if v == db[c.key] then idx = i end end
@@ -282,7 +290,10 @@ function ns.CreateOptions(spec)
                     local lines = c.lines()
                     fs:SetText(type(lines) == "table" and table.concat(lines, "\n") or tostring(lines or ""))
                 end)
-                y = y - (c.height or 40)
+                -- height can be a function, worked out when the page is first shown
+                local h = c.height
+                if type(h) == "function" then h = h() end
+                y = y - (h or 40)
 
             elseif c.type == "text" then
                 -- a one-line text box: saves on Enter or when you click away, Escape undoes,

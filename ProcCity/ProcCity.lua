@@ -108,6 +108,7 @@ local function BuildLookups()
                 byID[id] = p
                 local n = SpellName(id)
                 if n then AddName(n, p) end
+                if p.icon == 134400 then p.icon = SpellIcon(id) or p.icon end
             end
         end
     end
@@ -126,6 +127,19 @@ local function HasItem(p)
     return false
 end
 
+-- A weapon proc matched by anything other than its own published ID only counts while
+-- that weapon is on: a Swiftness Potion's "Speed" isn't Sprinter's Sword, and a druid's
+-- Enrage isn't Ragehammer's.
+local function OwnID(p, id)
+    if not id then return false end
+    for _, x in ipairs(p.ids) do if x == id then return true end end
+    return false
+end
+local function ItemOK(p, id)
+    return not p.items or HasItem(p) or OwnID(p, id)
+end
+ns.ItemOK = ItemOK
+
 -- Several buffs share a name (Haste, Enrage, Holy Shield): prefer the one from a
 -- weapon you have on, then one that isn't from a weapon, then anything you track.
 local function FindByName(name)
@@ -133,10 +147,19 @@ local function FindByName(name)
     if not list then return nil end
     local best, bestScore
     for _, p in ipairs(list) do
-        local score = (Wanted(p) and 10 or 0) + (HasItem(p) and 2 or (not p.items and 1 or 0))
-        if not bestScore or score > bestScore then best, bestScore = p, score end
+        if ItemOK(p) then
+            local score = (Wanted(p) and 10 or 0) + (HasItem(p) and 2 or (not p.items and 1 or 0))
+            if not bestScore or score > bestScore then best, bestScore = p, score end
+        end
     end
     return best
+end
+
+-- The tracked proc for a buff or cast, by spell ID first, then by name.
+local function Match(id, name)
+    local p = id and byID[id]
+    if p and not ItemOK(p, id) then p = nil end
+    return p or FindByName(name)
 end
 
 ---------------------------------------------------------------------------
@@ -256,11 +279,12 @@ end
 
 -- One readable buff: is it a proc you track?
 ScanOne = function(aura, found)
-    local p = byID[aura.spellId] or FindByName(aura.name) or GenericForAura(aura.spellId, aura.name)
+    local p = Match(aura.spellId, aura.name) or GenericForAura(aura.spellId, aura.name)
     if p and not p.generic and aura.spellId and not byID[aura.spellId] then
         -- matched by name only: remember the real ID for next time
         byID[aura.spellId] = p
         db.learnedIDs[aura.spellId] = p.key
+        if p.icon == 134400 and aura.icon and not IsSecret(aura.icon) then p.icon = aura.icon end
         Debug(("learned %s = spell %d"):format(p.name, aura.spellId))
     end
     if p and Wanted(p) then
@@ -364,7 +388,7 @@ local function CombatScan()
     local decided, changed = false, false
     local now = GetTime()
     for _, p in ipairs(ns.PROCS) do
-        if not p.react and Wanted(p) then
+        if not p.react and Wanted(p) and (not p.items or HasItem(p)) then
             local state, best
             for _, id in ipairs(IDsFor(p)) do
                 local st, aura = ProbeAura(id)
@@ -423,6 +447,7 @@ function ns.AuraProbeLines()
                 if aura then detail = detail .. (Readable(aura.expirationTime) and ", timer readable" or ", timer hidden") end
                 parts[#parts + 1] = ("%d %s (%s)"):format(id, detail, secret)
             end
+            if #parts == 0 then parts[1] = "new in Forever, matched by name (not seen yet)" end
             lines[#lines + 1] = p.name .. ": " .. table.concat(parts, "; ")
         end
     end
@@ -472,7 +497,7 @@ local SAME_PROC = 0.75
 local function OnCast(spellID)
     if IsSecret(spellID) then Debug("cast: (hidden)") return end
     local name = SpellName(spellID)
-    local p = byID[spellID] or FindByName(name)
+    local p = Match(spellID, name)
     local use = useSpells[spellID]
     Debug(("cast: %s %s%s"):format(tostring(spellID), tostring(name),
         p and (" -> " .. p.name) or (use and " -> trinket" or "")))
@@ -1088,6 +1113,10 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.6.0", "Tracks the new WoW Forever procs and cooldowns for every class (Reckless Swings, Shield Wall, Heating Up, Eclipse, Infusion of Light, Maelstrom Weapon and more)",
+                       "Overpower shows for every charge, including Bloodthrill procs and mobs without a nameplate",
+                       "A Swiftness Potion no longer shows as a Sprinter's Sword proc (weapon procs need the weapon on)",
+                       "Settings page: long labels no longer run into their buttons" },
             { "1.5.3", "Blood Craze is now tracked (warrior talent: heals you after you're crit)" },
             { "1.5.2", "Procs update in combat again: one buff the game hides in combat made it stop reading all of them",
                        "It now skips the hidden ones and reads the rest, and checks twice a second in combat" },

@@ -97,6 +97,23 @@ local function SpellName(id)
     return k and k.name
 end
 
+-- What a spell ID is to Kick Tally: by ID, or by the game's name for it when Forever uses
+-- an ID that isn't in the list (a new rank, or a reworked spell). Learned for the session.
+local function KickInfo(id)
+    if not id then return nil end
+    local info = KICKS[id]
+    if info then return info end
+    if C_Spell and C_Spell.GetSpellName then
+        local ok, name = pcall(C_Spell.GetSpellName, id)
+        if ok and not IsSecret(name) and name then
+            info = ns.KICK_NAMES[name]
+            if info then KICKS[id] = info end
+        end
+    end
+    return info
+end
+ns.KickInfo = KickInfo
+
 local function NameOf(unit)
     local ok, name = pcall(UnitName, unit)
     if ok and not IsSecret(name) and name then return name end
@@ -881,7 +898,7 @@ end
 
 local function StartCooldown(name, id, dur)
     if not name or not id then return end
-    local info = KICKS[id]
+    local info = KickInfo(id)
     if not info or info.kind ~= "kick" then return end
     cooldowns[name] = { id = id, start = GetTime(), dur = dur or db.cds[id] or info.cd or 0 }
 end
@@ -960,7 +977,7 @@ local function OnCast(unit, spellID)
     local own = owner == "player"
     if not own and not db.trackGroup then return end
     local id = Readable(spellID)
-    local info = id and KICKS[id]
+    local info = id and KickInfo(id)
     if id and not info then return end -- a spell we can read and it isn't a kick
     if info and info.kind == "stun" and not db.stuns then return end
     local name = own and playerName or roster[owner] or NameOf(owner)
@@ -1187,6 +1204,8 @@ function ns.BuildOptions()
         title = "Kick Tally",
         updateNotice = true,
         changes = {
+            { "1.4.1", "Kicks are also recognised by name, so a rank or reworked spell with a new Forever ID still counts",
+                       "Settings page: long labels no longer run into their buttons" },
             { "1.4.0", "Group members who run Kick Tally send you their kicks, so their counts are exact",
                        "Interrupt cooldowns over the class icons: yours, and theirs when they run it" },
             { "1.3.2", "The chat command is now /ktally (/kicks and /kicktally still work). /kick is the game's own" },

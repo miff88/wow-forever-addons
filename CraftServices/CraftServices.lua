@@ -1851,6 +1851,7 @@ function ns.BuildOptions()
         title = "Craft Services",
         updateNotice = true,
         changes = {
+            { "1.1.2", "Settings page: long labels no longer run into their buttons" },
             { "1.1.1", "Mats always show by name (\"short on 1 Coarse Stone\", not \"item 2836\")" },
             { "1.1.0", "Choose which professions to watch: the ones you've trained start ticked, tick any others",
                        "Never picks up mage requests (\"looking for mage port\" was read as a cooking request)",

@@ -8,7 +8,8 @@
 --   Forever tracks Overpower as combo points on the warrior, one per dodge against you,
 --   spent when you Overpower. Forever also reports dodges on every enemy nameplate, but
 --   those include dodges against other players. So a nameplate dodge only counts when a
---   new combo point appears at the same moment. Anything else is ignored.
+--   new combo point appears at the same moment. A charge with no dodge to match it
+--   (Bloodthrill, or nameplates turned off) still shows in the icon row, just not on a plate.
 -- No combat log is used (Forever forbids it). The nameplate icon needs enemy nameplates on.
 
 local _, ns = ...
@@ -41,7 +42,8 @@ local function Entry()
     for _, p in ipairs(ns.PROCS) do if p.key == "overpower" then return p end end
 end
 
-local procs = {}          -- [nameplate unit token] = time the Overpower window closes
+local procs = {}          -- [nameplate unit token, or "charge:n" for one with no plate] = time the window closes
+local loose = 0           -- counter for charges that never matched a nameplate
 local recentDodges = {}   -- [nameplate unit token] = time it reported a dodge (against anyone)
 local unmatchedGains = {} -- times of new combo points still waiting for their nameplate dodge
 local icons = {}          -- [nameplate frame] = icon frame
@@ -223,10 +225,22 @@ local function TakeRecentDodge(now)
     return best
 end
 
+-- A new charge that no nameplate dodge claimed in time is still an Overpower you can use
+-- (Bloodthrill, a mob without a nameplate): it goes in the row without a plate icon.
 local function PruneGains(now)
+    local moved = false
     for i = #unmatchedGains, 1, -1 do
-        if now - unmatchedGains[i] > MATCH_WINDOW then table.remove(unmatchedGains, i) end
+        local t = unmatchedGains[i]
+        if now - t > MATCH_WINDOW then
+            table.remove(unmatchedGains, i)
+            if Wanted() and t + ns.db.oppWindow > now then
+                loose = loose + 1
+                procs["charge:" .. loose] = t + ns.db.oppWindow
+                moved = true
+            end
+        end
     end
+    return moved
 end
 
 -- A nameplate reported a dodge. Only counts if a new combo point turns up with it.
@@ -256,6 +270,10 @@ local function ClearTargetOrOldest()
 end
 
 local function CheckPoints()
+    if #unmatchedGains > 0 and PruneGains(GetTime()) then
+        RefreshAll()
+        C_Timer.After(ns.db.oppWindow + 0.05, RefreshAll)
+    end
     local points = ReadPoints()
     if not points then return end
 
@@ -272,8 +290,13 @@ local function CheckPoints()
     elseif points < lastPoints then
         if points == 0 then
             wipe(procs)
+            wipe(unmatchedGains)
         else
             for _ = 1, lastPoints - points do ClearTargetOrOldest() end
+            -- a charge spent before its nameplate dodge turned up
+            local n = 0
+            for _ in pairs(procs) do n = n + 1 end
+            while #unmatchedGains > 0 and n + #unmatchedGains > points do table.remove(unmatchedGains, 1) end
         end
         RefreshAll()
     end
