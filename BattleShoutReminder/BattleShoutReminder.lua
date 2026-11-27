@@ -64,12 +64,37 @@ local function Knows(id)
         local ok, known = pcall(IsPlayerSpell, id)
         if ok and not IsSecret(known) and known then return true end
     end
+    if C_SpellBook and C_SpellBook.IsSpellKnownOrInSpellBook then
+        local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player or 0
+        local ok, known = pcall(C_SpellBook.IsSpellKnownOrInSpellBook, id, bank, true)
+        if ok and not IsSecret(known) and known then return true end
+    end
     if IsSpellKnown then
         local ok, known = pcall(IsSpellKnown, id)
         if ok and not IsSecret(known) and known then return true end
     end
     return false
 end
+
+-- Is this spell in your spellbook under its name? (Catches any rank, whatever its ID.)
+local function KnowsName(name)
+    if not (name and C_SpellBook and C_SpellBook.FindSpellBookSlotForSpell) then return false end
+    local ok, slot = pcall(C_SpellBook.FindSpellBookSlotForSpell, name, false, false, false, false)
+    return ok and slot ~= nil and not IsSecret(slot)
+end
+
+-- Can you cast this buff? Any rank's ID, or its name in your spellbook. (2.0.0 only
+-- checked the first rank, which Forever doesn't list once you've learned a higher one,
+-- so a level 60 warrior never got Battle Shout reminders.)
+local function KnowsBuff(b)
+    for _, id in ipairs(b.ids or {}) do if Knows(id) then return true, id end end
+    for _, id in ipairs(b.ranks or {}) do if Knows(id) then return true, id end end
+    for i, id in ipairs(b.ids or {}) do
+        if KnowsName(SpellName(id) or (b.names and b.names[i])) then return true, id end
+    end
+    return false
+end
+ns.KnowsBuff = KnowsBuff
 
 local function AurasReadable()
     if C_Secrets and C_Secrets.ShouldAurasBeSecret then
@@ -174,10 +199,8 @@ local function Resolve(b)
     end
     for _, n in ipairs(b.names or {}) do b.realNames[#b.realNames + 1] = n end
     if not b.icon then
-        for _, id in ipairs(b.ids or {}) do
-            if Knows(id) then b.icon = SpellTexture(id); break end
-        end
-        b.icon = b.icon or SpellTexture(b.ids and b.ids[1] or 0) or "Interface\\Icons\\INV_Misc_QuestionMark"
+        local _, id = KnowsBuff(b)
+        b.icon = (id and SpellTexture(id)) or SpellTexture(b.ids and b.ids[1] or 0) or "Interface\\Icons\\INV_Misc_QuestionMark"
     end
 end
 
@@ -185,9 +208,7 @@ local function Rebuild()
     playerClass = select(2, UnitClass("player"))
     wipe(buffs)
     for _, b in ipairs(ns.CLASS_BUFFS[playerClass] or {}) do
-        local known = false
-        for _, id in ipairs(b.ids) do if Knows(id) then known = true; break end end
-        if known then
+        if KnowsBuff(b) then
             Resolve(b)
             buffs[#buffs + 1] = b
         end
@@ -234,6 +255,12 @@ local function Icon(i)
     f.icon = f:CreateTexture(nil, "ARTWORK")
     f.icon:SetAllPoints()
     f.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    -- clock-style sweep while a buff runs out
+    f.cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
+    f.cd:SetAllPoints(f.icon)
+    if f.cd.SetDrawEdge then f.cd:SetDrawEdge(false) end
+    if f.cd.SetHideCountdownNumbers then f.cd:SetHideCountdownNumbers(true) end
+    f.cd:Hide()
     f.timer = f:CreateFontString(nil, "OVERLAY", "NumberFontNormalHuge")
     f.timer:SetPoint("CENTER")
     f.count = f:CreateFontString(nil, "OVERLAY", "NumberFontNormalLarge")
@@ -272,6 +299,16 @@ local function Draw(shows)
             f.icon:SetTexture(s.b.icon)
             f.icon:SetDesaturated(s.kind == "missing")
             f.timer:SetText(s.kind == "expiring" and tostring(math.ceil(s.remaining)) or "")
+            if s.kind == "expiring" and s.dur and s.dur > 0 and s.expires then
+                if f.cdFor ~= s.expires then
+                    f.cdFor = s.expires
+                    pcall(f.cd.SetCooldown, f.cd, s.expires - s.dur, s.dur)
+                    f.cd:Show()
+                end
+            else
+                f.cdFor = nil
+                f.cd:Hide()
+            end
             f.count:SetText(s.kind == "party" and tostring(s.count) or "")
             if s.kind == "missing" then
                 f.border:SetColorTexture(1, 0.2, 0.1, 1)
@@ -441,7 +478,8 @@ local function Update()
                 if not up then
                     shows[#shows + 1] = { b = b, kind = "missing" }
                 elseif remaining <= limit then
-                    shows[#shows + 1] = { b = b, kind = "expiring", remaining = remaining }
+                    shows[#shows + 1] = { b = b, kind = "expiring", remaining = remaining,
+                                          expires = st.expires, dur = db.durations[b.key] }
                 elseif b.group and db.party and (st.missing or 0) > 0 and not inCombat then
                     shows[#shows + 1] = { b = b, kind = "party", count = st.missing }
                 end
@@ -567,11 +605,27 @@ function ns.BuildOptions()
         controls[#controls + 1] = { type = "check", key = "on_" .. b.key,
             label = b.label:gsub("!$", "") .. (b.off and "  |cff999999(off unless you turn it on)|r" or "") }
     end
+    if #mine > 0 then
+        controls[#controls + 1] = { type = "info", height = 22, lines = function()
+            local can, cant = {}, {}
+            for _, b in ipairs(mine) do
+                local name = b.label:gsub("!$", "")
+                if KnowsBuff(b) then can[#can + 1] = name else cant[#cant + 1] = name end
+            end
+            local out = #can > 0 and ("|cff4cd964Watching:|r " .. table.concat(can, ", ")) or ""
+            if #cant > 0 then
+                out = out .. (out ~= "" and "   " or "") .. "|cff999999Not learned yet: " .. table.concat(cant, ", ") .. "|r"
+            end
+            return out
+        end }
+    end
     controls[#controls + 1] = { type = "check", key = "party", label = "Show how many party and raid members are missing your group buffs" }
     controls[#controls + 1] = { type = "check", key = "consumables", label = "In dungeons and raids, remind me about food and a flask or elixir" }
     controls[#controls + 1] = { type = "header", label = "When" }
-    controls[#controls + 1] = { type = "range", key = "threshold", label = "Short buffs: warn with this many seconds left", min = 0, max = 60, step = 5, suffix = "s" }
-    controls[#controls + 1] = { type = "range", key = "longThreshold", label = "Long buffs: warn with this many seconds left", min = 0, max = 300, step = 30, suffix = "s" }
+    controls[#controls + 1] = { type = "range", key = "threshold", label = "Short buffs: warn at", min = 0, max = 60, step = 5, suffix = "s" }
+    controls[#controls + 1] = { type = "range", key = "longThreshold", label = "Long buffs: warn at", min = 0, max = 300, step = 30, suffix = "s" }
+    controls[#controls + 1] = { type = "info", height = 22, lines = function()
+        return "|cff999999Short buffs last under 10 minutes (Battle Shout, Lightning Shield). Long ones are the 30 minute and hour buffs.|r" end }
     controls[#controls + 1] = { type = "check", key = "quietRested", label = "No reminders in cities and inns" }
     controls[#controls + 1] = { type = "check", key = "sound", label = "Play a sound when a buff drops off in combat" }
     controls[#controls + 1] = { type = "header", label = "Icons" }
@@ -605,6 +659,9 @@ function ns.BuildOptions()
         title = "Buff Notice",
         updateNotice = true,
         changes = {
+            { "2.1.0", "Battle Shout works again: 2.0.0 only checked rank 1 of each buff, so higher ranks were missed",
+                       "A sweep on the icon as a buff runs out, and this page shows which of your buffs it's watching",
+                       "Tidier settings page" },
             { "2.0.1", "Food and flask checks no longer give up when the game hides one of your other buffs in combat" },
             { "2.0.0", "Now for every class: Arcane Intellect, Fortitude, Mark of the Wild, Blessings, armors, Aspects, poisons and more",
                        "Counts party and raid members missing your group buffs",
@@ -659,11 +716,15 @@ SlashCmdList.BATTLESHOUTREMINDER = function(msg)
         ApplyLayout()
         Print("position reset")
     elseif cmd == "list" then
-        local names = {}
+        local names, cant = {}, {}
         for _, b in ipairs(buffs) do
             if not b.consumable then names[#names + 1] = b.label:gsub("!$", "") .. (Enabled(b) and "" or " (off)") end
         end
+        for _, b in ipairs(ns.CLASS_BUFFS[playerClass] or {}) do
+            if not KnowsBuff(b) then cant[#cant + 1] = b.label:gsub("!$", "") end
+        end
         Print(#names > 0 and ("watching: " .. table.concat(names, ", ")) or "no class buffs to watch on this character.")
+        if #cant > 0 then Print("not learned yet: " .. table.concat(cant, ", ")) end
     else
         Print("v" .. ns.version .. " commands (or just /bsn for the settings page):")
         Print("/bsn unlock, /bsn lock - move the icons")

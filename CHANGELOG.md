@@ -2,6 +2,12 @@
 
 ## 2026-11-27
 
+Buff Notice 2.1.0
+- Battle Shout works again. 2.0.0 only checked whether you know rank 1 of each buff, and Forever doesn't list rank 1 once you've learned a higher rank, so a level 60 warrior got no Battle Shout reminders at all. It now recognises any rank, or the spell's name in your spellbook. The same fix applies to every class's buffs (Arcane Intellect, Fortitude, Mark of the Wild, armors and the rest).
+- A clock-style sweep on the icon as a buff runs out, like Proc City.
+- The settings page shows which of your buffs it's watching and which you haven't learned yet (also `/bsn list`).
+- Tidier settings page: the warning-time labels no longer run into their buttons.
+
 Buff Notice 2.0.1
 - The same fix as Proc City 1.5.2: when the game hid one of your buffs in combat, the food and flask check gave up on the whole buff list. It now skips the hidden ones and reads the rest. A buff with more than one name (different ranks) is also still found if one of its names is hidden.
 

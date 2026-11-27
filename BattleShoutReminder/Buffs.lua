@@ -5,6 +5,7 @@
 -- Fields:
 --   key      saved settings key
 --   ids      spell IDs: knowing any of them means you can cast it; any of their buffs counts
+--   ranks    the other ranks' spell IDs (the game may only list your highest rank as known)
 --   names    fallback buff names, same order as ids
 --   label    what the icon says when it's missing
 --   when     "fight": only while fighting (Battle Shout); default: whenever you're out and about
@@ -17,26 +18,29 @@ local _, ns = ...
 
 ns.CLASS_BUFFS = {
     WARRIOR = {
-        { key = "shout", ids = { 6673 }, names = { "Battle Shout" }, label = "Battle Shout!", when = "fight" },
+        { key = "shout", ids = { 6673 }, names = { "Battle Shout" }, label = "Battle Shout!", when = "fight",
+          ranks = { 5242, 6192, 11549, 11550, 11551, 25289 } },
     },
     MAGE = {
         { key = "intellect", ids = { 1459, 23028 }, names = { "Arcane Intellect", "Arcane Brilliance" },
-          label = "Arcane Intellect", group = true, manaOnly = true },
+          label = "Arcane Intellect", group = true, manaOnly = true, ranks = { 1460, 1461, 10156, 10157 } },
         { key = "armor", ids = { 168, 7302, 6117 }, names = { "Frost Armor", "Ice Armor", "Mage Armor" },
-          label = "Armor" },
+          label = "Armor", ranks = { 7300, 7301, 7320, 10219, 10220, 22782, 22783 } },
     },
     PRIEST = {
         { key = "fortitude", ids = { 1243, 21562 }, names = { "Power Word: Fortitude", "Prayer of Fortitude" },
-          label = "Fortitude", group = true },
-        { key = "innerfire", ids = { 588 }, names = { "Inner Fire" }, label = "Inner Fire" },
+          label = "Fortitude", group = true, ranks = { 1244, 1245, 2791, 10937, 10938, 21564 } },
+        { key = "innerfire", ids = { 588 }, names = { "Inner Fire" }, label = "Inner Fire",
+          ranks = { 7128, 602, 1006, 10951, 10952 } },
         { key = "spirit", ids = { 14752, 27681 }, names = { "Divine Spirit", "Prayer of Spirit" },
-          label = "Divine Spirit", group = true, manaOnly = true },
+          label = "Divine Spirit", group = true, manaOnly = true, ranks = { 14818, 14819, 27841 } },
     },
     DRUID = {
         { key = "wild", ids = { 1126, 21849 }, names = { "Mark of the Wild", "Gift of the Wild" },
-          label = "Mark of the Wild", group = true },
+          label = "Mark of the Wild", group = true, ranks = { 5232, 6756, 5234, 8907, 9884, 9885, 21850 } },
         { key = "omen", ids = { 16864 }, names = { "Omen of Clarity" }, label = "Omen of Clarity" },
-        { key = "thorns", ids = { 467 }, names = { "Thorns" }, label = "Thorns", off = true },
+        { key = "thorns", ids = { 467 }, names = { "Thorns" }, label = "Thorns", off = true,
+          ranks = { 782, 1075, 8914, 9756, 9910 } },
     },
     PALADIN = {
         { key = "blessing",
@@ -49,10 +53,12 @@ ns.CLASS_BUFFS = {
         { key = "fury", ids = { 25780 }, names = { "Righteous Fury" }, label = "Righteous Fury", off = true },
     },
     WARLOCK = {
-        { key = "armor", ids = { 687, 706 }, names = { "Demon Skin", "Demon Armor" }, label = "Demon Armor" },
+        { key = "armor", ids = { 687, 706 }, names = { "Demon Skin", "Demon Armor" }, label = "Demon Armor",
+          ranks = { 696, 1086, 11733, 11734, 11735 } },
     },
     SHAMAN = {
-        { key = "shield", ids = { 324 }, names = { "Lightning Shield" }, label = "Lightning Shield" },
+        { key = "shield", ids = { 324 }, names = { "Lightning Shield" }, label = "Lightning Shield",
+          ranks = { 325, 905, 945, 8134, 10431, 10432 } },
         { key = "imbue", ids = { 8017, 8024, 8033, 8232 },
           names = { "Rockbiter Weapon", "Flametongue Weapon", "Frostbrand Weapon", "Windfury Weapon" },
           label = "Weapon imbue", weapon = "main" },
