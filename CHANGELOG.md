@@ -2,6 +2,9 @@
 
 ## 2026-11-27
 
+Kill Clock 1.0.1
+- The clock now starts just right of the target frame's portrait, level with it, instead of above the frame. If you've already moved it, it stays where you put it; `/kclock reset` brings it to the new spot.
+
 Kill Clock 1.0.0 (new)
 - A countdown just above the target frame showing roughly how long until your target dies, from how fast it has lost health so far. Shown as minutes and seconds (`1:24`), up to 20 minutes.
 - Movable. Text size, outline, an optional "Dies in" label, and a colour: white, yellow, orange, red, green, blue, purple, pink or any colour from the colour picker.

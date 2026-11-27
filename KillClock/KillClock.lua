@@ -1,5 +1,5 @@
 -- Kill Clock (WoW Forever)
--- A countdown above the target frame: roughly how long until your target dies at the
+-- A countdown beside the target frame's portrait: roughly how long until your target dies at the
 -- rate it's losing health, so you can time cooldowns and executes.
 --
 -- The estimate is the classic one: if a mob has lost (start - now) of its health in
@@ -22,7 +22,7 @@ local defaults = {
     label     = false,     -- "Dies in 1:24" instead of "1:24"
     elites    = false,     -- only elites, rares and bosses
     minTime   = 2,         -- seconds of damage before the first estimate
-    pos       = nil,       -- nil = just above the target frame
+    pos       = nil,       -- nil = just right of the target frame's portrait
 }
 
 local COLOURS = {
@@ -146,8 +146,12 @@ clock:SetScript("OnMouseUp", function(self)
     db.pos = { point, rel, x, y }
 end)
 
-local function PlateThreatBoxOn()
-    return _G.PlateThreatTargetBox ~= nil and _G.PlateThreatDB and _G.PlateThreatDB.portrait
+-- the target frame's portrait (the round picture), on the clients that name it
+local function TargetPortrait()
+    if not TargetFrame then return nil end
+    local container = TargetFrame.TargetFrameContainer
+    local p = (type(container) == "table" and container.Portrait) or TargetFrame.portrait
+    if type(p) == "table" and p.GetObjectType then return p end
 end
 
 local function Place()
@@ -155,9 +159,11 @@ local function Place()
     local p = db.pos
     if p then
         clock:SetPoint(p[1], UIParent, p[2], p[3], p[4])
+    elseif TargetPortrait() then
+        -- just right of the portrait, level with it
+        clock:SetPoint("LEFT", TargetPortrait(), "RIGHT", 2, 0)
     elseif TargetFrame then
-        -- just above the target frame, and above Plate Threat's box if that's on
-        clock:SetPoint("BOTTOM", TargetFrame, "TOP", 0, PlateThreatBoxOn() and 22 or 2)
+        clock:SetPoint("LEFT", TargetFrame, "RIGHT", 2, 0)
     else
         clock:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
     end
@@ -392,6 +398,7 @@ function ns.BuildOptions()
         title = "Kill Clock",
         updateNotice = true,
         changes = {
+            { "1.0.1", "Now starts just right of the target frame's portrait (drag it anywhere as before)" },
             { "1.0.0", "First version: how long until your target dies, above the target frame",
                        "Movable, with a choice of colours or your own",
                        "Works with Forever's hidden enemy health" },
@@ -413,7 +420,7 @@ function ns.BuildOptions()
             { type = "button", label = "Move",
               dynamicLabel = function() return unlocked and "Lock" or "Move" end,
               func = function() SetUnlocked(not unlocked) end },
-            { type = "button", label = "Back above the target frame", func = function() db.pos = nil; Place() end },
+            { type = "button", label = "Back beside the target frame", func = function() db.pos = nil; Place() end },
             { type = "button", label = "Test",
               dynamicLabel = function() return testMode and "Stop the test" or "Test" end,
               func = function() SetTest(not testMode) end },
@@ -454,7 +461,7 @@ SlashCmdList.KILLCLOCK = function(msg)
     elseif cmd == "reset" then
         db.pos = nil
         Place()
-        Print("clock moved back above the target frame.")
+        Print("clock moved back beside the target frame.")
     elseif cmd == "size" and tonumber(rest) then
         db.size = math.max(10, math.min(48, tonumber(rest)))
         Style()
@@ -477,7 +484,7 @@ SlashCmdList.KILLCLOCK = function(msg)
         Print("/kclock - settings")
         Print("/kclock test - show a sample time")
         Print("/kclock move | lock - move the clock")
-        Print("/kclock reset - back above the target frame")
+        Print("/kclock reset - back beside the target frame")
         Print("/kclock size <n> - text size")
         Print("/kclock colour <white|yellow|orange|red|green|blue|purple|pink> - or no name for the colour picker")
         Print("/kclock debug - print what it's timing from")

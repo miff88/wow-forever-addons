@@ -58,11 +58,11 @@ How it works on Forever: your own kicks are exact. Kick Tally sees you cast the 
 ### Kill Clock (`/kclock`)
 <img src="logos/KillClock.png" alt="KillClock logo" width="96">
 
-A countdown just above the target frame showing roughly how long until your target dies (`1:24`), so you can time cooldowns and executes. It's how long the target will take at the pace it has lost health so far. Drag it anywhere; pick the text size, a colour (white, yellow, orange, red, green, blue, purple, pink, or any colour from the colour picker), an outline and an optional "Dies in" label. It can be limited to elites, rares and bosses.
+A countdown just right of the target frame's portrait showing roughly how long until your target dies (`1:24`), so you can time cooldowns and executes. It's how long the target will take at the pace it has lost health so far. Drag it anywhere; pick the text size, a colour (white, yellow, orange, red, green, blue, purple, pink, or any colour from the colour picker), an outline and an optional "Dies in" label. It can be limited to elites, rares and bosses.
 
 How it works on Forever: the game hides enemy health from addons in combat, so they can show it but can't do maths with it. Kill Clock never reads the health. Twice a second it gives the game a lookup ("curve") from health left to time left at the current pace, and the game applies it to the hidden health and shows the answer. Keep enemy nameplates on so it knows when each mob started taking damage, even after you switch targets.
 
-- `/kclock test`, `/kclock move` (`/kclock lock` when done), `/kclock reset` (back above the target frame)
+- `/kclock test`, `/kclock move` (`/kclock lock` when done), `/kclock reset` (back beside the target frame)
 - `/kclock size <n>`, `/kclock colour <name>` (no name opens the colour picker), `/kclock debug`
 
 ## Mage
