@@ -43,7 +43,7 @@ Forever hides buff details from addons in combat. Out of combat Proc City reads 
 - `/proc list` what's tracked for your class, `/proc off <name>` / `/proc on <name>`
 - `/proc debug` print casts, Strength changes and combat text in combat
 
-### Kick Tally (`/kicks`)
+### Kick Tally (`/ktally`, also `/kicks`)
 <img src="logos/KickTally.png" alt="KickTally logo" width="96">
 
 Announces your successful interrupts in chat ("Pummel interrupted Defias Pillager's Fireball!") and keeps a window, styled like the game's own damage meter, with how many kicks each person in your party or raid has landed: class-coloured bars, C / O for this fight or overall, a gear menu and a minimise button. Hover a row to see what that player kicked. Counts Pummel, Shield Bash, Kick, Counterspell, Earth Shock, Spell Lock, Feral Charge and Silence, plus (optionally) stuns and fears that stop a cast, like Hammer of Justice or Kidney Shot. It also tells you, in your own chat window, when your kick didn't interrupt anything.
@@ -52,8 +52,8 @@ How it works on Forever: your own kicks are exact. Kick Tally sees you cast the 
 
 - Announce to auto (instance, raid or party chat), party, raid, instance, say or yell (say and yell only inside instances), or only yourself. The message is editable: `{target}`, `{spell}`, `{ability}`, `{count}`.
 - Drag the bottom-right corner to resize it; the mouse wheel scrolls when there are more players than fit. Show or hide the window, or only show it in a party or raid. Bar height, background and window opacity are on the settings page.
-- `/kicks test`, `/kicks report` (or `report total`) post the tally to the group, `/kicks lock|unlock`, `/kicks show|hide`, `/kicks reset` (or `reset position`); "Reset all data" is also in the window's C / O and gear menus
-- `/kicks debug` print the casts and interrupts it sees
+- `/ktally test`, `/ktally report` (or `report total`) post the tally to the group, `/ktally lock|unlock`, `/ktally show|hide`, `/ktally reset` (or `reset position`); "Reset all data" is also in the window's C / O and gear menus
+- `/ktally debug` print the casts and interrupts it sees
 
 ### Kill Clock (`/kclock`)
 <img src="logos/KillClock.png" alt="KillClock logo" width="96">

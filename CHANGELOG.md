@@ -2,6 +2,9 @@
 
 ## 2026-11-27
 
+Kick Tally 1.3.2
+- The chat command is now `/ktally`, because `/kick` (one letter off `/kicks`) is the game's own command for removing someone from your group. `/kicks` and `/kicktally` still work.
+
 Kick Tally 1.3.1
 - "Reset all data" on the window itself: in the C / O menu (like the damage meter) and the gear menu, as well as the arrow menu and the settings page. It asks before clearing this fight's and the overall counts. `/kicks reset` still clears them straight away.
 

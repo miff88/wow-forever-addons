@@ -11,7 +11,7 @@
 --   * a party or raid member's cast landing at the same moment an enemy's cast is
 --     interrupted, when the game hides which spell it was.
 -- Chat messages from addons are blocked during boss encounters, so there your kicks go
--- to your own chat window instead. /kicks debug prints what it sees.
+-- to your own chat window instead. /ktally debug prints what it sees.
 
 local ADDON_NAME, ns = ...
 local KICKS = ns.KICKS
@@ -695,7 +695,7 @@ gear:SetScript("OnClick", function(self)
             function() db.groupOnly = not db.groupOnly; Layout() end)
         root:CreateButton("Hide window", function()
             db.showWindow = false; Layout()
-            Print("window hidden. /kicks show, or the settings page, brings it back.")
+            Print("window hidden. /ktally show, or the settings page, brings it back.")
         end)
         root:CreateButton("Reset all data", AskReset)
         root:CreateButton("Settings", function() if ns.OpenOptions then ns.OpenOptions() end end)
@@ -1005,6 +1005,7 @@ function ns.BuildOptions()
         title = "Kick Tally",
         updateNotice = true,
         changes = {
+            { "1.3.2", "The chat command is now /ktally (/kicks and /kicktally still work). /kick is the game's own" },
             { "1.3.1", "Reset all data: in the C / O menu and the gear menu on the window, asks first" },
             { "1.3.0", "Kick posts name the enemy more often: names read before the pull, raid markers",
                        "When the game hides everything it says which ability, or isn't posted at all",
@@ -1022,7 +1023,7 @@ function ns.BuildOptions()
         icon = "Interface\\Icons\\Ability_Kick",
         about = "Announces your kicks and tallies the group's",
         credit = "Created by Miff, supported by Claude",
-        slash = "/kicks",
+        slash = "/ktally",
         db = db,
         onChange = function() Layout() end,
         controls = {
@@ -1072,8 +1073,10 @@ function KickTally_OnAddonCompartmentClick()
     if ns.OpenOptions then ns.OpenOptions() end
 end
 
-SLASH_KICKTALLY1 = "/kicks"
+-- /ktally, not /kick: /kick is the game's own command for removing someone from your group
+SLASH_KICKTALLY1 = "/ktally"
 SLASH_KICKTALLY2 = "/kicktally"
+SLASH_KICKTALLY3 = "/kicks"
 SlashCmdList.KICKTALLY = function(msg)
     local cmd, rest = (msg or ""):match("^(%S*)%s*(.-)$")
     cmd = cmd:lower()
@@ -1090,10 +1093,10 @@ SlashCmdList.KICKTALLY = function(msg)
         db.showWindow = cmd == "show"
         Layout()
         if cmd == "show" then
-            Print(db.groupOnly and not InGroup() and "window on. It shows when you're in a party or raid (turn that off in /kicks)."
+            Print(db.groupOnly and not InGroup() and "window on. It shows when you're in a party or raid (turn that off in /ktally)."
                 or "window shown.")
         else
-            Print("window hidden. /kicks show to bring it back.")
+            Print("window hidden. /ktally show to bring it back.")
         end
     elseif cmd == "reset" then
         if rest == "position" then
@@ -1106,18 +1109,18 @@ SlashCmdList.KICKTALLY = function(msg)
         Report(rest == "total" and "total" or "fight")
     elseif cmd == "debug" then
         debugMode = not debugMode
-        Print(debugMode and "debug on: casts and interrupts are printed. /kicks debug again to stop." or "debug off.")
+        Print(debugMode and "debug on: casts and interrupts are printed. /ktally debug again to stop." or "debug off.")
         if debugMode then
             Print(("now: in a group %s, chat locked %s, announcing to %s"):format(tostring(InGroup()),
                 tostring(ChatLocked()), tostring(ChatType() or "your chat window only")))
         end
     else
-        Print("/kicks - settings")
-        Print("/kicks test - sample window and message")
-        Print("/kicks report [total] - post this fight's (or all) kicks to the group")
-        Print("/kicks lock | unlock - lock or move the window")
-        Print("/kicks show | hide - show or hide the window")
-        Print("/kicks reset - clear all kick data (/kicks reset position for the window's position and size)")
-        Print("/kicks debug - print what it sees, to check it on Forever")
+        Print("/ktally - settings")
+        Print("/ktally test - sample window and message")
+        Print("/ktally report [total] - post this fight's (or all) kicks to the group")
+        Print("/ktally lock | unlock - lock or move the window")
+        Print("/ktally show | hide - show or hide the window")
+        Print("/ktally reset - clear all kick data (/ktally reset position for the window's position and size)")
+        Print("/ktally debug - print what it sees, to check it on Forever")
     end
 end
