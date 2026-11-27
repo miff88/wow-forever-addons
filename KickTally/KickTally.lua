@@ -345,7 +345,7 @@ if okType and typeDD then
         typeDD:SetupMenu(function(_, root)
             root:CreateTitle("Kick Tally")
             root:CreateButton("Post to the group", function() if ns.Report then ns.Report(db.mode) end end)
-            root:CreateButton("Reset the counts", function() if ns.ResetCounts then ns.ResetCounts() end end)
+            root:CreateButton("Reset all data", function() if ns.AskReset then ns.AskReset() end end)
             root:CreateButton("Test", function() if ns.SetTest then ns.SetTest(not testMode) end end)
         end)
     end
@@ -576,9 +576,31 @@ ns.Layout = Layout
 
 local function ResetCounts()
     wipe(fight); wipe(db.total); wipe(recent)
+    scroll = 0
     Layout()
 end
 ns.ResetCounts = ResetCounts
+
+-- clearing everything asks first, like the damage meter
+local function AskReset()
+    if StaticPopupDialogs and StaticPopup_Show then
+        StaticPopupDialogs.KICKTALLY_RESET = StaticPopupDialogs.KICKTALLY_RESET or {
+            text = "Clear all Kick Tally data?\nThis fight's and the overall kick counts are deleted.",
+            button1 = YES or "Yes",
+            button2 = NO or "No",
+            OnAccept = function() ResetCounts(); Print("all kick data cleared.") end,
+            timeout = 0,
+            whileDead = true,
+            hideOnEscape = true,
+            preferredIndex = 3,
+        }
+        StaticPopup_Show("KICKTALLY_RESET")
+    else
+        ResetCounts()
+        Print("all kick data cleared.")
+    end
+end
+ns.AskReset = AskReset
 
 mini:SetScript("OnClick", function() db.collapsed = not db.collapsed; Layout() end)
 
@@ -657,6 +679,8 @@ if session.SetupMenu then
     session:SetupMenu(function(_, root)
         root:CreateRadio("Current fight", function() return db.mode ~= "total" end, function() SetMode("fight") end)
         root:CreateRadio("Overall", function() return db.mode == "total" end, function() SetMode("total") end)
+        if root.CreateDivider then root:CreateDivider() end
+        root:CreateButton("Reset all data", AskReset)
     end)
     if session.SetSelectionText then pcall(session.SetSelectionText, session, function() return "" end) end
 else
@@ -673,6 +697,7 @@ gear:SetScript("OnClick", function(self)
             db.showWindow = false; Layout()
             Print("window hidden. /kicks show, or the settings page, brings it back.")
         end)
+        root:CreateButton("Reset all data", AskReset)
         root:CreateButton("Settings", function() if ns.OpenOptions then ns.OpenOptions() end end)
     end)
     if not opened and ns.OpenOptions then ns.OpenOptions() end
@@ -980,6 +1005,7 @@ function ns.BuildOptions()
         title = "Kick Tally",
         updateNotice = true,
         changes = {
+            { "1.3.1", "Reset all data: in the C / O menu and the gear menu on the window, asks first" },
             { "1.3.0", "Kick posts name the enemy more often: names read before the pull, raid markers",
                        "When the game hides everything it says which ability, or isn't posted at all",
                        "New message: \"Pummel interrupted Scorching Elemental's Fireball!\"" },
@@ -1027,7 +1053,7 @@ function ns.BuildOptions()
             { type = "check", key = "locked", label = "Lock the window (otherwise drag its title bar to move it)" },
             { type = "button", label = "Reset position and size", func = function()
                 db.pos = nil; db.width, db.height = defaults.width, defaults.height; PlaceWindow(); Layout() end },
-            { type = "button", label = "Reset the counts", func = function() ResetCounts() end },
+            { type = "button", label = "Reset all data", func = function() AskReset() end },
             { type = "button", label = "Test",
               dynamicLabel = function() return testMode and "Stop the test" or "Test" end,
               func = function() SetTest(not testMode) end },
@@ -1074,7 +1100,7 @@ SlashCmdList.KICKTALLY = function(msg)
             db.pos = nil; db.width, db.height = defaults.width, defaults.height; PlaceWindow(); Layout()
             Print("window position and size reset.")
         else
-            ResetCounts(); Print("counts reset.")
+            ResetCounts(); Print("all kick data cleared.")
         end
     elseif cmd == "report" then
         Report(rest == "total" and "total" or "fight")
@@ -1091,7 +1117,7 @@ SlashCmdList.KICKTALLY = function(msg)
         Print("/kicks report [total] - post this fight's (or all) kicks to the group")
         Print("/kicks lock | unlock - lock or move the window")
         Print("/kicks show | hide - show or hide the window")
-        Print("/kicks reset [position] - reset the counts (or the window's position and size)")
+        Print("/kicks reset - clear all kick data (/kicks reset position for the window's position and size)")
         Print("/kicks debug - print what it sees, to check it on Forever")
     end
 end

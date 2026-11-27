@@ -52,7 +52,7 @@ How it works on Forever: your own kicks are exact. Kick Tally sees you cast the 
 
 - Announce to auto (instance, raid or party chat), party, raid, instance, say or yell (say and yell only inside instances), or only yourself. The message is editable: `{target}`, `{spell}`, `{ability}`, `{count}`.
 - Drag the bottom-right corner to resize it; the mouse wheel scrolls when there are more players than fit. Show or hide the window, or only show it in a party or raid. Bar height, background and window opacity are on the settings page.
-- `/kicks test`, `/kicks report` (or `report total`) post the tally to the group, `/kicks lock|unlock`, `/kicks show|hide`, `/kicks reset` (or `reset position`)
+- `/kicks test`, `/kicks report` (or `report total`) post the tally to the group, `/kicks lock|unlock`, `/kicks show|hide`, `/kicks reset` (or `reset position`); "Reset all data" is also in the window's C / O and gear menus
 - `/kicks debug` print the casts and interrupts it sees
 
 ### Kill Clock (`/kclock`)

@@ -32,7 +32,7 @@ Made for **World of Warcraft: Forever**. Every class.
 | `/kicks report` / `/kicks report total` | Post this fight's (or all) kicks to the group |
 | `/kicks lock` / `/kicks unlock` | Lock or move the window |
 | `/kicks show` / `/kicks hide` | Show or hide the window |
-| `/kicks reset` / `/kicks reset position` | Reset the counts or the window position |
+| `/kicks reset` / `/kicks reset position` | Clear all kick data (also in the window's C / O and gear menus) or reset the window position |
 | `/kicks debug` | Print the casts and interrupts it sees |
 
 ## Good to know

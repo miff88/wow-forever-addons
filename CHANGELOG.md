@@ -2,6 +2,9 @@
 
 ## 2026-11-27
 
+Kick Tally 1.3.1
+- "Reset all data" on the window itself: in the C / O menu (like the damage meter) and the gear menu, as well as the arrow menu and the settings page. It asks before clearing this fight's and the overall counts. `/kicks reset` still clears them straight away.
+
 Kill Clock 1.0.1
 - The clock now starts just right of the target frame's portrait, level with it, instead of above the frame. If you've already moved it, it stays where you put it; `/kclock reset` brings it to the new spot.
 
