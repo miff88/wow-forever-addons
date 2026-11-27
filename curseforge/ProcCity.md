@@ -1,6 +1,6 @@
 # Proc City
 
-**See your procs the moment they happen.** Proc City shows your procs and short buffs as a movable row of icons with the time left on each: Flurry, Crusader, Clearcasting, Vengeance, Shadow Trance, trinkets and more.
+**See your procs the moment they happen.** Proc City shows your procs and short buffs as a movable row of icons with the time left on each: Flurry, Crusader, Clearcasting, Vengeance, Shadow Trance, trinkets, and now Overpower, Revenge and Riposte too.
 
 Made for **World of Warcraft: Forever**. Every class.
 
@@ -12,10 +12,19 @@ Made for **World of Warcraft: Forever**. Every class.
 - Crusader (Holy Strength), the new Forever enchants Insight and Revelation, and every Forever weapon that buffs you on hit or on use (Destiny, Arcanite Champion, Claymore of Two Moons, Ragehammer, Quel'Serrar, Hand of Edward the Odd and more), and racials (Blood Fury, Berserking, Perception, Stoneform).
 - **Any equipped trinket with a Use** is picked up automatically, including Forever's new trinkets.
 
+### After a dodge, parry or block (formerly Proc Plates)
+- **Warriors:** Overpower when a mob dodges you, and Revenge after you block, dodge or parry.
+- **Rogues:** Riposte after you parry. **Hunters:** Counterattack after you parry, and Mongoose Bite after your target dodges.
+- They join the row for their 5 second window, and their buttons glow on your action bars (Blizzard bars, Bartender4, ElvUI and Dominos).
+- **Overpower on the right mob:** an Overpower icon also sits above the nameplate of the mob that dodged you, including Whirlwind and Cleave dodges on mobs you aren't targeting. Dodges against other players are ignored.
+- Revenge, Riposte and the hunter ones only show while the game says you can cast them, and go away once you use them.
+- Coming from Proc Plates or Overpower Plates? Proc City brings your settings over, and Proc Plates steps aside once Proc City is installed.
+
 ### Clear at a glance
 - Icons grow to the right or left as procs happen, with the seconds left and an optional clock sweep.
 - **Crusader on both weapons:** when both proc at once, the icon glows.
 - **Pinned procs:** pin the procs you build around and they keep their place, shown as a faint grey icon while they're down. Spot a missing Flurry or Crusader as easily as a running one. By default the grey icons only show in combat.
+- **Button glow:** your Overpower, Revenge, Riposte, Counterattack and Mongoose Bite buttons light up while they're usable, and Shadow Bolt lights up during Shadow Trance.
 - Stack counts, an optional sound, and adjustable icon size and gap.
 
 ### Easy to set up
@@ -34,6 +43,8 @@ Made for **World of Warcraft: Forever**. Every class.
 | `/proc list` | What's tracked for your class |
 | `/proc off <name>` / `/proc on <name>` | Hide or show one proc |
 | `/proc pin <name>` / `/proc unpin <name>` | Keep a proc on screen, greyed out while it's down |
+| `/proc glow` | Turn the action button glow on or off |
+| `/proc plates` | Turn the Overpower nameplate icon on or off (warriors) |
 | `/proc debug` | Print what Proc City sees in combat |
 
 ## Good to know

@@ -1,8 +1,8 @@
 ## Interface: 16001
 ## Title: |cffffd100Proc|r Plates
-## Notes: Lights up your after-a-dodge abilities: Overpower on the mob that dodged you, plus Revenge, Riposte, Counterattack and Mongoose Bite. Warriors, rogues and hunters.
+## Notes: Now part of Proc City: install Proc City and it takes over with your settings. Overpower on the mob that dodged you, plus Revenge, Riposte, Counterattack and Mongoose Bite.
 ## Author: Mitch Brindle
-## Version: 2.0.2
+## Version: 2.1.0
 ## IconTexture: Interface\Icons\Ability_Warrior_Revenge
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons

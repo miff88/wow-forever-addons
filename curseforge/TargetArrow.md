@@ -11,7 +11,7 @@ Made for **World of Warcraft: Forever**. Works on every class.
 - Seven colours: red, yellow, green, blue, white, purple and orange.
 - Adjustable size and height above the health bar.
 - Optionally only show it on enemies.
-- Sits high enough to clear Proc Plates' Overpower icon if you use both.
+- Sits high enough to clear Proc City's Overpower nameplate icon if you use both.
 - Full settings page under Options > AddOns, with an entry on the minimap's addon button.
 
 ## Commands

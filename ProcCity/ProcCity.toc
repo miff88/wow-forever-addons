@@ -1,15 +1,19 @@
 ## Interface: 16001
 ## Title: |cffff8000Proc|r City
-## Notes: Your procs and short buffs as a movable row of icons with the time left: Flurry, Crusader, Clearcasting, trinkets and more. Any class.
+## Notes: Your procs and short buffs as a movable row of icons with the time left: Flurry, Crusader, Clearcasting, trinkets, and Overpower, Revenge and Riposte after a dodge or parry. Any class.
 ## Author: Mitch Brindle
-## Version: 1.3.0
+## Version: 1.4.0
 ## IconTexture: Interface\Icons\Spell_Holy_BlessingOfStrength
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons
 ## AddonCompartmentFunc: ProcCity_OnAddonCompartmentClick
 ## SavedVariables: ProcCityDB
+## OptionalDeps: OverpowerPlates
 
 Options.lua
 VersionCheck.lua
 Procs.lua
 ProcCity.lua
+Glow.lua
+Reactive.lua
+Overpower.lua

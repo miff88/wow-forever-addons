@@ -21,13 +21,23 @@ local defaults = {
     swipe   = true,     -- clock-style sweep as it runs out
     glowDouble = true,  -- glow when a proc is up twice (Crusader on both weapons)
     sound   = false,
-    cats    = { proc = true, cooldown = true, enchant = true, item = true, trinket = true, racial = true },
+    cats    = { proc = true, cooldown = true, enchant = true, item = true, trinket = true, racial = true,
+                reactive = true },
     off     = {},       -- [key] = true for procs you've turned off
     learned = {},       -- [key] = real duration seen out of combat
     learnedIDs = {},    -- [spellID] = key, for buffs matched by name (new Forever enchants)
     pins    = {},       -- keys always shown, greyed out while they're down, in this order
     pinsInCombat = true,-- ...only greyed out in combat (out of combat they hide)
     pinAlpha = 50,      -- how faint a pinned icon is while it's down
+    glowButtons = true, -- light the matching action buttons (Overpower, Revenge, Shadow Bolt...)
+    -- Overpower on the nameplate of the mob that dodged you (Overpower.lua)
+    oppPlates = true,
+    oppSize   = 30,
+    oppOffset = 18,     -- above the health bar
+    oppWindow = 5,      -- seconds Overpower stays usable after a dodge
+    oppSound  = true,   -- sound when a mob dodges you
+    oppPop    = true,
+    oppPulse  = true,
     pos     = nil,
 }
 
@@ -80,13 +90,13 @@ local function BuildLookups()
     wipe(byID); wipe(byName)
     for _, p in ipairs(ns.PROCS) do
         p.icon = p.icon or SpellIcon(p.ids[1]) or 134400
-        for _, id in ipairs(p.ids) do
+        for _, id in ipairs(p.react and {} or p.ids) do
             byID[id] = p
             -- the client's own name for the ID (other languages, or a renamed spell)
             local n = SpellName(id)
             if n then AddName(n, p) end
         end
-        AddName(p.name, p)
+        if not p.react then AddName(p.name, p) end
     end
     -- IDs learned from your own buffs, for entries whose ID isn't published yet
     if db and db.learnedIDs then
@@ -270,9 +280,9 @@ local function ScanAuras()
                                expires = f.expires, noTimer = not f.expires })
         end
     end
-    -- anything we were showing that isn't really there any more
-    for key in pairs(active) do
-        if not found[key] then Remove(key) end
+    -- anything we were showing that isn't really there any more (abilities aren't buffs)
+    for key, a in pairs(active) do
+        if not found[key] and a.source ~= "react" then Remove(key) end
     end
     Layout()
     return true
@@ -706,9 +716,17 @@ local function TestEntries()
     elseif playerClass == "DRUID" then add("clearcasting"); add("naturesgrace")
     elseif playerClass == "SHAMAN" then add("flurry"); add("clearcasting")
     elseif playerClass == "PRIEST" then add("innerfocus"); add("spirittap") end
+    if playerClass == "WARRIOR" then add("overpower")
+    elseif playerClass == "ROGUE" then add("riposte")
+    elseif playerClass == "HUNTER" then add("counterattack") end
     add("kissspider")
     return list
 end
+
+ns.Start, ns.Remove, ns.Wanted = Start, Remove, Wanted
+ns.Active = function() return active end
+ns.IsTest = function() return testMode end
+ns.IsUnlocked = function() return unlocked end
 
 local function SetTest(on)
     testMode = on
@@ -724,6 +742,7 @@ local function SetTest(on)
         ScanAuras()
     end
     Layout()
+    if ns.RefreshOverpower then ns.RefreshOverpower() end
 end
 ns.SetTest = SetTest
 
@@ -743,6 +762,27 @@ local function Refresh()
     lastStr = ReadStr()
     ScanAuras()
     Layout()
+end
+
+-- Overpower Plates / Proc Plates is now part of Proc City: bring its settings over once
+function ns.ImportProcPlates()
+    local old = OverpowerPlatesDB
+    if type(old) == "table" and not db.importedProcPlates then
+        if type(old.window) == "number" then db.oppWindow = old.window end
+        if type(old.size) == "number" then db.oppSize = old.size end
+        if type(old.offsetY) == "number" then db.oppOffset = old.offsetY end
+        if old.sound ~= nil then db.oppSound = old.sound and true or false end
+        if old.pop ~= nil then db.oppPop = old.pop and true or false end
+        if old.pulse ~= nil then db.oppPulse = old.pulse and true or false end
+        if old.barGlow == false then db.glowButtons = false end
+        if old.reactive == false then
+            for _, k in ipairs({ "revenge", "riposte", "counterattack", "mongoose" }) do db.off[k] = true end
+        end
+        if type(old.reactOff) == "table" then
+            for k, v in pairs(old.reactOff) do if v then db.off[k] = true end end
+        end
+        db.importedProcPlates = true
+    end
 end
 
 ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
@@ -766,6 +806,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
         db = ProcCityDB
         ns.db = db
         if type(db.pins) ~= "table" then db.pins = {} end
+        ns.ImportProcPlates()
         local _, class = UnitClass("player")
         playerClass = class
         BuildLookups()
@@ -841,6 +882,19 @@ function ns.BuildOptions()
     for _, c in ipairs(ns.CATEGORIES) do
         controls[#controls + 1] = { type = "check", key = "cat_" .. c.key, label = c.label }
     end
+    controls[#controls + 1] = { type = "check", key = "glowButtons", label = "Light the matching action buttons (Overpower, Revenge, Riposte, Shadow Bolt during Shadow Trance...)" }
+    if playerClass == "WARRIOR" then
+        controls[#controls + 1] = { type = "header", label = "Overpower on the mob that dodged you" }
+        controls[#controls + 1] = { type = "check", key = "oppPlates", label = "Put an Overpower icon on that mob's nameplate too" }
+        controls[#controls + 1] = { type = "range", key = "oppSize", label = "Nameplate icon size", min = 16, max = 64, step = 2 }
+        controls[#controls + 1] = { type = "range", key = "oppOffset", label = "Height above the health bar", min = 0, max = 80, step = 2 }
+        controls[#controls + 1] = { type = "range", key = "oppWindow", label = "Seconds Overpower stays up", min = 1, max = 10, step = 1, suffix = "s" }
+        controls[#controls + 1] = { type = "check", key = "oppPop", label = "Pop the nameplate icon in" }
+        controls[#controls + 1] = { type = "check", key = "oppPulse", label = "Pulse a gold glow around it" }
+        controls[#controls + 1] = { type = "check", key = "oppSound", label = "Play a sound when a mob dodges you" }
+        controls[#controls + 1] = { type = "info", height = 44, lines = function()
+            return "|cff999999A nameplate dodge only counts when your Overpower charge goes up at the same moment, so dodges against other players are ignored. Needs enemy nameplates on (V).|r" end }
+    end
     controls[#controls + 1] = { type = "header", label = "Always show (greyed out while down)" }
     controls[#controls + 1] = { type = "dropdown", key = "pinPick", label = "Pin or unpin a proc",
         options = function()
@@ -881,13 +935,14 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.4.0", "Proc Plates is now part of Proc City: Overpower, Revenge, Riposte, Counterattack and Mongoose Bite",
+                       "Overpower also marks the mob that dodged you on its nameplate",
+                       "Lights the matching action buttons, including Shadow Bolt during Shadow Trance" },
             { "1.3.0", "Pin the procs you care about: they keep their place, greyed out while they're down",
                        "Pick them on this page or with /proc pin <name>" },
             { "1.2.0", "Tracks every Forever weapon that buffs you on hit or on use",
                        "Destiny, Arcanite Champion, Claymore of Two Moons, Ragehammer, Hand of Edward the Odd and 23 more",
                        "Shared buff names (Haste, Enrage) go to the weapon you have on" },
-            { "1.1.0", "Tracks the new Forever enchants Insight and Revelation",
-                       "Revelation clears when your next spell uses it" },
 
         },
         icon = "Interface\\Icons\\Spell_Holy_BlessingOfStrength",
@@ -898,6 +953,8 @@ function ns.BuildOptions()
         onChange = function()
             if not testMode then ScanAuras() end
             Layout()
+            if ns.RefreshOverpower then ns.RefreshOverpower() end
+            if ns.UpdateGlows then ns.UpdateGlows(true) end
         end,
         controls = controls,
     })
@@ -978,6 +1035,14 @@ SlashCmdList.PROCCITY = function(msg)
         local pinned = IsPinned(p.key)
         if (cmd == "pin") ~= pinned then ns.TogglePin(p.key) end
         Print(p.name .. (cmd == "pin" and " is pinned: it keeps its place, greyed out while it's down." or " is unpinned."))
+    elseif cmd == "plates" then
+        db.oppPlates = not db.oppPlates
+        if ns.RefreshOverpower then ns.RefreshOverpower() end
+        Print("Overpower icon on the nameplate of the mob that dodged you " .. (db.oppPlates and "on" or "off"))
+    elseif cmd == "glow" then
+        db.glowButtons = not db.glowButtons
+        if ns.UpdateGlows then ns.UpdateGlows(true) end
+        Print("action button glow " .. (db.glowButtons and "on" or "off"))
     elseif cmd == "list" then
         local parts = {}
         for _, p in ipairs(ProcsForSettings()) do
@@ -991,6 +1056,18 @@ SlashCmdList.PROCCITY = function(msg)
             Print(("now: buffs readable %s, Strength readable %s, Crusader on %d weapon(s), trinkets with a Use %d"):format(
                 tostring(AurasReadable()), tostring(ReadStr() ~= nil), crusaderWeapons,
                 (function() local n = 0 for _ in pairs(useSpells) do n = n + 1 end return n end)()))
+            if playerClass == "WARRIOR" and ns.ReadOverpowerCharges then
+                Print("Overpower charges: " .. tostring(ns.ReadOverpowerCharges()))
+            end
+            if ns.ReactiveDebug then for _, line in ipairs(ns.ReactiveDebug()) do Print(line) end end
+            if ns.GlowDebug then
+                for _, p in ipairs(ns.PROCS) do
+                    if p.glow and p.class and p.class[playerClass] then
+                        local g = p.glow == true and { name = p.name, ids = p.ids } or p.glow
+                        Print(ns.GlowDebug(g.name, g.ids))
+                    end
+                end
+            end
         end
     else
         Print("v" .. ns.version .. " commands (or just /proc for the settings page):")
@@ -1000,6 +1077,10 @@ SlashCmdList.PROCCITY = function(msg)
         Print("/proc size <n> - icon size (now " .. db.size .. ")")
         Print("/proc list - what's tracked for your class; /proc off <name> or /proc on <name>")
         Print("/proc pin <name>, /proc unpin <name> - always show it, greyed out while it's down")
+        Print("/proc glow - light the matching action buttons (now " .. (db.glowButtons and "on" or "off") .. ")")
+        if playerClass == "WARRIOR" then
+            Print("/proc plates - Overpower icon on the mob that dodged you (now " .. (db.oppPlates and "on" or "off") .. ")")
+        end
         Print("/proc debug - print what Proc City sees in combat")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end

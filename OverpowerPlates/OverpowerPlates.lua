@@ -1,4 +1,7 @@
--- Proc Plates (WoW Forever), formerly Overpower Plates
+-- Proc Plates (WoW Forever), formerly Overpower Plates. NOW PART OF PROC CITY.
+-- This last version hands over to Proc City 1.4.0 or later when it's installed (Proc City
+-- reads these settings and shows Overpower, Revenge and the rest itself), and otherwise
+-- keeps working and points people to Proc City.
 -- Warriors: puts an Overpower icon above the nameplate of the mob that dodged YOU,
 -- including mobs that dodge a Whirlwind or Cleave while they aren't your target.
 -- Reactive.lua adds Revenge, Riposte, Counterattack and Mongoose Bite.
@@ -36,6 +39,29 @@ local defaults = {
     reactGlow   = true, -- glow on its action buttons
     reactSound  = false,
 }
+
+-- true when Proc City 1.4.0 or later is loaded: it does all of this now
+local function Print(msg)
+    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Proc Plates:|r " .. msg)
+end
+
+local function VersionAtLeast(v, want)
+    local a, b = {}, {}
+    for n in tostring(v or ""):gmatch("%d+") do a[#a + 1] = tonumber(n) end
+    for n in want:gmatch("%d+") do b[#b + 1] = tonumber(n) end
+    for i = 1, math.max(#a, #b) do
+        local x, y = a[i] or 0, b[i] or 0
+        if x ~= y then return x > y end
+    end
+    return true
+end
+
+function ns.ProcCityTakesOver()
+    local isLoaded = (C_AddOns and C_AddOns.IsAddOnLoaded) or IsAddOnLoaded
+    if not isLoaded or not isLoaded("ProcCity") then return false end
+    local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+    return meta and VersionAtLeast(meta("ProcCity", "Version"), "1.4.0") or false
+end
 
 local MATCH_WINDOW = 0.35 -- seconds between a nameplate dodge and a new combo point to call it a match
 
@@ -374,6 +400,15 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
         ns.BuildOptions()
 
     elseif event == "PLAYER_LOGIN" then
+        local takenOver = ns.ProcCityTakesOver()
+        C_Timer.After(6, function()
+            if takenOver then
+                Print("now part of Proc City, which has taken over with your settings. You can delete the OverpowerPlates folder from your AddOns.")
+            else
+                Print("Proc Plates is now part of Proc City and won't get more updates. Install Proc City from CurseForge: it takes over with your settings.")
+            end
+        end)
+        if takenOver then return end
         local _, class = UnitClass("player")
         if class ~= "WARRIOR" then return end
 
@@ -400,10 +435,6 @@ end)
 ---------------------------------------------------------------------------
 -- Slash command: /opp
 ---------------------------------------------------------------------------
-local function Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Proc Plates:|r " .. msg)
-end
-
 ---------------------------------------------------------------------------
 -- Settings page (Options > AddOns) and minimap addon button
 ---------------------------------------------------------------------------
@@ -411,6 +442,11 @@ function ns.BuildOptions()
     local _, class = UnitClass("player")
     local controls = {}
     local function add(c) controls[#controls + 1] = c end
+    add({ type = "header", label = "Proc Plates is now part of Proc City" })
+    add({ type = "info", height = 56, lines = function()
+        return ns.ProcCityTakesOver()
+            and "|cff40ff40Proc City is installed and has taken over, with these settings. You can delete the OverpowerPlates folder.|r"
+            or "|cffffd100Overpower, Revenge, Riposte, Counterattack and Mongoose Bite are now in Proc City. Install Proc City from CurseForge and it takes over with these settings. Proc Plates won't get more updates.|r" end })
     local mineR = {}
     for _, r in ipairs(ns.REACTIVE or {}) do if r.class == class then mineR[#mineR + 1] = r end end
 
@@ -470,6 +506,8 @@ function ns.BuildOptions()
         title = "Proc Plates",
         updateNotice = true,
         changes = {
+            { "2.1.0", "Proc Plates is now part of Proc City. Install Proc City and it takes over with your settings",
+                       "This is the last Proc Plates update" },
             { "2.0.2", "Now called Proc Plates (/procplates or /opp)" },
             { "2.0.0", "Renamed from Overpower Plates: now for warriors, rogues and hunters",
                        "Revenge, Riposte, Counterattack and Mongoose Bite light up when they're usable",
@@ -497,6 +535,11 @@ end
 SLASH_OVERPOWERPLATES1 = "/procplates"
 SLASH_OVERPOWERPLATES2 = "/opp"
 SlashCmdList.OVERPOWERPLATES = function(msg)
+    if ns.ProcCityTakesOver() and SlashCmdList.PROCCITY then
+        Print("now part of Proc City, opening its settings (/proc).")
+        SlashCmdList.PROCCITY("")
+        return
+    end
     local cmd, val = (msg or ""):lower():match("^(%S*)%s*(.-)$")
     local n = tonumber(val)
 

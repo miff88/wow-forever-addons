@@ -1,10 +1,10 @@
 # WoW Forever Addons
 
-Small addons for World of Warcraft: Forever (Interface 16001). Most work on any class; Mage Services is made for mages, and Proc Plates is for warriors, rogues and hunters. None of them use the combat log, which Forever blocks for addons.
+Small addons for World of Warcraft: Forever (Interface 16001). They all work on any class; Mage Services is made for mages. None of them use the combat log, which Forever blocks for addons.
 
 ## Install
 
-Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates need to be on (V) for everything except Buff Notice and Proc City, and Kick Tally works best with them on.
+Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates (V) need to be on for Target Arrow, Plate Threat's numbers and Proc City's Overpower icon, and Kick Tally and Kill Clock work best with them on.
 
 ## Settings
 
@@ -17,7 +17,7 @@ Every addon has a settings page under **Options > AddOns**, and an entry on the 
 ### Target Arrow (`/tarrow`)
 <img src="logos/TargetArrow.png" alt="TargetArrow logo" width="96">
 
-A bobbing arrow above your target's nameplate so you can pick it out of a crowd. It sits high enough to clear Proc Plates' Overpower icon if you use both.
+A bobbing arrow above your target's nameplate so you can pick it out of a crowd. It sits high enough to clear Proc City's Overpower nameplate icon if you use both.
 
 An optional second, smaller arrow marks your focus or a raid marker (skull by default) in its own colour, and hides when it would point at your target.
 
@@ -42,6 +42,8 @@ Also adds a retail-style threat box on top of the target frame, coloured by your
 
 Your procs and short buffs as a movable row of icons, with the time left on each: Flurry, Enrage, Clearcasting, Vengeance, Shadow Trance, Quick Shots, Crusader (Holy Strength), the new Forever enchants Insight and Revelation, every Forever weapon that buffs you (Destiny, Arcanite Champion, Ragehammer, Hand of Edward the Odd and more), item procs, on-use trinkets, class cooldowns and racials, for every class. Icons grow to the right or left as procs happen. When Crusader is up on both weapons at once, its icon glows. Any equipped trinket with a Use is picked up automatically, even if it's new to Forever.
 
+**After a dodge, parry or block.** Overpower, Revenge (warriors), Riposte (rogues), Counterattack and Mongoose Bite (hunters) join the row for their 5 second window, and their buttons glow on your action bars. Overpower also puts an icon on the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave: a nameplate dodge only counts when your Overpower charge goes up at the same moment, so dodges against other players are ignored. The others only show while the game says you can cast them, and go away once you use them. Mongoose Bite only shows when the game confirms it, since your target dodging your pet looks the same as dodging you. This used to be Proc Plates (Overpower Plates). Shadow Trance also lights your Shadow Bolt buttons.
+
 **Pinned procs.** Pin the ones you build around (Flurry, Crusader, Enrage...) on the settings page or with `/proc pin <name>`. They come first, always in the same place, and stay as a faint grey icon while they're down, so a missing proc is as easy to spot as a running one. By default the grey icons only show in combat.
 
 Forever hides buff details from addons in combat. Out of combat Proc City reads your buffs exactly, and learns each buff's real Forever duration. In combat it works from what the game still shows: your own casts (trinkets, cooldowns), your Strength (Crusader and other Strength procs, which is also how it tells one Crusader from two) and the game's combat text, then corrects itself when combat ends. Procs it has no in-combat signal for may only appear out of combat; `/proc debug` prints what it sees during a fight, which tells us what to add.
@@ -50,7 +52,8 @@ Forever hides buff details from addons in combat. Out of combat Proc City reads 
 - `/proc grow left|right`, `/proc size <n>`
 - `/proc list` what's tracked for your class, `/proc off <name>` / `/proc on <name>`
 - `/proc pin <name>` / `/proc unpin <name>` keep it on screen, greyed out while it's down
-- `/proc debug` print casts, Strength changes and combat text in combat
+- `/proc glow` the action button glow, `/proc plates` the Overpower nameplate icon
+- `/proc debug` print casts, Strength changes, combat text, dodges and parries in combat
 
 ### Kick Tally (`/ktally`, also `/kicks`)
 <img src="logos/KickTally.png" alt="KickTally logo" width="96">
@@ -134,23 +137,9 @@ Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it on
 - `/ms autoreply` turns automatic replies to whispers on or off
 - `/ms test` add sample requests, `/ms show` show the window
 
-## Warriors, rogues and hunters
+## Retired
 
-### Proc Plates (`/procplates` or `/opp`), formerly Overpower Plates
-<img src="logos/OverpowerPlates.png" alt="Proc Plates logo" width="96">
-
-Lights up the abilities you can only use right after a dodge, parry or block.
-
-**Overpower (warriors).** An Overpower icon with a 5 second countdown above the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave. A nameplate dodge only counts when your Overpower charge (combo point) goes up at the same moment, so dodges against other players are ignored. While it's up, a gold glow pulses around the icon and your Overpower button glows on the action bars (Blizzard bars, Bartender4, ElvUI and Dominos). There's also an optional big Overpower icon in the middle of the screen.
-
-**Revenge (warriors), Riposte (rogues), Counterattack and Mongoose Bite (hunters).** A big icon in the middle of the screen with a 5 second sweep and the spell's name, plus a glow on its action buttons, after you block, dodge or parry (Mongoose Bite: after your target dodges). The game still reports your own dodges, parries and blocks to addons, which starts the window, and the icon only shows while the game says the spell can be cast, so one on cooldown stays hidden. Mongoose Bite only shows when the game confirms it's usable, since your target dodging your pet looks the same as dodging you. Each one can be turned off. This part is new: `/opp debug` shows what it sees in a fight, which helps if something doesn't light up.
-
-- `/opp test` show the icons (Overpower on every nameplate, and your reactive abilities)
-- `/opp size <n>`, `/opp offset <n>`, `/opp window <n>`
-- `/opp sound` toggle the dodge sound
-- `/opp glow` toggle the action bar glow, `/opp screen` toggle the Overpower screen icon, `/opp move` place the screen icons
-- `/opp reactive` Revenge, Riposte, Counterattack and Mongoose Bite on or off
-- `/opp debug` your Overpower charges, which action buttons it found, and the dodges and parries it has seen
+**Proc Plates** (formerly Overpower Plates) is now part of Proc City. Its last version hands over to Proc City 1.4.0 or later, which brings its settings with it, so the `OverpowerPlates` folder can be deleted once Proc City is installed.
 
 ## Problems and ideas
 

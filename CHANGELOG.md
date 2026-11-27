@@ -2,6 +2,15 @@
 
 ## 2026-11-27
 
+Proc City 1.4.0
+- Proc Plates (formerly Overpower Plates) is now part of Proc City. Warriors get Overpower when a mob dodges you and Revenge after a block, dodge or parry; rogues get Riposte; hunters get Counterattack and Mongoose Bite. They join the icon row for their 5 second window, can be pinned, and only show while the game says you can cast them.
+- Overpower also puts an icon on the nameplate of the mob that dodged you, as Proc Plates did (on by default, `/proc plates` to turn it off).
+- Your action buttons glow while one of these is up, and Shadow Bolt lights up during Shadow Trance (`/proc glow` to turn it off).
+- Proc Plates settings come across automatically the first time you log in with both installed.
+
+Proc Plates 2.1.0
+- The last Proc Plates update: it's now part of Proc City. With Proc City 1.4.0 or later installed, Proc City takes over with your settings and Proc Plates goes quiet (and `/opp` opens Proc City's settings), so you can delete it. Without Proc City it keeps working and reminds you at login.
+
 Proc Plates 2.0.2
 - Now called Proc Plates. `/procplates` opens the settings, and `/opp` still works. Nothing else changed.
 

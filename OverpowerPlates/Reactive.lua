@@ -284,6 +284,7 @@ SafeRegister("PLAYER_LOGIN")
 
 ev:SetScript("OnEvent", function(_, event, a1, a2, a3)
     if event == "PLAYER_LOGIN" then
+        if ns.ProcCityTakesOver and ns.ProcCityTakesOver() then return end -- Proc City does this now
         local _, class = UnitClass("player")
         playerClass = class
         Rebuild()

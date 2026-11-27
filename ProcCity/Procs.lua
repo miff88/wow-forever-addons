@@ -15,6 +15,11 @@
 --   items  item IDs of the weapon that gives it (Strength procs are only read from your
 --          stats in combat while one of these is equipped)
 --   stat    { stat index, amount } for Strength-style procs, read in combat from your stats
+--   react   an ability that lights up after a dodge, parry or block (Reactive.lua), with
+--           on = which of your own dodge / parry / block starts it, target = after your
+--           target dodges, confirm = only when the game confirms it can be cast
+--   glow    light this spell's buttons on your action bars while it's up (true = the entry's
+--           own spell, or { name, ids } for another spell: Shadow Trance lights Shadow Bolt)
 
 local _, ns = ...
 
@@ -25,6 +30,7 @@ ns.CATEGORIES = {
     { key = "item",     label = "Weapon and item procs" },
     { key = "trinket",  label = "On-use trinkets (any equipped trinket with a Use)" },
     { key = "racial",   label = "Racials (Blood Fury, Berserking...)" },
+    { key = "reactive", label = "After a dodge, parry or block (Overpower, Revenge, Riposte, Counterattack, Mongoose Bite)" },
 }
 
 ns.PROCS = {
@@ -182,8 +188,28 @@ ns.PROCS = {
 
     ---------------------------------------------------------------- warlock
     { key = "shadowtrance", name = "Shadow Trance", ids = { 17941 }, dur = 10, class = { WARLOCK = true }, cat = "proc",
-      note = "Nightfall: instant Shadow Bolt" },
+      note = "Nightfall: instant Shadow Bolt",
+      glow = { name = "Shadow Bolt", ids = { 686, 695, 705, 1088, 1106, 7641, 11659, 11660, 11661, 25307 } } },
     { key = "amplifycurse", name = "Amplify Curse", ids = { 18288 }, dur = 30, class = { WARLOCK = true }, cat = "cooldown" },
+
+    ---------------------------------------------------------------- after a dodge, parry or block
+    -- These are abilities, not buffs: Reactive.lua (and Overpower.lua for Overpower) starts
+    -- them, so they're left out of the buff lookups.
+    { key = "overpower", name = "Overpower", ids = { 7384, 7887, 11584, 11585 }, dur = 5,
+      class = { WARRIOR = true }, cat = "reactive", react = true, glow = true,
+      note = "after a mob dodges you; also marked on that mob's nameplate" },
+    { key = "revenge", name = "Revenge", ids = { 6572, 6574, 7379, 11600, 11601, 25288 }, dur = 5,
+      class = { WARRIOR = true }, cat = "reactive", react = true, glow = true,
+      on = { BLOCK = true, DODGE = true, PARRY = true }, note = "after you block, dodge or parry" },
+    { key = "riposte", name = "Riposte", ids = { 14251 }, dur = 5,
+      class = { ROGUE = true }, cat = "reactive", react = true, glow = true,
+      on = { PARRY = true }, note = "after you parry" },
+    { key = "counterattack", name = "Counterattack", ids = { 19306, 20909, 20910 }, dur = 5,
+      class = { HUNTER = true }, cat = "reactive", react = true, glow = true,
+      on = { PARRY = true }, note = "after you parry" },
+    { key = "mongoose", name = "Mongoose Bite", ids = { 1495, 14269, 14270, 14271 }, dur = 5,
+      class = { HUNTER = true }, cat = "reactive", react = true, glow = true,
+      target = true, confirm = true, note = "after your target dodges" },
 
     ---------------------------------------------------------------- racials
     { key = "bloodfury", name = "Blood Fury", ids = { 20572 }, dur = 15, cat = "racial" },
