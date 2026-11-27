@@ -67,6 +67,10 @@ ns.ASK_WORDS = { "lf", "lfm", "wtb", "need", "needs", "needed", "buy", "buying",
 ns.SELL_WORDS = { "wts", "selling", "sell", "offering", "lfw", "customers", "taking orders", "your mats",
                   "ur mats", "free enchants", "tips appreciated", "can craft", "can make", "i can do", "i craft" }
 
+-- what people asking a mage say: never a crafting request on their own
+ns.MAGE_WORDS = { "mage", "mages", "port", "ports", "portal", "portals", "tp", "teleport", "water", "waters",
+                  "conjured", "food", "summon", "summons", "table", "mage table", "refreshment" }
+
 -- who brings the materials
 ns.THEIR_MATS = { "have mats", "got mats", "my mats", "own mats", "w mats", "with mats", "i have the mats",
                   "have the mats", "have all mats", "mats ready", "i have mats", "bring mats", "providing mats" }

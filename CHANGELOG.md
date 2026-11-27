@@ -2,6 +2,16 @@
 
 ## 2026-11-27
 
+Craft Services 1.1.0
+- Choose which professions it watches: the settings page has a tick-box for every profession. The ones you've trained start ticked, and you can tick others (one an alt has, say). Nothing else is picked up. This replaces "Also list requests for professions you don't have".
+- Never picks up mage requests. "looking for mage port uc to tb" was being read as a cooking request, because "looking" counted as a typo of "cooking". Typos now have to keep the first letter of the word, and lines about ports, portals, water or a mage are skipped unless a profession or recipe is named.
+- Typos in enchant names are understood: "anyone do firey?" finds Fiery Weapon.
+- A request that just names your profession ("LF cook") no longer says "open your Cooking window" next to it.
+- Settings page: no more big gaps under your professions, prices and featured recipes; the "Payment messages" label isn't cut off; and the payment message used when the gold amount is kept private can now be edited (it's the one that's on by default).
+
+Mage Services 2.1.2
+- Settings page: the "Payment messages" label is no longer cut off.
+
 Craft Services 1.0.0
 - New addon: Mage Services for every profession. Spots people asking for enchants, crafts and lockboxes in chat (Enchanting, Blacksmithing, Leatherworking, Tailoring, Alchemy, Engineering, Jewelcrafting, Inscription, Cooking, First Aid, and Lockpicking for rogues) and lists them with Invite and Whisper buttons.
 - Reads your recipes when you open a profession window, so it knows what you can make and whether you have the mats. Understands links, recipe names and enchant nicknames like "crusader" or "+7 agi gloves".

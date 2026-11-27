@@ -8,7 +8,7 @@ Made for **World of Warcraft: Forever**. Works on any class, for anyone with a p
 
 ### Every profession
 - Enchanting, Blacksmithing, Leatherworking, Tailoring, Alchemy, Engineering, Jewelcrafting, Inscription, Cooking and First Aid, plus **Lockpicking** for rogues.
-- Only lists the professions you have, or all of them dimmed if you prefer. Turn each one on or off.
+- Watches only the professions ticked on the settings page. The ones you've trained start ticked; tick any others you want (one an alt has, say). Nothing else is picked up.
 
 ### Knows your recipes
 - Open each profession window once and it reads every recipe you've learned, with its materials and description. It updates when you learn something new.
@@ -19,7 +19,8 @@ Made for **World of Warcraft: Forever**. Works on any class, for anyone with a p
 - Links to recipes, items or enchants, and recipe names: "LF tailor runecloth bag".
 - Enchant nicknames: "crusader", "+7 agi gloves", "minor speed boots", "2h int". When it could be two enchants, it asks them which rather than guessing.
 - Notices who brings the mats ("have mats", "your mats").
-- Ignores other crafters' adverts ("WTS", "LFW") and chatter like "crusader is the best enchant".
+- Ignores other crafters' adverts ("WTS", "LFW"), mage requests (ports, water) and chatter like "crusader is the best enchant".
+- Allows typos ("firey", "enchnter") as long as the first letter is right.
 - Add your own phrases (`/cs add`) and words to ignore (`/cs exclude`).
 
 ### Replies that do the work

@@ -5,34 +5,44 @@
 --   * an enchant by nickname or stats ("LF enchanter crusader", "+7 agi gloves")
 --   * a recipe name typed out ("anyone make major healing potions?")
 --   * or just the profession ("LF BS", "need a tailor", "anyone lockpick a box?")
--- Case and punctuation are ignored, and longer words can be one letter off.
+-- Case and punctuation are ignored, and longer words can be one letter off (or have two
+-- letters swapped), as long as the first letter is right: "enchnter" and "firey" match,
+-- "looking" never matches "cooking".
 
 local ADDON_NAME, ns = ...
 
 ---------------------------------------------------------------------------
 -- Text helpers
 ---------------------------------------------------------------------------
-local function Levenshtein(a, b)
+-- Edit distance where swapping two neighbouring letters counts as one edit.
+local function EditDistance(a, b)
     local la, lb = #a, #b
-    local prev, cur = {}, {}
-    for j = 0, lb do prev[j] = j end
+    local d = {}
+    for i = 0, la do d[i] = { [0] = i } end
+    for j = 0, lb do d[0][j] = j end
     for i = 1, la do
-        cur[0] = i
-        local ca = a:byte(i)
         for j = 1, lb do
-            local cost = (ca == b:byte(j)) and 0 or 1
-            cur[j] = math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
+            local cost = (a:byte(i) == b:byte(j)) and 0 or 1
+            local v = math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+            if i > 1 and j > 1 and a:byte(i) == b:byte(j - 1) and a:byte(i - 1) == b:byte(j) then
+                v = math.min(v, d[i - 2][j - 2] + 1)
+            end
+            d[i][j] = v
         end
-        prev, cur = cur, prev
     end
-    return prev[lb]
+    return d[la][lb]
 end
+ns.EditDistance = EditDistance
 
--- Same word, or one letter off when both are 5+ letters ("enchnter", "leatherworkr").
+-- Same word, or a typo of it: both 5+ letters, same first letter, one edit apart
+-- ("enchnter", "leatherworkr", "firey"). The first letter has to match because a
+-- different word that happens to be close ("looking"/"cooking", "telling"/"selling") is
+-- far more likely than a typo there.
 local function Close(a, b)
     if a == b then return true end
     if #a < 5 or #b < 5 or math.abs(#a - #b) > 1 then return false end
-    return Levenshtein(a, b) <= 1
+    if a:byte(1) ~= b:byte(1) then return false end
+    return EditDistance(a, b) <= 1
 end
 ns.Close = Close
 
@@ -65,6 +75,22 @@ local function HasPhrase(tokens, phrase)
             if not Close(tokens[i + j - 1], w) then ok = false break end
         end
         if ok then return true end
+    end
+    return false
+end
+
+-- A phrase from the list typed exactly (no typo allowance).
+local function HasExact(tokens, list)
+    for _, phrase in ipairs(list) do
+        local words = {}
+        for w in phrase:lower():gsub("'", ""):gsub("[^%w]", " "):gmatch("%S+") do words[#words + 1] = w end
+        for i = 1, #tokens - #words + 1 do
+            local ok = #words > 0
+            for j, w in ipairs(words) do
+                if tokens[i + j - 1] ~= w then ok = false break end
+            end
+            if ok then return true end
+        end
     end
     return false
 end
@@ -142,11 +168,12 @@ local function WhoMats(tokens)
     if HasAny(tokens, ns.THEIR_MATS) then return "theirs" end
 end
 
+-- Only the professions you watch: the ones you've trained, plus any you ticked yourself.
 local function Wanted(opts, key)
     if not key then return false end
-    if opts.profs and opts.profs[key] == false then return false end
-    if opts.mine[key] then return true end
-    return opts.all and true or false
+    if opts.watch then return opts.watch(key) and true or false end
+    if opts.profs and opts.profs[key] ~= nil then return opts.profs[key] and true or false end
+    return opts.mine and opts.mine[key] and true or false
 end
 
 function ns.Classify(msg, opts)
@@ -202,6 +229,10 @@ function ns.Classify(msg, opts)
         -- without a profession word, only a sure match counts as a request
         if recipe and not named and sure ~= "sure" then recipe = nil end
     end
+
+    -- portals, water and the like are a mage's business, not a crafter's: unless they asked
+    -- for one of your recipes, only a profession typed out in full counts
+    if not recipe and HasAny(tokens, ns.MAGE_WORDS) and not (named and HasExact(tokens, named.words)) then return nil end
 
     local prof = recipe and ns.PROF_BY_KEY[recipe.prof] or named
     if not prof then return nil end

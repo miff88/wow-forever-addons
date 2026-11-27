@@ -1350,6 +1350,7 @@ function ns.BuildOptions()
         title = "Mage Services",
         updateNotice = true,
         changes = {
+            { "2.1.2", "Settings page: the \"Payment messages\" label is no longer cut off" },
             { "2.1.1", "Payment messages: a trade you both accepted counts as completed even without the game's \"Trade complete\" message",
                        "More trade errors recognised" },
             { "2.1.0", "Advertise button: posts your own advert in Trade (or General, say, yell), at most every few minutes",
@@ -1419,7 +1420,9 @@ function ns.BuildOptions()
             { type = "range", key = "autoReplyGap", label = "Don't auto-reply to them again for", min = 1, max = 30, step = 1, suffix = " min" },
             { type = "info", height = 22, lines = function() return ns.ReplyWarning() end },
             { type = "header", label = "Payments" },
-            { type = "choice", key = "receiptMode", label = "Payment messages (Auto / Prefill / Off)", values = { "auto", "prefill", "off" } },
+            { type = "choice", key = "receiptMode", label = "Payment messages", values = { "auto", "prefill", "off" } },
+            { type = "info", height = 20, lines = function()
+                return "|cff999999Auto sends them, Prefill types them into your chat box for you to send, Off sends nothing.|r" end },
             { type = "check", key = "receiptAll", label = "Post for every trade, not just customers" },
             { type = "check", key = "hideAmount", label = "Keep the gold amount out of payment messages" },
             { type = "button", label = "Test a payment message", func = function() ns.TestTrade("complete") end },

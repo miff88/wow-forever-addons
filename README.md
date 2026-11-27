@@ -101,7 +101,9 @@ Spots people asking for enchants, crafts and lockboxes in chat, for every profes
 
 **It knows your recipes.** Open each profession window once and it reads every recipe you've learned, with its materials and description (it updates whenever you learn something). That's how it tells "you know this and have the mats" from "you don't have this recipe".
 
-**Matching.** It understands links (recipe, item or enchant), recipe names ("runecloth bag"), and enchant nicknames: "crusader", "+7 agi gloves", "minor speed boots", "2h int". When a nickname could mean two enchants it asks what they want rather than guessing. It notices who brings the mats ("have mats", "your mats"), ignores other crafters' adverts ("WTS", "LFW") and only lists professions you have (or all of them, dimmed, if you prefer).
+**Matching.** It understands links (recipe, item or enchant), recipe names ("runecloth bag"), and enchant nicknames: "crusader", "+7 agi gloves", "minor speed boots", "2h int". When a nickname could mean two enchants it asks what they want rather than guessing. It notices who brings the mats ("have mats", "your mats"), ignores other crafters' adverts ("WTS", "LFW") and never picks up mage requests (ports, water). Typos are allowed ("firey", "enchnter") as long as the first letter is right.
+
+**Which professions.** It only watches the professions ticked on the settings page. The ones you've trained start ticked; tick any others you want to see, such as one an alt has.
 
 **Replies** fill in the recipe, your price, the mats, what you're short of and their place in the queue: "Hi Ana, I can do Enchant Weapon - Crusader for you for 5g. You're #2 in line. Sending you an invite." Edit them on the settings page. Automatic replies (whispers only) and automatic invites (only when you know the recipe and have the mats, or they bring them) are there but off by default.
 

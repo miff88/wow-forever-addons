@@ -328,12 +328,19 @@ local function NameIn(nameWords, tokens, close)
 end
 
 -- Enchants by nickname: "crusader", "+15 agi 2h", "minor speed", "+7 agi gloves".
-local function EnchantScore(e, tokens, set, msgSlot, msgStats, numbers)
+local function EnchantScore(e, tokens, set, msgSlot, msgStats, numbers, close)
     local score = 0
     local effectWords = Words(e.effect)
     local text = ((e.effect or "") .. " " .. (e.desc or "")):lower()
     for _, w in ipairs(effectWords) do
-        if set[w] and not TIERS[w] and w ~= "weapon" and not ns.ENCHANT_STATS[w] and #w >= 4 then
+        -- a distinctive name can have a typo in it ("firey"); short and common words can't
+        local hit = set[w]
+        if not hit and close and #w >= 5 and not TIERS[w] and not ns.ENCHANT_STATS[w] then
+            for _, t in ipairs(tokens) do
+                if close(t, w) then hit = true break end
+            end
+        end
+        if hit and not TIERS[w] and w ~= "weapon" and not ns.ENCHANT_STATS[w] and #w >= 4 then
             score = score + 10 -- a name like Crusader, Fiery, Lifestealing, Unholy
         elseif set[w] and TIERS[w] then
             score = score + 1
@@ -379,7 +386,7 @@ function Book.FindByText(tokens, prof, close)
                     score = 8 + #nw
                 end
                 if e.enchant then
-                    score = math.max(score, EnchantScore(e, tokens, set, msgSlot, msgStats, numbers))
+                    score = math.max(score, EnchantScore(e, tokens, set, msgSlot, msgStats, numbers, close))
                 end
                 if score > bestScore then
                     second = bestScore

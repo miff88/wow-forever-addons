@@ -282,7 +282,10 @@ function ns.CreateOptions(spec)
                     local lines = c.lines()
                     fs:SetText(type(lines) == "table" and table.concat(lines, "\n") or tostring(lines or ""))
                 end)
-                y = y - (c.height or 40)
+                -- height can be a function, worked out when the page is first shown
+                local h = c.height
+                if type(h) == "function" then h = h() end
+                y = y - (h or 40)
 
             elseif c.type == "text" then
                 -- a one-line text box: saves on Enter or when you click away, Escape undoes,

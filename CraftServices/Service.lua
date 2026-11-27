@@ -451,26 +451,27 @@ function ns.EarningsLine()
         Money(l.total), muted, #by > 0 and ("(" .. table.concat(by, ", ") .. ")") or "", Money(e.total), Money(s.total))
 end
 
-local function Breakdown(lines, t)
+local function Breakdown(lines, t, max)
     local parts = {}
     for kind, copper in pairs(t.prof) do parts[#parts + 1] = { kind = kind, copper = copper } end
     table.sort(parts, function(a, b) return a.copper > b.copper end)
-    for _, p in ipairs(parts) do
+    for i, p in ipairs(parts) do
+        if max and i > max then break end
         lines[#lines + 1] = ("     %s:  %s  from %d"):format(ProfName(p.kind), Money(p.copper), t.count[p.kind] or 0)
     end
 end
 
--- Full breakdown for chat and the settings page.
-function ns.EarningsLines()
+-- Full breakdown for chat; compact (a fixed 9 lines at most) for the settings page.
+function ns.EarningsLines(compact)
     local e, s, l, a = ns.earnings, ns.session, ns.lifetime, ns.allTrades
     if not e then return {} end
     local lines = {}
     lines[#lines + 1] = ("All characters, all time (since %s):  %s"):format(ns.db.lifetimeSince or "install", Money(l.total))
-    Breakdown(lines, l)
+    Breakdown(lines, l, compact and 4 or nil)
     lines[#lines + 1] = ("This character:  %s"):format(Money(e.total))
-    Breakdown(lines, e)
+    if not compact then Breakdown(lines, e) end
     lines[#lines + 1] = ("This session:  %s"):format(Money(s.total))
-    Breakdown(lines, s)
+    if not compact then Breakdown(lines, s) end
     local recipes = {}
     for name, copper in pairs(l.recipe) do recipes[#recipes + 1] = { name = name, copper = copper } end
     table.sort(recipes, function(x, y) return x.copper > y.copper end)

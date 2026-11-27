@@ -27,7 +27,6 @@ BINDING_NAME_CRAFTSERVICES_ADVERTISE = "Post your advert"
 local defaults = {
     updateNotice = true,  -- "a newer version is out" chat notice (VersionCheck.lua)
     profs = {},           -- [profession key] = false to stop watching for it
-    allProfs = false,     -- also list requests for professions you don't have
     -- channels to watch
     chTrade = true,       -- Trade, General, LookingForGroup and other numbered channels
     chSay   = true,       -- say and yell
@@ -244,10 +243,18 @@ local function Faction()
     return (f == "Alliance") and "Alliance" or "Horde"
 end
 
+-- The professions it watches for: the ones you've trained, plus any you've ticked on the
+-- settings page (db.profs[key] = true), minus any you've unticked (false).
+local testWatchAll = false
+function ns.Watching(key)
+    if testWatchAll then return true end
+    local choice = db and db.profs[key]
+    if choice ~= nil then return choice and true or false end
+    return ns.Book.Has(key)
+end
+
 local function MatchOptions()
-    local mine = {}
-    for key in pairs(ns.Book.MyProfs()) do mine[key] = true end
-    return { mine = mine, all = db.allProfs, profs = db.profs, custom = db.custom, excludes = db.excludes }
+    return { watch = ns.Watching, custom = db.custom, excludes = db.excludes }
 end
 
 ---------------------------------------------------------------------------
@@ -288,7 +295,8 @@ end
 local function CraftCheck(info)
     if info.kind ~= "craft" then return nil end
     local prof = ns.PROF_BY_KEY[info.prof]
-    if not ns.Book.Has(info.prof) then return "not your profession", true end
+    -- one you ticked without having it here (an alt has it, say): noted, not hidden
+    if not ns.Book.Has(info.prof) then return "not on this character", false end
     if info.recipe then
         if info.mats == "theirs" then return "they bring the mats", false, true end
         local m = ns.Book.Mats(info.recipe)
@@ -301,7 +309,8 @@ local function CraftCheck(info)
     end
     -- they linked something you can't make (and your recipe list is up to date)
     if info.linkedItem and ns.Book.Scanned(info.prof) then return "you don't have this recipe", true end
-    if prof and prof.key ~= "lockpicking" and not ns.Book.Scanned(info.prof) then
+    -- they named something you might make, but the recipes haven't been read yet
+    if (info.link or info.linkedItem) and prof and prof.key ~= "lockpicking" and not ns.Book.Scanned(info.prof) then
         return "open your " .. prof.name .. " once so I know your recipes", false
     end
     return nil
@@ -472,7 +481,7 @@ function ns.AdParts()
     local mine = ns.Book.MyProfs()
     local profs = {}
     for _, p in ipairs(ns.PROFS) do
-        if mine[p.key] and db.profs[p.key] ~= false and p.key ~= "cooking" and p.key ~= "firstaid" then
+        if mine[p.key] and ns.Watching(p.key) and p.key ~= "cooking" and p.key ~= "firstaid" then
             profs[#profs + 1] = p.short
         end
     end
@@ -1501,13 +1510,13 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, _, arg4, _, _, _, _, arg9
         end
         C_Timer.After(5, AskRoster)
         C_Timer.NewTicker(60, AskRoster)
-        C_Timer.After(3, function() ns.Book.MyProfs(true); ns.AddProfessionChecks() end)
+        C_Timer.After(3, function() ns.Book.MyProfs(true); Refresh() end)
         C_Timer.After(8, function()
             if ns.IsPaused() then Print("paused on this character. Click Resume on the window, or type /cs resume.") return end
             -- professions you have but haven't opened yet
             local unread = {}
             for _, p in ipairs(ns.PROFS) do
-                if ns.Book.Has(p.key) and p.key ~= "lockpicking" and not ns.Book.Scanned(p.key) and db.profs[p.key] ~= false then
+                if ns.Book.Has(p.key) and p.key ~= "lockpicking" and not ns.Book.Scanned(p.key) and ns.Watching(p.key) then
                     unread[#unread + 1] = p.name
                 end
             end
@@ -1532,10 +1541,9 @@ end)
 ---------------------------------------------------------------------------
 local function TestSamples()
     local list = {}
-    local mine = ns.Book.MyProfs()
-    -- one for each profession you have, using a recipe you know when there is one
+    -- one for each profession you watch, using a recipe you know when there is one
     for _, p in ipairs(ns.PROFS) do
-        if mine[p.key] and p.key ~= "cooking" and p.key ~= "firstaid" then
+        if ns.Watching(p.key) and p.key ~= "cooking" and p.key ~= "firstaid" then
             local recipes = {}
             for _, x in ipairs(ns.Book.List(p.key) or {}) do recipes[#recipes + 1] = x end
             table.sort(recipes, function(a, b) return a.name < b.name end)
@@ -1566,8 +1574,10 @@ local function RunTest()
     end
     testMode = true
     local samples = TestSamples()
-    local wasAll = db.allProfs
-    if not next(ns.Book.MyProfs()) then db.allProfs = true end -- no professions: show them anyway
+    -- watching nothing (no professions here): let the samples through anyway
+    local any = false
+    for _, p in ipairs(ns.PROFS) do if ns.Watching(p.key) then any = true end end
+    testWatchAll = not any
     local matched = 0
     for _, s in ipairs(samples) do
         ns.HandleChat(s[2], s[1], s[3])
@@ -1576,7 +1586,7 @@ local function RunTest()
             if r.key == key and r.msg == s[2] then matched = matched + 1 break end
         end
     end
-    db.allProfs = wasAll
+    testWatchAll = false
     testMode = false
     Print(("test: %d sample lines, %d matched (the last is another crafter's advert, meant to be ignored)."):format(
         #samples, matched))
@@ -1637,6 +1647,24 @@ local function FeaturedLines()
     return list
 end
 
+-- The first few of a list, then "and N more" (the settings page has room for two lines).
+local function Shortlist(list, max, more)
+    if #list <= max then return table.concat(list, ",  ") end
+    local out = {}
+    for i = 1, max do out[i] = list[i] end
+    return table.concat(out, ",  ") .. ("  and %d more (%s)"):format(#list - max, more)
+end
+
+-- A recipe of yours to use in examples, so they read like your own profession.
+local function SampleName()
+    for _, x in ipairs(ns.Book.FeaturedList(false)) do return x.callName or x.name end
+    for _, p in ipairs(ns.PROFS) do
+        local list = ns.Book.List(p.key)
+        if list and list[1] then return list[1].callName or list[1].name end
+    end
+    return "Crusader"
+end
+
 ---------------------------------------------------------------------------
 -- Settings page (Options > AddOns) and minimap addon button
 ---------------------------------------------------------------------------
@@ -1679,18 +1707,23 @@ function ns.BuildOptions()
         { type = "info", height = 22, lines = function()
             return "|cff999999" .. (ns.IsPaused() and "Paused on this character: not watching chat." or "Pausing stops watching chat on this character until you resume.") .. "|r" end },
         { type = "header", label = "Your professions" },
-        { type = "info", height = 96, lines = RecipeLines },
+        { type = "info", height = function() return 6 + 13 * #RecipeLines() end, lines = RecipeLines },
+        { type = "header", label = "Watch for requests for" },
+        { type = "info", height = 30, lines = function()
+            return "|cff999999The professions you've trained start ticked. Tick any others you want to see (one an alt has, say). Nothing else is picked up.|r" end },
     }
     local function add(c) controls[#controls + 1] = c end
-    -- a checkbox per profession you have goes in here once your professions are known
-    ns.profChecksAt, ns.optionControls = #controls + 1, controls
-    add({ type = "check", key = "allProfs", label = "Also list requests for professions you don't have (dimmed)" })
+    for _, p in ipairs(ns.PROFS) do
+        add({ type = "check", key = "prof_" .. p.key,
+              label = p.key == "lockpicking" and "Lockboxes (rogues, Pick Lock)" or p.name })
+    end
 
     add({ type = "header", label = "Prices" })
     add({ type = "text", key = "priceEntry", label = "Set a price: the recipe, then the amount (e.g. crusader 5g)", default = "" })
-    add({ type = "info", height = 70, lines = function()
+    add({ type = "info", height = 34, lines = function()
         local l = PriceLines()
-        return "|cff999999" .. (#l > 0 and table.concat(l, ",  ") or "No prices set. Replies fill {price} in from these: \"I can do Crusader for you for 5g\".") .. "|r" end })
+        return "|cff999999" .. (#l > 0 and Shortlist(l, 8, "/cs prices")
+            or ("No prices set. Replies fill {price} in from these: \"I can do " .. SampleName() .. " for you for 5g\".")) .. "|r" end })
     add({ type = "text", key = "noPriceText", label = "{price} when there's no price set (e.g. \" (tips welcome)\")", default = "" })
 
     add({ type = "header", label = "Advertise" })
@@ -1699,9 +1732,9 @@ function ns.BuildOptions()
     add({ type = "info", height = 44, lines = function()
         return "|cff999999{professions} is what you do (\"Enchanter and Tailor\"), {featured} your featured recipes, {zone} where you are. Keep \"LFW\" or \"WTS\" in it, so other crafters' Craft Services don't list it as a request.|r" end })
     add({ type = "text", key = "featureEntry", label = "Feature a recipe in your advert (type its name; again to remove)", default = "" })
-    add({ type = "info", height = 40, lines = function()
+    add({ type = "info", height = 34, lines = function()
         local l = FeaturedLines()
-        return "|cff999999" .. (#l > 0 and ("Featured: " .. table.concat(l, ", ")) or "Nothing featured yet.") .. "|r" end })
+        return "|cff999999" .. (#l > 0 and ("Featured: " .. Shortlist(l, 10, "/cs featured")) or "Nothing featured yet.") .. "|r" end })
     add({ type = "check", key = "adOnlyMats", label = "Only list featured recipes you have the mats for" })
     add({ type = "dropdown", key = "adChannel", label = "Post it in", options = function() return {
         { value = "trade", label = "Trade" }, { value = "general", label = "General" },
@@ -1744,10 +1777,14 @@ function ns.BuildOptions()
 
     add({ type = "header", label = "Trading" })
     add({ type = "check", key = "tradePanel", label = "Show the helper beside the trade window (mats, payment, slot check, enchant and Pick Lock buttons)" })
-    add({ type = "choice", key = "receiptMode", label = "Payment messages (Auto / Prefill / Off)", values = { "auto", "prefill", "off" } })
+    add({ type = "choice", key = "receiptMode", label = "Payment messages", values = { "auto", "prefill", "off" } })
+    add({ type = "info", height = 20, lines = function()
+        return "|cff999999Auto sends them, Prefill types them into your chat box for you to send, Off sends nothing.|r" end })
     add({ type = "check", key = "receiptAll", label = "Post for every trade, not just customers" })
     add({ type = "check", key = "hideAmount", label = "Keep the gold amount out of payment messages" })
-    add({ type = "text", key = "paidMsg", label = "Payment received", default = defaults.paidMsg,
+    add({ type = "text", key = "paidMsgPrivate", label = "Payment received (gold amount kept private, the box above)", default = defaults.paidMsgPrivate,
+          preview = function(t) return (t:gsub("{name}", "Testbuyer")) end })
+    add({ type = "text", key = "paidMsg", label = "Payment received (with the amount, when the box above is unticked)", default = defaults.paidMsg,
           preview = function(t) return (t:gsub("{name}", "Testbuyer"):gsub("{amount}", "1g 50s")) end })
     add({ type = "check", key = "matsReceipt", label = "Say thanks when someone hands over mats (before paying)" })
     add({ type = "text", key = "matsMsg", label = "Mats received", default = defaults.matsMsg,
@@ -1761,7 +1798,8 @@ function ns.BuildOptions()
     add({ type = "button", label = "Test a payment message", func = function() ns.TestTrade("complete") end })
 
     add({ type = "header", label = "Earnings (saved, kept through logouts)" })
-    add({ type = "info", lines = function() return ns.EarningsLines() end, height = 190 })
+    add({ type = "info", lines = function() return ns.EarningsLines(true) end, height = 130 })
+    add({ type = "info", height = 20, lines = function() return "|cff999999/cs earnings in chat shows the full breakdown.|r" end })
 
     add({ type = "header", label = "Channels" })
     add({ type = "check", key = "chTrade", label = "Trade, General and other numbered channels" })
@@ -1791,14 +1829,14 @@ function ns.BuildOptions()
     local proxy = setmetatable({}, {
         __index = function(_, k)
             local key = type(k) == "string" and k:match("^prof_(.+)$")
-            if key then return db.profs[key] ~= false end
+            if key then return ns.Watching(key) end
             if k == "priceEntry" or k == "featureEntry" then return "" end
             return db[k]
         end,
         __newindex = function(_, k, v)
             local key = type(k) == "string" and k:match("^prof_(.+)$")
             if key then
-                db.profs[key] = (not v) and false or nil
+                db.profs[key] = v and true or false
             elseif k == "priceEntry" then
                 if v ~= "" then ns.SetPriceFromText(v) end
             elseif k == "featureEntry" then
@@ -1813,6 +1851,10 @@ function ns.BuildOptions()
         title = "Craft Services",
         updateNotice = true,
         changes = {
+            { "1.1.0", "Choose which professions to watch: the ones you've trained start ticked, tick any others",
+                       "Never picks up mage requests (\"looking for mage port\" was read as a cooking request)",
+                       "Typos still match (\"firey\", \"enchnter\"), but only with the right first letter",
+                       "Tidier settings page; the payment message without the amount can be edited" },
             { "1.0.0", "Spots requests for every profession: links, nicknames like \"crusader\" or \"+7 agi gloves\", recipe names",
                        "Knows your recipes and mats; replies fill in the recipe, your price, the mats and their place in line",
                        "Follows each customer from invite to paid, with a helper beside the trade window" },
@@ -1825,22 +1867,6 @@ function ns.BuildOptions()
         onChange = function() ns.ApplyTheme(); Refresh() end,
         controls = controls,
     })
-end
-
--- Called shortly after login, when your professions are known (the page is built the
--- first time you open it, so this is in time).
-function ns.AddProfessionChecks()
-    local controls = ns.optionControls
-    if not controls or ns.profChecksAdded then return end
-    local at = ns.profChecksAt
-    for _, p in ipairs(ns.PROFS) do
-        if ns.Book.Has(p.key) then
-            table.insert(controls, at, { type = "check", key = "prof_" .. p.key,
-                label = "Watch for " .. (p.key == "lockpicking" and "lockbox" or p.name:lower()) .. " requests" })
-            at = at + 1
-            ns.profChecksAdded = true
-        end
-    end
 end
 
 function CraftServices_OnAddonCompartmentClick()
