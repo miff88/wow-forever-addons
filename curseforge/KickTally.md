@@ -14,7 +14,8 @@ Made for **World of Warcraft: Forever**. Every class.
 - Optional sound.
 
 ### The group's kicks
-- A small movable window with each player's kicks this fight and in total, in class colours.
+- A window styled like the game's own damage meter: class-coloured bars, C / O for this fight or overall, and a minimise button. Hover a row to see what that player kicked.
+- Show or hide it, or only show it in a party or raid.
 - `/kicks report` posts the tally to your group, and it can post a boss fight's tally automatically when the boss dies.
 
 ### What counts
@@ -29,7 +30,7 @@ Made for **World of Warcraft: Forever**. Every class.
 | `/kicks test` | Sample window and message |
 | `/kicks report` / `/kicks report total` | Post this fight's (or all) kicks to the group |
 | `/kicks lock` / `/kicks unlock` | Lock or move the window |
-| `/kicks show` / `/kicks hide` | Window always on or off |
+| `/kicks show` / `/kicks hide` | Show or hide the window |
 | `/kicks reset` / `/kicks reset position` | Reset the counts or the window position |
 | `/kicks debug` | Print the casts and interrupts it sees |
 

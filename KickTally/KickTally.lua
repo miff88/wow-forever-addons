@@ -26,7 +26,12 @@ local defaults = {
     missed     = true,       -- tell me when my kick didn't interrupt anything
     sound      = false,
     trackGroup = true,       -- count party and raid members' kicks too
-    show       = "group",    -- tracker window: group, always, never
+    showWindow = true,       -- the tally window
+    groupOnly  = true,       -- ...only while in a party or raid
+    mode       = "fight",    -- the window shows this fight ("fight") or overall ("total")
+    collapsed  = false,      -- minimised to just its title bar
+    width      = 250,
+    opacity    = 100,
     rows       = 8,
     locked     = false,
     reportAfterBoss = false, -- post the fight's kicks to the group after a boss
@@ -49,7 +54,6 @@ local roster = {}       -- [unit] = name, refreshed whenever the group changes
 local guidName = {}     -- [guid] = name (pets map to their owner)
 local casts = {}        -- recent casts that could be kicks
 local lastEvent         -- the latest enemy interrupt, to merge the same one seen on two units
-local lastLine          -- "Mitch > Defias Pillager (Fireball)" for the window
 local sentTarget        -- target name of your last cast, from UNIT_SPELLCAST_SENT
 local inEncounter = false
 
@@ -246,48 +250,199 @@ end
 ns.Fill = Fill
 
 ---------------------------------------------------------------------------
--- The window
+-- The window: built to look like the game's own damage meter, using its art
 ---------------------------------------------------------------------------
+local BAR_HEIGHT, BAR_SPACING, HEADER = 25, 4, 32
+local recent = {}       -- [name] = { "Defias Pillager (Fireball)", ... } this fight, newest last
+
+-- the game's art; on a client without it, a plain colour stands in
+local function Atlas(tex, atlas, r, g, b, a)
+    if tex.SetAtlas then
+        local ok, res = pcall(tex.SetAtlas, tex, atlas)
+        if ok and res ~= false then return true end
+    end
+    tex:SetColorTexture(r or 0, g or 0, b or 0, a or 0.6)
+    return false
+end
+
 local win = CreateFrame("Frame", "KickTallyFrame", UIParent)
-win:SetSize(190, 60)
+win:SetSize(250, 120)
 win:SetFrameStrata("MEDIUM")
 win:SetClampedToScreen(true)
 win:SetMovable(true)
+win:EnableMouse(true)
 win:Hide()
-local bg = win:CreateTexture(nil, "BACKGROUND")
-bg:SetAllPoints()
-bg:SetColorTexture(0, 0, 0, 0.55)
 
-local title = win:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-title:SetPoint("TOPLEFT", 6, -5)
-title:SetText("|cffff8000Kick|r Tally")
-local cols = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-cols:SetPoint("TOPRIGHT", -6, -5)
-cols:SetText("fight (all)")
+local body = win:CreateTexture(nil, "BACKGROUND", nil, -1)
+body:SetPoint("TOPLEFT", 0, -HEADER + 6)
+body:SetPoint("BOTTOMRIGHT")
+Atlas(body, "damagemeters-background", 0.08, 0.05, 0.03, 0.8)
 
-local rowsL, rowsR = {}, {}
-local function Row(i)
-    if not rowsL[i] then
-        local l = win:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        l:SetPoint("TOPLEFT", 8, -8 - i * 13)
-        l:SetJustifyH("LEFT")
-        local r = win:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        r:SetPoint("TOPRIGHT", -8, -8 - i * 13)
-        r:SetJustifyH("RIGHT")
-        rowsL[i], rowsR[i] = l, r
-    end
-    return rowsL[i], rowsR[i]
-end
-local last = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-last:SetJustifyH("LEFT")
-last:SetWidth(178)
+local header = win:CreateTexture(nil, "BACKGROUND")
+header:SetPoint("TOPLEFT")
+header:SetPoint("TOPRIGHT")
+header:SetHeight(HEADER)
+Atlas(header, "ui-damagemeters-header-bar", 0.12, 0.08, 0.02, 0.95)
 
-win:SetScript("OnDragStart", function(self) if not db.locked then self:StartMoving() end end)
-win:SetScript("OnDragStop", function(self)
-    self:StopMovingOrSizing()
-    local point, _, rel, x, y = self:GetPoint()
+-- the header is the drag handle
+local drag = CreateFrame("Frame", nil, win)
+drag:SetPoint("TOPLEFT")
+drag:SetPoint("TOPRIGHT", -80, 0)
+drag:SetHeight(HEADER)
+drag:EnableMouse(true)
+if drag.RegisterForDrag then drag:RegisterForDrag("LeftButton") end
+drag:SetScript("OnDragStart", function() if not db.locked then win:StartMoving() end end)
+drag:SetScript("OnDragStop", function()
+    win:StopMovingOrSizing()
+    local point, _, rel, x, y = win:GetPoint()
     db.pos = { point, rel, x, y }
 end)
+
+-- a small menu from a button; uses the game's menus when it has them
+local function OpenMenu(owner, build)
+    if MenuUtil and MenuUtil.CreateContextMenu then
+        pcall(MenuUtil.CreateContextMenu, owner, function(_, root) build(root) end)
+        return true
+    end
+    return false
+end
+
+-- title: the arrow dropdown, like the meter's "Damage Done"
+local title
+local okType, typeDD = pcall(CreateFrame, "DropdownButton", nil, win, "WowStyle1ArrowDropdownTemplate")
+if okType and typeDD then
+    typeDD:SetPoint("TOPLEFT", 4, -3)
+    title = typeDD:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
+    if type(typeDD.Arrow) == "table" then
+        title:SetPoint("LEFT", typeDD.Arrow, "RIGHT", 0, 3)
+    else
+        title:SetPoint("LEFT", typeDD, "LEFT", 22, 0)
+    end
+    if typeDD.SetupMenu then
+        typeDD:SetupMenu(function(_, root)
+            root:CreateTitle("Kick Tally")
+            root:CreateButton("Post to the group", function() if ns.Report then ns.Report(db.mode) end end)
+            root:CreateButton("Reset the counts", function() if ns.ResetCounts then ns.ResetCounts() end end)
+            root:CreateButton("Test", function() if ns.SetTest then ns.SetTest(not testMode) end end)
+        end)
+    end
+else
+    title = win:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", 10, -9)
+end
+title:SetText("Kicks")
+
+-- minimise, like the meter's red button
+local mini = CreateFrame("Button", nil, win)
+mini:SetSize(18, 19)
+mini:SetPoint("TOPRIGHT", -3, -5)
+local function MiniArt()
+    local n = mini:GetNormalTexture() or mini:CreateTexture(nil, "ARTWORK")
+    local p = mini:GetPushedTexture() or mini:CreateTexture(nil, "ARTWORK")
+    local collapsed = db and db.collapsed
+    if not Atlas(n, collapsed and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all", 0.6, 0.1, 0.1, 1) then
+        n:SetAllPoints()
+    end
+    Atlas(p, collapsed and "ui-questtrackerbutton-expand-all-pressed" or "ui-questtrackerbutton-collapse-all-pressed", 0.4, 0.05, 0.05, 1)
+    mini:SetNormalTexture(n)
+    mini:SetPushedTexture(p)
+end
+do
+    local h = mini:CreateTexture(nil, "HIGHLIGHT")
+    h:SetAllPoints()
+    Atlas(h, "ui-questtrackerbutton-red-highlight", 1, 1, 1, 0.2)
+    if h.SetBlendMode then h:SetBlendMode("ADD") end
+end
+
+-- settings, like the meter's gear
+local gear = CreateFrame("Button", nil, win)
+gear:SetSize(27, 27)
+gear:SetPoint("RIGHT", mini, "LEFT", -2, -2)
+do
+    local n, p, h = gear:CreateTexture(nil, "ARTWORK"), gear:CreateTexture(nil, "ARTWORK"), gear:CreateTexture(nil, "HIGHLIGHT")
+    n:SetAllPoints(); p:SetAllPoints(); h:SetAllPoints()
+    Atlas(n, "common-dropdown-a-button-settings-shadowless", 0.5, 0.4, 0.1, 1)
+    Atlas(p, "common-dropdown-a-button-settings-pressed-shadowless", 0.4, 0.3, 0.1, 1)
+    Atlas(h, "common-dropdown-a-button-settings-hover-shadowless", 1, 1, 1, 0.15)
+    gear:SetNormalTexture(n); gear:SetPushedTexture(p)
+end
+
+-- current fight or overall, like the meter's C / O button
+local session = CreateFrame("Button", nil, win)
+session:SetSize(24, 20)
+session:SetPoint("RIGHT", gear, "LEFT", -2, 3)
+do
+    local okS, dd = pcall(CreateFrame, "DropdownButton", nil, win, "WowStyle2DropdownTemplate")
+    if okS and dd then
+        session:Hide()
+        session = dd
+        session:SetSize(24, 18)
+        session:SetPoint("RIGHT", gear, "LEFT", -2, 3)
+        if type(session.Text) == "table" then session.Text:Hide() end
+    else
+        local bg = session:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0, 0, 0, 0.5)
+    end
+    session.label = session:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
+    session.label:SetAllPoints()
+    session.label:SetJustifyH("CENTER")
+end
+
+local rows = {}
+local function Row(i)
+    if rows[i] then return rows[i] end
+    local r = CreateFrame("Button", nil, win)
+    r:SetHeight(BAR_HEIGHT)
+    r:SetPoint("TOPLEFT", 5, -HEADER + 2 - (i - 1) * (BAR_HEIGHT + BAR_SPACING))
+    r:SetPoint("RIGHT", -1, 0)
+    r.icon = r:CreateTexture(nil, "ARTWORK")
+    r.icon:SetSize(BAR_HEIGHT, BAR_HEIGHT)
+    r.icon:SetPoint("LEFT")
+    r.bar = CreateFrame("StatusBar", nil, r)
+    r.bar:SetPoint("LEFT", r.icon, "RIGHT", 0, 0)
+    r.bar:SetPoint("TOP", 0, -1)
+    r.bar:SetPoint("BOTTOMRIGHT", -4, 1)
+    local tex = r.bar:CreateTexture(nil, "ARTWORK")
+    if not Atlas(tex, "UI-HUD-CoolDownManager-Bar", 1, 1, 1, 1) then tex:SetColorTexture(1, 1, 1, 1) end
+    r.bar:SetStatusBarTexture(tex)
+    r.bar.tex = tex
+    local bg = r.bar:CreateTexture(nil, "BACKGROUND")
+    bg:SetPoint("TOPLEFT", -2, 2)
+    bg:SetPoint("BOTTOMRIGHT", 2, -2)
+    Atlas(bg, "ui-damagemeters-bar-shadowbg", 0, 0, 0, 0.5)
+    local edge = r.bar:CreateTexture(nil, "OVERLAY")
+    edge:SetPoint("TOPLEFT", -2, 2)
+    edge:SetPoint("BOTTOMRIGHT", 2, -2)
+    if not Atlas(edge, "ui-damagemeters-bar-shadowedge", 0, 0, 0, 0) then edge:Hide() end
+    r.value = r.bar:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    r.value:SetPoint("RIGHT", -3, 0)
+    r.value:SetJustifyH("RIGHT")
+    r.name = r.bar:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    r.name:SetPoint("LEFT", 2, 0)
+    r.name:SetPoint("RIGHT", r.value, "LEFT", -25, 0)
+    r.name:SetJustifyH("LEFT")
+    if r.name.SetWordWrap then r.name:SetWordWrap(false) end
+    r:SetScript("OnEnter", function(self)
+        if not self.who or not GameTooltip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        GameTooltip:AddLine(self.who)
+        GameTooltip:AddLine(("%d this fight, %d in total"):format(fight[self.who] or 0, db.total[self.who] or 0), 1, 1, 1)
+        local list = recent[self.who]
+        if list and #list > 0 then
+            GameTooltip:AddLine(" ")
+            for k = #list, math.max(1, #list - 5), -1 do GameTooltip:AddLine(list[k], 0.8, 0.8, 0.8) end
+        end
+        GameTooltip:Show()
+    end)
+    r:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+    rows[i] = r
+    return r
+end
+
+local empty = win:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+empty:SetPoint("TOP", 0, -HEADER - 6)
+empty:SetText("No kicks yet")
 
 local function PlaceWindow()
     win:ClearAllPoints()
@@ -299,62 +454,128 @@ local function PlaceWindow()
     end
 end
 
+local function ClassIcon(tex, class)
+    if class and GetClassAtlas then
+        local ok, atlas = pcall(GetClassAtlas, class)
+        if ok and atlas and tex.SetAtlas then
+            local ok2, res = pcall(tex.SetAtlas, tex, atlas)
+            if ok2 and res ~= false then tex:SetTexCoord(0, 1, 0, 1) return end
+        end
+    end
+    local coords = class and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
+    if coords then
+        tex:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
+        tex:SetTexCoord(unpack(coords))
+    else
+        tex:SetTexture("Interface\\Icons\\Ability_Kick")
+        tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    end
+end
+
 local sample = { { "Miff", 3, 41, "WARRIOR" }, { "Grunk", 2, 17, "ROGUE" }, { "Sally", 1, 9, "SHAMAN" }, { "Zaxx", 0, 4, "MAGE" } }
+
+local function WindowWanted()
+    if testMode then return true end
+    if not db.showWindow then return false end
+    return not db.groupOnly or InGroup()
+end
 
 local function Layout()
     if not db then return end
-    local show = testMode or db.show == "always" or (db.show == "group" and InGroup())
-    win:EnableMouse(not db.locked)
-    if win.RegisterForDrag then win:RegisterForDrag("LeftButton") end
-    if not show then win:Hide() return end
+    if not WindowWanted() then win:Hide() return end
+    win:SetWidth(db.width)
+    MiniArt()
+    session.label:SetText(db.mode == "total" and "O" or "C")
+    title:SetText(db.mode == "total" and "Kicks (overall)" or "Kicks")
 
     local list = {}
     if testMode then
-        for _, s in ipairs(sample) do list[#list + 1] = { name = s[1], f = s[2], t = s[3], class = s[4] } end
+        for _, s in ipairs(sample) do
+            list[#list + 1] = { name = s[1], n = db.mode == "total" and s[3] or s[2], class = s[4] }
+        end
     else
+        local counts = db.mode == "total" and db.total or fight
         local seen = {}
         local function add(name)
             if name and not seen[name] then
                 seen[name] = true
-                list[#list + 1] = { name = name, f = fight[name] or 0, t = db.total[name] or 0 }
+                list[#list + 1] = { name = name, n = counts[name] or 0, class = db.classes[name] }
             end
         end
         for _, name in pairs(roster) do add(name) end
-        for name in pairs(fight) do add(name) end
-        table.sort(list, function(a, b)
-            if a.f ~= b.f then return a.f > b.f end
-            if a.t ~= b.t then return a.t > b.t end
-            return a.name < b.name
-        end)
+        for name in pairs(counts) do add(name) end
     end
+    table.sort(list, function(a, b)
+        if a.n ~= b.n then return a.n > b.n end
+        return a.name < b.name
+    end)
+    local sum, top = 0, 0
+    for _, e in ipairs(list) do sum = sum + e.n; if e.n > top then top = e.n end end
 
-    local n = math.min(#list, db.rows)
-    for i = 1, math.max(n, #rowsL) do
-        local l, r = Row(i)
+    local n = db.collapsed and 0 or math.min(#list, db.rows)
+    for i = 1, math.max(n, #rows) do
+        local r = Row(i)
         local e = list[i]
         if e and i <= n then
-            local color = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
-            local hex = color and ("|cff%02x%02x%02x"):format(color.r * 255, color.g * 255, color.b * 255) or ClassColor(e.name)
-            l:SetText(hex .. e.name .. "|r")
-            r:SetText((e.f > 0 and "|cffffd100" .. e.f .. "|r" or "|cff8080800|r") .. "  |cff999999(" .. e.t .. ")|r")
-            l:Show(); r:Show()
+            local c = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
+            r.bar.tex:SetVertexColor(c and c.r or 0.6, c and c.g or 0.6, c and c.b or 0.6)
+            r.bar:SetMinMaxValues(0, math.max(top, 1))
+            r.bar:SetValue(e.n)
+            r.name:SetText(i .. ". " .. e.name)
+            r.value:SetText(sum > 0 and ("%d (%d%%)"):format(e.n, math.floor(e.n / sum * 100 + 0.5)) or "0")
+            ClassIcon(r.icon, e.class)
+            r.who = e.name
+            r:Show()
         else
-            l:Hide(); r:Hide()
+            r.who = nil
+            r:Hide()
         end
     end
-    local text = testMode and "Last: Miff > Defias Pillager (Fireball)" or (lastLine and ("Last: " .. lastLine)) or nil
-    last:ClearAllPoints()
-    last:SetPoint("TOPLEFT", 8, -10 - (n + 1) * 13)
-    last:SetText(text or "")
-    last:SetShown(text ~= nil)
-    win:SetHeight(18 + n * 13 + (text and 18 or 6) + (n == 0 and 13 or 0))
-    if n == 0 then
-        local l, r = Row(1)
-        l:SetText("|cff999999No kicks yet|r"); l:Show(); r:Hide()
+    body:SetShown(not db.collapsed)
+    empty:SetShown(not db.collapsed and n == 0)
+    if db.collapsed then
+        win:SetHeight(HEADER)
+    else
+        win:SetHeight(HEADER + math.max(n, 1) * (BAR_HEIGHT + BAR_SPACING) + 4)
     end
+    win:SetAlpha((db.opacity or 100) / 100)
     win:Show()
 end
 ns.Layout = Layout
+
+local function ResetCounts()
+    wipe(fight); wipe(db.total); wipe(recent)
+    Layout()
+end
+ns.ResetCounts = ResetCounts
+
+mini:SetScript("OnClick", function() db.collapsed = not db.collapsed; Layout() end)
+
+local function SetMode(mode) db.mode = mode; Layout() end
+if session.SetupMenu then
+    session:SetupMenu(function(_, root)
+        root:CreateRadio("Current fight", function() return db.mode ~= "total" end, function() SetMode("fight") end)
+        root:CreateRadio("Overall", function() return db.mode == "total" end, function() SetMode("total") end)
+    end)
+    if session.SetSelectionText then pcall(session.SetSelectionText, session, function() return "" end) end
+else
+    session:SetScript("OnClick", function() SetMode(db.mode == "total" and "fight" or "total") end)
+end
+
+gear:SetScript("OnClick", function(self)
+    local opened = OpenMenu(self, function(root)
+        root:CreateTitle("Kick Tally")
+        root:CreateCheckbox("Lock window", function() return db.locked end, function() db.locked = not db.locked end)
+        root:CreateCheckbox("Only in a party or raid", function() return db.groupOnly end,
+            function() db.groupOnly = not db.groupOnly; Layout() end)
+        root:CreateButton("Hide window", function()
+            db.showWindow = false; Layout()
+            Print("window hidden. /kicks show, or the settings page, brings it back.")
+        end)
+        root:CreateButton("Settings", function() if ns.OpenOptions then ns.OpenOptions() end end)
+    end)
+    if not opened and ns.OpenOptions then ns.OpenOptions() end
+end)
 
 ---------------------------------------------------------------------------
 -- Kicks
@@ -405,9 +626,11 @@ end
 local function Credit(who, e, cast)
     fight[who] = (fight[who] or 0) + 1
     db.total[who] = (db.total[who] or 0) + 1
-    local what = e.target or "?"
+    local what = e.target or "an enemy"
     if e.spell then what = what .. " (" .. e.spell .. ")" end
-    lastLine = who .. " > " .. what
+    recent[who] = recent[who] or {}
+    table.insert(recent[who], what)
+    if #recent[who] > 10 then table.remove(recent[who], 1) end
     Debug(("kick credited to %s%s"):format(who, cast and cast.id and (" with " .. tostring(SpellName(cast.id))) or " (spell hidden)"))
     if who == playerName then OwnKick(e, cast) end
     Layout()
@@ -513,6 +736,8 @@ local function Report(which, quiet)
     return sent
 end
 
+ns.Report = Report
+
 local function ReportAfterBoss(tries)
     if not db.reportAfterBoss then return end
     if ChatLocked() and tries < 6 then
@@ -556,6 +781,11 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         end
         db = KickTallyDB
         ns.db = db
+        if db.show ~= nil then -- 1.0.0 test builds: show = group / always / never
+            db.showWindow = db.show ~= "never"
+            db.groupOnly = db.show == "group"
+            db.show = nil
+        end
         UpdateRoster()
         PlaceWindow()
         if ns.StartVersionCheck then ns.StartVersionCheck(db, "Kick Tally") end
@@ -584,12 +814,12 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         if target and target ~= "" then sentTarget = { t = GetTime(), name = target } end
     elseif event == "PLAYER_REGEN_DISABLED" then
         -- a new fight (a boss fight keeps counting from its start)
-        if not inEncounter then wipe(fight); lastLine = nil end
+        if not inEncounter then wipe(fight); wipe(recent) end
         UpdateRoster()
         Layout()
     elseif event == "ENCOUNTER_START" then
         inEncounter = true
-        wipe(fight); lastLine = nil
+        wipe(fight); wipe(recent)
         Layout()
     elseif event == "ENCOUNTER_END" then
         inEncounter = false
@@ -621,6 +851,9 @@ function ns.BuildOptions()
         title = "Kick Tally",
         updateNotice = true,
         changes = {
+            { "1.1.0", "The window now looks like the game's damage meter",
+                       "Current fight or overall (C / O), settings and minimise buttons on its title bar",
+                       "Show or hide the window, or only show it in a party or raid" },
             { "1.0.0", "First version: announces your successful kicks",
                        "Counts your party and raid's kicks, this fight and in total",
                        "Tells you when a kick didn't interrupt anything" },
@@ -646,12 +879,15 @@ function ns.BuildOptions()
             { type = "check", key = "missed", label = "Tell me when my kick didn't interrupt anything" },
             { type = "check", key = "sound", label = "Play a sound on a kick" },
             { type = "header", label = "Tally window" },
-            { type = "choice", key = "show", label = "Show the window", values = { "group", "always", "never" } },
+            { type = "check", key = "showWindow", label = "Show the tally window" },
+            { type = "check", key = "groupOnly", label = "Only while I'm in a party or raid" },
             { type = "check", key = "trackGroup", label = "Count party and raid members' kicks too" },
             { type = "range", key = "rows", label = "Players shown", min = 3, max = 20, step = 1 },
-            { type = "check", key = "locked", label = "Lock the window (otherwise drag it to move)" },
+            { type = "range", key = "width", label = "Width", min = 180, max = 400, step = 10 },
+            { type = "range", key = "opacity", label = "Opacity", min = 30, max = 100, step = 10, suffix = "%" },
+            { type = "check", key = "locked", label = "Lock the window (otherwise drag its title bar to move it)" },
             { type = "button", label = "Reset position", func = function() db.pos = nil; PlaceWindow() end },
-            { type = "button", label = "Reset the counts", func = function() wipe(fight); wipe(db.total); lastLine = nil; Layout() end },
+            { type = "button", label = "Reset the counts", func = function() ResetCounts() end },
             { type = "button", label = "Test",
               dynamicLabel = function() return testMode and "Stop the test" or "Test" end,
               func = function() SetTest(not testMode) end },
@@ -685,14 +921,19 @@ SlashCmdList.KICKTALLY = function(msg)
         Layout()
         Print(db.locked and "window locked." or "window unlocked: drag it to move.")
     elseif cmd == "show" or cmd == "hide" then
-        db.show = cmd == "show" and "always" or "never"
+        db.showWindow = cmd == "show"
         Layout()
-        Print(cmd == "show" and "window shown." or "window hidden. /kicks show to bring it back.")
+        if cmd == "show" then
+            Print(db.groupOnly and not InGroup() and "window on. It shows when you're in a party or raid (turn that off in /kicks)."
+                or "window shown.")
+        else
+            Print("window hidden. /kicks show to bring it back.")
+        end
     elseif cmd == "reset" then
         if rest == "position" then
             db.pos = nil; PlaceWindow(); Print("window position reset.")
         else
-            wipe(fight); wipe(db.total); lastLine = nil; Layout(); Print("counts reset.")
+            ResetCounts(); Print("counts reset.")
         end
     elseif cmd == "report" then
         Report(rest == "total" and "total" or "fight")
@@ -708,7 +949,7 @@ SlashCmdList.KICKTALLY = function(msg)
         Print("/kicks test - sample window and message")
         Print("/kicks report [total] - post this fight's (or all) kicks to the group")
         Print("/kicks lock | unlock - lock or move the window")
-        Print("/kicks show | hide - window always on or off")
+        Print("/kicks show | hide - show or hide the window")
         Print("/kicks reset [position] - reset the counts (or the window position)")
         Print("/kicks debug - print what it sees, to check it on Forever")
     end

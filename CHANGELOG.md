@@ -2,6 +2,12 @@
 
 ## 2026-11-27
 
+Kick Tally 1.1.0
+- The tally window now looks like the game's own damage meter, using its art: the gold title bar, class-coloured bars with class icons, "1. Name" and the count with each player's share of the group's kicks.
+- Title bar buttons like the meter's: C / O for this fight or overall, a gear menu (lock, only in a group, hide, settings) and a minimise button. The arrow by the title posts the tally, resets the counts or runs the test.
+- Hover a row to see what that player kicked this fight.
+- New settings: show the window (on/off), only while in a party or raid, width and opacity.
+
 Kick Tally 1.0.0 (new)
 - Announces your successful interrupts in chat. The message is editable, with `{target}`, `{spell}`, `{ability}` and `{count}`, and any part the game hides is left out cleanly.
 - Choose where it goes: auto (instance, raid or party chat), party, raid, instance, say, yell (inside instances only) or just your own chat window.
