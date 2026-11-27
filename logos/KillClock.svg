@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#3a2108"/>
+      <stop offset="1" stop-color="#120a04"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ff8000" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#ff8000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="face" cx="45%" cy="40%" r="65%">
+      <stop offset="0" stop-color="#fff6e0"/>
+      <stop offset="1" stop-color="#d9c49a"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd23d"/>
+      <stop offset="1" stop-color="#b8740f"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="url(#bg)"/>
+  <circle cx="200" cy="214" r="170" fill="url(#glow)"/>
+
+  <!-- stopwatch crown and buttons -->
+  <rect x="180" y="52" width="40" height="26" rx="6" fill="url(#rim)" stroke="#3a2108" stroke-width="6"/>
+  <rect x="190" y="74" width="20" height="18" fill="url(#rim)" stroke="#3a2108" stroke-width="5"/>
+  <g transform="translate(200 220) rotate(42)">
+    <rect x="-12" y="-152" width="24" height="26" rx="5" fill="url(#rim)" stroke="#3a2108" stroke-width="5"/>
+  </g>
+
+  <!-- the watch -->
+  <circle cx="200" cy="220" r="128" fill="url(#rim)" stroke="#3a2108" stroke-width="8"/>
+  <circle cx="200" cy="220" r="106" fill="url(#face)" stroke="#3a2108" stroke-width="6"/>
+
+  <!-- the time already gone: a red wedge from 12 o'clock round to the hand -->
+  <path d="M 200 220 L 200 114 A 106 106 0 1 1 108 167 Z" fill="#c22b1e" opacity="0.85"/>
+
+  <!-- ticks -->
+  <g stroke="#3a2108" stroke-width="7" stroke-linecap="round">
+    <line x1="200" y1="124" x2="200" y2="140"/>
+    <line x1="296" y1="220" x2="280" y2="220"/>
+    <line x1="200" y1="316" x2="200" y2="300"/>
+    <line x1="104" y1="220" x2="120" y2="220"/>
+  </g>
+
+  <!-- the hand, pointing at where the red runs out (behind the skull) -->
+  <line x1="200" y1="220" x2="120" y2="172" stroke="#2a1606" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- skull in the middle -->
+  <g transform="translate(200 214)">
+    <path d="M -40 6 C -44 -38 -20 -54 0 -54 C 20 -54 44 -38 40 6 C 38 18 30 22 26 24 L 26 40 L -26 40 L -26 24 C -30 22 -38 18 -40 6 Z"
+          fill="#fdf7ea" stroke="#2a1606" stroke-width="7" stroke-linejoin="round"/>
+    <ellipse cx="-17" cy="-8" rx="12" ry="14" fill="#2a1606"/>
+    <ellipse cx="17" cy="-8" rx="12" ry="14" fill="#2a1606"/>
+    <path d="M 0 8 L -7 20 L 7 20 Z" fill="#2a1606"/>
+    <path d="M -12 40 L -12 30 M 0 40 L 0 30 M 12 40 L 12 30" stroke="#2a1606" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="none" stroke="#ff8000" stroke-width="10"/>
+  <rect x="22" y="22" width="356" height="356" rx="64" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
+</svg>

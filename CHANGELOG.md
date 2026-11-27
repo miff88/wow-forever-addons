@@ -2,6 +2,13 @@
 
 ## 2026-11-27
 
+Kill Clock 1.0.0 (new)
+- A countdown just above the target frame showing roughly how long until your target dies, from how fast it has lost health so far. Shown as minutes and seconds (`1:24`), up to 20 minutes.
+- Movable. Text size, outline, an optional "Dies in" label, and a colour: white, yellow, orange, red, green, blue, purple, pink or any colour from the colour picker.
+- Can be limited to elites, rares and bosses, and waits a couple of seconds of damage before its first estimate.
+- Works with WoW Forever's hidden enemy health: it never reads the health, it hands the game a lookup from health left to time left and the game shows the result. Times each mob from when its nameplate started losing health, so switching targets mid-fight keeps a good estimate.
+- Sits above Plate Threat's threat box when that's on.
+
 Kick Tally 1.3.0
 - Fixed kick posts that only said "Interrupted!". In a dungeon fight the game hides the enemy's name and spell from addons, and won't let them post hidden text. Kick Tally now reads each enemy's name while it still can (when its nameplate appears or you target it before the pull) and uses that, falls back to the enemy's raid marker ({rt8} shows as a skull), and always names your ability.
 - New default message: "{ability} interrupted {target}'s {spell}!", e.g. "Pummel interrupted Scorching Elemental's Fireball!". If you kept the old default it's switched over; a message you wrote yourself is left alone.
