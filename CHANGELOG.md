@@ -2,6 +2,9 @@
 
 ## 2026-11-27
 
+Buff Notice 2.0.1
+- The same fix as Proc City 1.5.2: when the game hid one of your buffs in combat, the food and flask check gave up on the whole buff list. It now skips the hidden ones and reads the rest. A buff with more than one name (different ranks) is also still found if one of its names is hidden.
+
 Proc City 1.5.2
 - Procs update in combat again. Your debug screenshot showed the game still lets addons read your buffs in combat, but it hides some of them. One hidden buff made Proc City give up on the whole list, so nothing changed until combat ended. It now skips the hidden ones and reads the rest, and checks twice a second in combat as well as when your buffs change.
 - `/proc debug` says how many of your buffs are readable and how many are hidden.

@@ -84,28 +84,38 @@ end
 --         nil     if the game won't say right now (in combat)
 local function ReadBuff(unit, names)
     if not AurasReadable() then return nil end
+    local unknown = false
     for _, name in ipairs(names) do
         local ok, aura = pcall(C_UnitAuras.GetAuraDataBySpellName, unit, name, "HELPFUL")
-        if not ok or IsSecret(aura) then return nil end
-        if aura then
+        if not ok or IsSecret(aura) then
+            unknown = true -- this one's hidden: keep checking the other names
+        elseif aura then
             local exp, dur = aura.expirationTime, aura.duration
-            if IsSecret(exp) or IsSecret(dur) then return nil end
+            if IsSecret(exp) or IsSecret(dur) then return nil end -- there, but its timer is hidden: keep the last known
             if not exp or exp == 0 then return math.huge, 0 end
             return exp, dur
         end
     end
+    if unknown then return nil end
     return false
 end
 
 -- food / flask: any buff whose name contains one of the words
 local function ReadMatch(words)
     if not AurasReadable() or not C_UnitAuras.GetAuraDataByIndex then return nil end
+    -- the game can hide some buffs and not others: skip the hidden ones and read the rest
+    local hidden = false
     for i = 1, 60 do
         local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
-        if not ok or IsSecret(aura) then return nil end
-        if not aura then break end
-        local name = aura.name
-        if not IsSecret(name) and type(name) == "string" then
+        if not ok then return nil end
+        if IsSecret(aura) then
+            hidden = true
+        elseif aura == nil then
+            break
+        end
+        local name = not IsSecret(aura) and aura and aura.name
+        if IsSecret(name) then hidden = true end
+        if name and not IsSecret(name) and type(name) == "string" then
             for _, w in ipairs(words) do
                 if name:find(w, 1, true) then
                     local exp = aura.expirationTime
@@ -115,6 +125,7 @@ local function ReadMatch(words)
             end
         end
     end
+    if hidden then return nil end -- it might be one of the hidden ones
     return false
 end
 
@@ -594,6 +605,7 @@ function ns.BuildOptions()
         title = "Buff Notice",
         updateNotice = true,
         changes = {
+            { "2.0.1", "Food and flask checks no longer give up when the game hides one of your other buffs in combat" },
             { "2.0.0", "Now for every class: Arcane Intellect, Fortitude, Mark of the Wild, Blessings, armors, Aspects, poisons and more",
                        "Counts party and raid members missing your group buffs",
                        "Optional food and flask check in dungeons and raids. Renamed from Battle Shout Notice" },
