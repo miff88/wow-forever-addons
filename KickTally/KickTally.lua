@@ -20,7 +20,8 @@ local defaults = {
     updateNotice = true,
     announce   = true,       -- post your successful kicks in chat
     channel    = "auto",     -- auto, party, raid, instance, say, yell, self
-    message    = "Interrupted {target}'s {spell}!",
+    message    = "{ability} interrupted {target}'s {spell}!",
+    announceVague = false,   -- post even when the game hides both the enemy and its spell
     stuns      = true,       -- stuns and fears that stop a cast count as kicks
     printLocal = true,       -- show your kick in your own chat window when it isn't posted
     missed     = true,       -- tell me when my kick didn't interrupt anything
@@ -99,6 +100,21 @@ end
 local function GUIDOf(unit)
     local ok, guid = pcall(UnitGUID, unit)
     if ok and not IsSecret(guid) and guid then return guid end
+end
+
+-- the raid marker on a unit (1 star ... 8 skull), when the game shows it
+local function MarkOf(unit)
+    if not GetRaidTargetIndex then return nil end
+    local ok, i = pcall(GetRaidTargetIndex, unit)
+    if ok and not IsSecret(i) and type(i) == "number" and i >= 1 and i <= 8 then return i end
+end
+
+-- enemies' names, read while the game still shows them: in a dungeon the game hides an
+-- enemy's name once the fight starts, but it shows it when its nameplate appears or you
+-- target it before the pull
+local unitNames = {}
+local function RememberName(unit)
+    unitNames[unit] = NameOf(unit) or unitNames[unit]
 end
 
 -- the group member a unit belongs to ("partypet2" -> "party2"), or nil for anyone else
@@ -236,6 +252,9 @@ end
 -- fill the message template; any part the game hid is left out
 local function Fill(template, v)
     local s = template or ""
+    if not v.spell and not v.target then
+        s = s:gsub("{target}'s {spell}", "a cast")
+    end
     if not v.spell then
         s = s:gsub("'s {spell}", ""):gsub("{spell}", "")
     end
@@ -688,19 +707,32 @@ local function Missed(c)
     if db.sound and PlaySound and SOUNDKIT then PlaySound(SOUNDKIT.IG_QUEST_FAILED or 847) end
 end
 
+-- {rt8} shows as a skull in chat; in our own chat lines it needs the texture itself
+local function Icons(msg)
+    return (msg:gsub("{rt(%d)}", "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%1:0|t"))
+end
+
 local function OwnKick(e, cast)
+    local target = e.target or (cast and cast.target)
     local values = {
-        target = e.target or (cast and cast.target),
+        target = target or (e.mark and ("{rt" .. e.mark .. "}")),
         spell = e.spell,
-        ability = cast and SpellName(cast.id),
+        ability = cast and SpellName(cast.id) or "Kick",
         count = fight[playerName],
     }
     if db.sound and PlaySound and SOUNDKIT then PlaySound(SOUNDKIT.RAID_WARNING or 8959) end
     local msg = Fill(db.message, values)
     local sent, why = false, "announcing is off"
-    if db.announce and msg ~= "" then sent, why = Post(msg) end
+    local vague = not values.target and not values.spell
+    if db.announce and msg ~= "" then
+        if vague and not db.announceVague then
+            why = "the game hid the enemy and its spell"
+        else
+            sent, why = Post(msg)
+        end
+    end
     if not sent and db.printLocal then
-        Print(msg ~= "" and msg or "you interrupted a cast.")
+        Print(Icons(msg ~= "" and msg or "you interrupted a cast."))
     end
     Debug("own kick: " .. msg .. (sent and " (posted)" or (" (not posted: " .. tostring(why) .. ")")))
 end
@@ -772,17 +804,19 @@ local function OnInterrupted(event, unit, spellID, interruptedBy)
     local by = Readable(interruptedBy)
     local now = GetTime()
     local spell = SpellName(spellID)
-    local target = NameOf(unit)
+    local target = NameOf(unit) or unitNames[unit]
+    local mark = MarkOf(unit)
     if by == "" then by = nil end
 
     -- the same interrupt seen on two units (your target and its nameplate)
     if lastEvent and now - lastEvent.t < 0.08 and lastEvent.by == by then
         lastEvent.spell = lastEvent.spell or spell
         lastEvent.target = lastEvent.target or target
+        lastEvent.mark = lastEvent.mark or mark
         if not channel then lastEvent.channel = false end
         return
     end
-    local e = { t = now, spell = spell, target = target, by = by, channel = channel }
+    local e = { t = now, spell = spell, target = target, mark = mark, by = by, channel = channel }
     lastEvent = e
     Debug(("%s on %s%s"):format(channel and "channel stopped" or "cast interrupted", tostring(target or unit),
         by and (" by " .. tostring(guidName[by] or by)) or ""))
@@ -863,6 +897,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         end
         db = KickTallyDB
         ns.db = db
+        if db.message == "Interrupted {target}'s {spell}!" then db.message = defaults.message end
         if db.show ~= nil then -- 1.0.0 test builds: show = group / always / never
             db.showWindow = db.show ~= "never"
             db.groupOnly = db.show == "group"
@@ -876,6 +911,10 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         SafeRegister("PLAYER_ENTERING_WORLD")
         SafeRegister("GROUP_ROSTER_UPDATE")
         SafeRegister("UNIT_PET")
+        SafeRegister("PLAYER_TARGET_CHANGED")
+        SafeRegister("PLAYER_FOCUS_CHANGED")
+        SafeRegister("NAME_PLATE_UNIT_ADDED")
+        SafeRegister("NAME_PLATE_UNIT_REMOVED")
         SafeRegister("PLAYER_REGEN_DISABLED")
         SafeRegister("ENCOUNTER_START")
         SafeRegister("ENCOUNTER_END")
@@ -906,6 +945,14 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
     elseif event == "ENCOUNTER_END" then
         inEncounter = false
         C_Timer.After(2, function() ReportAfterBoss(0) end)
+    elseif event == "PLAYER_TARGET_CHANGED" then
+        unitNames.target = NameOf("target")
+    elseif event == "PLAYER_FOCUS_CHANGED" then
+        unitNames.focus = NameOf("focus")
+    elseif event == "NAME_PLATE_UNIT_ADDED" then
+        if type(a1) == "string" and not IsSecret(a1) then unitNames[a1] = NameOf(a1) end
+    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        if type(a1) == "string" and not IsSecret(a1) then unitNames[a1] = nil end
     elseif event == "UNIT_PET" then
         if a1 == "player" then petGUID = GUIDOf("pet"); if petGUID and playerName then guidName[petGUID] = playerName end
         else UpdateRoster() end
@@ -933,6 +980,9 @@ function ns.BuildOptions()
         title = "Kick Tally",
         updateNotice = true,
         changes = {
+            { "1.3.0", "Kick posts name the enemy more often: names read before the pull, raid markers",
+                       "When the game hides everything it says which ability, or isn't posted at all",
+                       "New message: \"Pummel interrupted Scorching Elemental's Fireball!\"" },
             { "1.2.0", "Resize the window by dragging its bottom-right corner",
                        "Scroll with the mouse wheel when more players than fit",
                        "Thinner bars and a see-through background, like the meter; both adjustable" },
@@ -958,7 +1008,9 @@ function ns.BuildOptions()
                 return "|cff999999" .. (CHANNEL_HELP[db.channel] or "") .. "|r" end },
             { type = "text", key = "message", label = "Message ({target}, {spell}, {ability}, {count})",
               default = defaults.message,
-              preview = function(text) return Fill(text, { target = "Defias Pillager", spell = "Fireball", ability = "Pummel", count = 3 }) end },
+              preview = function(text) return Fill(text, { target = "Defias Pillager", spell = "Fireball", ability = "Pummel", count = 3 })
+                  .. "  |cff999999or, with the name hidden in a dungeon:|r " .. Icons(Fill(text, { target = "{rt8}", ability = "Pummel", count = 3 })) end },
+            { type = "check", key = "announceVague", label = "Post even when the game hides the enemy and its spell (\"Pummel interrupted a cast!\")" },
             { type = "check", key = "stuns", label = "Count stuns and fears that stop a cast (Hammer of Justice, Kidney Shot...)" },
             { type = "check", key = "printLocal", label = "Show your kick in your own chat window when it isn't posted" },
             { type = "check", key = "missed", label = "Tell me when my kick didn't interrupt anything" },

@@ -7,7 +7,7 @@ Made for **World of Warcraft: Forever**. Every class.
 ## Features
 
 ### Your kicks
-- Announces each successful interrupt: "Interrupted Defias Pillager's Fireball!"
+- Announces each successful interrupt: "Pummel interrupted Defias Pillager's Fireball!"
 - Post to auto (instance, raid or party chat), party, raid, instance, say or yell, or just your own chat window.
 - Edit the message with `{target}`, `{spell}`, `{ability}` and `{count}`.
 - Tells you (only you) when your kick didn't interrupt anything.
@@ -39,6 +39,7 @@ Made for **World of Warcraft: Forever**. Every class.
 - WoW Forever doesn't let addons read the combat log. Your own kicks are exact: Kick Tally sees your interrupt and the enemy's cast stopping. In combat the game hides which spells other players cast, so their kicks are counted when their cast lands at the same moment an enemy's cast is interrupted.
 - Keep enemy nameplates on (V) so it sees every enemy, not just your target.
 - The game blocks addon chat messages during boss fights. There your kicks show in your own chat window instead.
+- In dungeon fights the game hides enemies' names and spells from addons. Kick Tally remembers names it saw before the pull and uses raid markers; a kick it can't name stays in your own chat window unless you turn on posting it anyway.
 - Say and yell only work inside dungeons and raids; outdoors the game blocks addons from using them.
 
 Created by Miff, supported by Claude. Source and changelog: [github.com/miff88/wow-forever-addons](https://github.com/miff88/wow-forever-addons)

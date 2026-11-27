@@ -2,6 +2,11 @@
 
 ## 2026-11-27
 
+Kick Tally 1.3.0
+- Fixed kick posts that only said "Interrupted!". In a dungeon fight the game hides the enemy's name and spell from addons, and won't let them post hidden text. Kick Tally now reads each enemy's name while it still can (when its nameplate appears or you target it before the pull) and uses that, falls back to the enemy's raid marker ({rt8} shows as a skull), and always names your ability.
+- New default message: "{ability} interrupted {target}'s {spell}!", e.g. "Pummel interrupted Scorching Elemental's Fireball!". If you kept the old default it's switched over; a message you wrote yourself is left alone.
+- When the game hides both the enemy and its spell, the kick goes only to your own chat window ("Pummel interrupted a cast!") instead of the group. Turn on "Post even when the game hides the enemy and its spell" to post it anyway.
+
 Kick Tally 1.2.0
 - Resize the window by dragging its bottom-right corner, with the damage meter's own corner handle (it shows while your mouse is over the window). The window lists as many players as fit; scroll with the mouse wheel to see the rest.
 - Thinner bars (20, was 25) and a see-through background, closer to how the meter looks. Bar height, background opacity and window height are new settings, next to width and window opacity.
