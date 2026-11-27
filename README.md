@@ -1,6 +1,6 @@
 # WoW Forever Addons
 
-Small addons for World of Warcraft: Forever (Interface 16001). Most work on any class; Mage Services is made for mages, and Payback is for warriors, rogues and hunters. None of them use the combat log, which Forever blocks for addons.
+Small addons for World of Warcraft: Forever (Interface 16001). Most work on any class; Mage Services is made for mages, and Payback Time is for warriors, rogues and hunters. None of them use the combat log, which Forever blocks for addons.
 
 ## Install
 
@@ -17,7 +17,7 @@ Every addon has a settings page under **Options > AddOns**, and an entry on the 
 ### Target Arrow (`/tarrow`)
 <img src="logos/TargetArrow.png" alt="TargetArrow logo" width="96">
 
-A bobbing arrow above your target's nameplate so you can pick it out of a crowd. It sits high enough to clear Payback's Overpower icon if you use both.
+A bobbing arrow above your target's nameplate so you can pick it out of a crowd. It sits high enough to clear Payback Time's Overpower icon if you use both.
 
 An optional second, smaller arrow marks your focus or a raid marker (skull by default) in its own colour, and hides when it would point at your target.
 
@@ -136,8 +136,8 @@ Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it on
 
 ## Warriors, rogues and hunters
 
-### Payback (`/payback` or `/opp`), formerly Overpower Plates
-<img src="logos/OverpowerPlates.png" alt="Payback logo" width="96">
+### Payback Time (`/payback` or `/opp`), formerly Overpower Plates
+<img src="logos/OverpowerPlates.png" alt="Payback Time logo" width="96">
 
 Lights up the abilities you can only use right after a dodge, parry or block.
 

@@ -1,6 +1,6 @@
-# Payback
+# Payback Time
 
-**Hit back the moment you can.** Payback (formerly Overpower Plates) lights up the abilities you can only use right after a dodge, parry or block: Overpower on the exact mob that dodged you, and Revenge, Riposte, Counterattack and Mongoose Bite as a big icon in the middle of your screen.
+**Hit back the moment you can.** Payback Time (formerly Overpower Plates) lights up the abilities you can only use right after a dodge, parry or block: Overpower on the exact mob that dodged you, and Revenge, Riposte, Counterattack and Mongoose Bite as a big icon in the middle of your screen.
 
 Made for **World of Warcraft: Forever**. Warriors, rogues and hunters.
 
@@ -46,7 +46,7 @@ Made for **World of Warcraft: Forever**. Warriors, rogues and hunters.
 | `/opp help` | All commands |
 
 ## Good to know
-- WoW Forever doesn't let addons read the combat log. Payback works from the game's own Overpower charges, its dodge, parry and block reports, and whether it says a spell can be cast.
+- WoW Forever doesn't let addons read the combat log. Payback Time works from the game's own Overpower charges, its dodge, parry and block reports, and whether it says a spell can be cast.
 - Mongoose Bite only shows when the game confirms it's usable, since your target dodging your pet looks the same as dodging you.
 - Overpower needs enemy nameplates switched on (V by default).
 - Upgrading from Overpower Plates keeps your settings, and `/opp` still works.

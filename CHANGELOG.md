@@ -2,6 +2,9 @@
 
 ## 2026-11-27
 
+Payback Time 2.0.1
+- Named Payback Time (the name "Payback" was already taken on CurseForge), so the addon list, settings page and CurseForge page all match. Nothing else changed; `/payback` and `/opp` both still work.
+
 Payback 2.0.0 (was Overpower Plates)
 - Renamed, because it now covers rogues and hunters too, with a new logo.
 - Revenge (warriors), Riposte (rogues), Counterattack and Mongoose Bite (hunters): a big icon in the middle of the screen with a 5 second sweep, and a glow on the spell's action buttons, after you block, dodge or parry (Mongoose Bite: after your target dodges). It only shows while the game says the spell can be cast, so one on cooldown stays hidden. Each can be turned off, and the icon moved, resized or turned off in favour of just the button glow.

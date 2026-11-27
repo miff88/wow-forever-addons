@@ -1,4 +1,4 @@
--- Payback: the other "only after a dodge, parry or block" abilities.
+-- Payback Time: the other "only after a dodge, parry or block" abilities.
 --   Warrior  Revenge        after you block, dodge or parry
 --   Rogue    Riposte        after you parry
 --   Hunter   Counterattack  after you parry
@@ -191,7 +191,7 @@ local function Update()
     end
     holder:SetSize(math.max(size, #list * size + (#list - 1) * gap), size)
     holder:EnableMouse(ns.screenUnlocked and true or false)
-    holder.label:SetText(ns.screenUnlocked and "Payback: drag to move" or "")
+    holder.label:SetText(ns.screenUnlocked and "Payback Time: drag to move" or "")
     for i = 1, math.max(#list, #icons) do
         local f = icons[i] or (list[i] and NewIcon())
         local u = list[i]
