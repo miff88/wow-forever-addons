@@ -4,7 +4,7 @@ Small addons for World of Warcraft: Forever (Interface 16001). Some work on any 
 
 ## Install
 
-Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates need to be on (V) for everything except Battle Shout Notice and Proc City, and Kick Tally works best with them on.
+Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates need to be on (V) for everything except Buff Notice and Proc City, and Kick Tally works best with them on.
 
 ## Settings
 
@@ -65,6 +65,17 @@ How it works on Forever: the game hides enemy health from addons in combat, so t
 - `/kclock test`, `/kclock move` (`/kclock lock` when done), `/kclock reset` (back beside the target frame)
 - `/kclock size <n>`, `/kclock colour <name>` (no name opens the colour picker), `/kclock debug`
 
+### Buff Notice (`/bsn`, also `/bsr`)
+<img src="logos/BattleShoutReminder.png" alt="Buff Notice logo" width="96">
+
+Formerly Battle Shout Notice. Shows an icon when a buff your class keeps up is missing or about to run out: Battle Shout (while fighting), Arcane Intellect and mage armors, Fortitude, Inner Fire and Divine Spirit, Mark of the Wild and Omen of Clarity, Blessings, Demon Armor, Lightning Shield and shaman weapon imbues, Aspects and Trueshot Aura, and rogue poisons on each weapon. Only buffs you know are watched, and each can be turned off.
+
+- Red and pulsing: missing. Gold with seconds: running out (10 seconds for short buffs, 60 for long ones, both adjustable).
+- Blue with a number: that many party or raid members nearby are missing your group buff (Intellect and Spirit skip warriors and rogues).
+- Optional food and flask/elixir reminder in dungeons and raids.
+- Quiet in cities and inns. Forever hides buffs from addons in combat, so it checks them out of combat and times them from your own casts in between.
+- `/bsn unlock`, `/bsn lock` move the icons, `/bsn test`, `/bsn list` the buffs it watches, `/bsn time <n>`, `/bsn size <n>`, `/bsn sound`, `/bsn reset`
+
 ## Mage
 
 ### Mage Services (`/ms`)
@@ -122,14 +133,6 @@ While Overpower is up, a gold glow pulses around the icon and your Overpower but
 - `/opp sound` toggle the dodge sound
 - `/opp glow` toggle the action bar glow, `/opp screen` toggle the screen icon, `/opp move` place it
 - `/opp debug` print your Overpower charges and which action buttons hold Overpower
-
-### Battle Shout Notice (`/bsr` or `/bsn`)
-<img src="logos/BattleShoutReminder.png" alt="Battle Shout Notice logo" width="96">
-
-Shows a Battle Shout icon when the buff is missing or under 10 seconds while you're in combat or targeting an enemy. Forever hides buffs from addons in combat, so it times your own casts and checks the real buff out of combat.
-
-- `/bsr unlock`, `/bsr lock` move the icon
-- `/bsr test`, `/bsr time <n>`, `/bsr size <n>`, `/bsr sound`, `/bsr reset`
 
 ## Problems and ideas
 

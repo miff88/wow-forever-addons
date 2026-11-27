@@ -1,9 +1,9 @@
 ## Interface: 16001
-## Title: |cffff5533Battle Shout|r Notice
-## Notes: Shows a Battle Shout icon when the buff is missing or about to run out while you're fighting. Warrior only.
+## Title: |cff33ccffBuff|r Notice
+## Notes: Reminds you when your class buffs, poisons or weapon imbues are missing or running out, and counts party members missing your group buffs. Every class.
 ## Author: Mitch Brindle
-## Version: 1.3.1
-## IconTexture: Interface\Icons\Ability_Warrior_BattleShout
+## Version: 2.0.0
+## IconTexture: Interface\Icons\Spell_Holy_WordFortitude
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons
 ## AddonCompartmentFunc: BattleShoutReminder_OnAddonCompartmentClick
@@ -11,4 +11,5 @@
 
 Options.lua
 VersionCheck.lua
+Buffs.lua
 BattleShoutReminder.lua

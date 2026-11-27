@@ -2,6 +2,13 @@
 
 ## 2026-11-27
 
+Buff Notice 2.0.0 (was Battle Shout Notice)
+- Now for every class. Reminds you about the buffs your class keeps up: Battle Shout, Arcane Intellect and mage armors, Fortitude, Inner Fire and Divine Spirit, Mark of the Wild, Omen of Clarity and Thorns, Blessings and Righteous Fury, Demon Skin/Armor, Lightning Shield and weapon imbues, Aspects and Trueshot Aura, and rogue poisons on each weapon. Only buffs you know are watched, and each can be turned off on the settings page.
+- Group buffs show how many nearby party or raid members are missing yours (Intellect and Spirit skip warriors and rogues).
+- Optional food and flask/elixir reminder in dungeons and raids.
+- Short buffs warn at 10 seconds and long ones at 60, both adjustable. Quiet in cities and inns.
+- Warriors: Battle Shout works as before, and your settings and icon position carry over. `/bsn list` shows what it's watching; `/buffnotice` also opens the settings.
+
 Kick Tally 1.3.2
 - The chat command is now `/ktally`, because `/kick` (one letter off `/kicks`) is the game's own command for removing someone from your group. `/kicks` and `/kicktally` still work.
 
