@@ -1,6 +1,6 @@
-# Payback Time
+# Proc Plates
 
-**Hit back the moment you can.** Payback Time (formerly Overpower Plates) lights up the abilities you can only use right after a dodge, parry or block: Overpower on the exact mob that dodged you, and Revenge, Riposte, Counterattack and Mongoose Bite as a big icon in the middle of your screen.
+**Hit back the moment your procs light up.** Proc Plates (formerly Overpower Plates) lights up the abilities you can only use right after a dodge, parry or block: Overpower on the exact mob that dodged you, and Revenge, Riposte, Counterattack and Mongoose Bite as a big icon in the middle of your screen.
 
 Made for **World of Warcraft: Forever**. Warriors, rogues and hunters.
 
@@ -33,7 +33,7 @@ Made for **World of Warcraft: Forever**. Warriors, rogues and hunters.
 
 | Command | What it does |
 |---|---|
-| `/payback` or `/opp` | Open settings |
+| `/procplates` or `/opp` | Open settings |
 | `/opp test` | Show the icons, plus the glow |
 | `/opp size <n>` | Overpower icon size |
 | `/opp offset <n>` | Overpower icon height above the health bar |
@@ -42,14 +42,15 @@ Made for **World of Warcraft: Forever**. Warriors, rogues and hunters.
 | `/opp glow` | Turn the action bar glow on or off |
 | `/opp screen` / `/opp move` | Turn the Overpower screen icon on or off / move the screen icons |
 | `/opp reactive` | Revenge, Riposte, Counterattack and Mongoose Bite on or off |
-| `/opp debug` | What Payback can see: Overpower charges, action buttons, dodges and parries |
+| `/opp debug` | What Proc Plates can see: Overpower charges, action buttons, dodges and parries |
 | `/opp help` | All commands |
 
 ## Good to know
-- WoW Forever doesn't let addons read the combat log. Payback Time works from the game's own Overpower charges, its dodge, parry and block reports, and whether it says a spell can be cast.
+- WoW Forever doesn't let addons read the combat log. Proc Plates works from the game's own Overpower charges, its dodge, parry and block reports, and whether it says a spell can be cast.
 - Mongoose Bite only shows when the game confirms it's usable, since your target dodging your pet looks the same as dodging you.
 - Overpower needs enemy nameplates switched on (V by default).
 - Upgrading from Overpower Plates keeps your settings, and `/opp` still works.
+- Pairs with Proc City, which shows your other procs and buffs as a row of icons.
 - Pairs with Target Arrow, which sits above the Overpower icon.
 
 Created by Miff, supported by Claude. Source and changelog: [github.com/miff88/wow-forever-addons](https://github.com/miff88/wow-forever-addons)

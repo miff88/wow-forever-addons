@@ -2,6 +2,9 @@
 
 ## 2026-11-27
 
+Proc Plates 2.0.2
+- Now called Proc Plates. `/procplates` opens the settings, and `/opp` still works. Nothing else changed.
+
 Payback Time 2.0.1
 - Named Payback Time (the name "Payback" was already taken on CurseForge), so the addon list, settings page and CurseForge page all match. Nothing else changed; `/payback` and `/opp` both still work.
 

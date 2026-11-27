@@ -1,4 +1,4 @@
--- Payback Time: the other "only after a dodge, parry or block" abilities.
+-- Proc Plates: the other "only after a dodge, parry or block" abilities.
 --   Warrior  Revenge        after you block, dodge or parry
 --   Rogue    Riposte        after you parry
 --   Hunter   Counterattack  after you parry
@@ -80,7 +80,7 @@ end
 -- Screen icons
 ---------------------------------------------------------------------------
 local GOLD = { 1, 0.82, 0.1 }
-local holder = CreateFrame("Frame", "PaybackReactiveFrame", UIParent)
+local holder = CreateFrame("Frame", "ProcPlatesReactiveFrame", UIParent)
 holder:SetFrameStrata("HIGH")
 holder:SetClampedToScreen(true)
 holder:SetMovable(true)
@@ -191,7 +191,7 @@ local function Update()
     end
     holder:SetSize(math.max(size, #list * size + (#list - 1) * gap), size)
     holder:EnableMouse(ns.screenUnlocked and true or false)
-    holder.label:SetText(ns.screenUnlocked and "Payback Time: drag to move" or "")
+    holder.label:SetText(ns.screenUnlocked and "Proc Plates: drag to move" or "")
     for i = 1, math.max(#list, #icons) do
         local f = icons[i] or (list[i] and NewIcon())
         local u = list[i]

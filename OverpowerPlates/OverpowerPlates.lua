@@ -1,4 +1,4 @@
--- Payback Time (WoW Forever), formerly Overpower Plates
+-- Proc Plates (WoW Forever), formerly Overpower Plates
 -- Warriors: puts an Overpower icon above the nameplate of the mob that dodged YOU,
 -- including mobs that dodge a Whirlwind or Cleave while they aren't your target.
 -- Reactive.lua adds Revenge, Riposte, Counterattack and Mongoose Bite.
@@ -370,7 +370,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
         end
         db = OverpowerPlatesDB
         ns.db = db
-        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Payback Time") end
+        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Proc Plates") end
         ns.BuildOptions()
 
     elseif event == "PLAYER_LOGIN" then
@@ -390,7 +390,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
 
         lastPoints = ReadPoints() or 0
         if ReadPoints() == nil then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Payback Time:|r can't read your Overpower charges on this client, so no Overpower icons will show.")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Proc Plates:|r can't read your Overpower charges on this client, so no Overpower icons will show.")
         end
         -- backup in case a power event is missed
         C_Timer.NewTicker(0.1, CheckPoints)
@@ -401,7 +401,7 @@ end)
 -- Slash command: /opp
 ---------------------------------------------------------------------------
 local function Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Payback Time:|r " .. msg)
+    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Proc Plates:|r " .. msg)
 end
 
 ---------------------------------------------------------------------------
@@ -467,10 +467,10 @@ function ns.BuildOptions()
     })
 
     ns.CreateOptions({
-        title = "Payback Time",
+        title = "Proc Plates",
         updateNotice = true,
         changes = {
-            { "2.0.1", "Named Payback Time, to match its CurseForge page" },
+            { "2.0.2", "Now called Proc Plates (/procplates or /opp)" },
             { "2.0.0", "Renamed from Overpower Plates: now for warriors, rogues and hunters",
                        "Revenge, Riposte, Counterattack and Mongoose Bite light up when they're usable",
                        "A big icon in the middle of the screen and a glow on their action buttons" },
@@ -483,7 +483,7 @@ function ns.BuildOptions()
         icon = "Interface\\Icons\\Ability_Warrior_Revenge",
         about = "Overpower, Revenge, Riposte, Counterattack and Mongoose Bite alerts",
         credit = "Created by Miff, supported by Claude",
-        slash = "/payback",
+        slash = "/procplates",
         db = proxy,
         onChange = function() RefreshAll() end,
         controls = controls,
@@ -494,7 +494,7 @@ function OverpowerPlates_OnAddonCompartmentClick()
     if ns.OpenOptions then ns.OpenOptions() end
 end
 
-SLASH_OVERPOWERPLATES1 = "/payback"
+SLASH_OVERPOWERPLATES1 = "/procplates"
 SLASH_OVERPOWERPLATES2 = "/opp"
 SlashCmdList.OVERPOWERPLATES = function(msg)
     local cmd, val = (msg or ""):lower():match("^(%S*)%s*(.-)$")
@@ -538,7 +538,7 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
             for _, line in ipairs(ns.ReactiveDebug()) do Print(line) end
         end
     else
-        Print("v" .. ns.version .. " commands (/payback or /opp; on its own it opens the settings page):")
+        Print("v" .. ns.version .. " commands (/procplates or /opp; on its own it opens the settings page):")
         Print("/opp test - show the icons to check placement")
         Print("/opp size <n> - icon size (now " .. db.size .. ")")
         Print("/opp offset <n> - height above the health bar (now " .. db.offsetY .. ")")
@@ -547,7 +547,7 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
         Print("/opp glow - glow on your Overpower button (now " .. (db.barGlow and "on" or "off") .. ")")
         Print("/opp screen - big icon in the middle of the screen (now " .. (db.screenIcon and "on" or "off") .. "), /opp move to place it")
         Print("/opp reactive - Revenge, Riposte, Counterattack and Mongoose Bite alerts (now " .. (db.reactive and "on" or "off") .. ")")
-        Print("/opp debug - what Payback Time can see: Overpower charges, action buttons, dodges and parries")
+        Print("/opp debug - what Proc Plates can see: Overpower charges, action buttons, dodges and parries")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end
 end

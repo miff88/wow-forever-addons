@@ -1,4 +1,4 @@
--- Payback Time (formerly Overpower Plates): the louder alerts.
+-- Proc Plates (formerly Overpower Plates): the louder alerts.
 --   * a gold glow and border on your Overpower button (or Revenge, Riposte, Counterattack,
 --     Mongoose Bite) on the action bars while it's up
 --   * an optional big Overpower icon in the middle of the screen, with a countdown sweep
