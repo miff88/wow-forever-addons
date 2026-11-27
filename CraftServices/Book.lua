@@ -46,6 +46,14 @@ function Book.ItemName(id)
     return name
 end
 
+-- A reagent's name: from the game if it has it, else the one saved when the recipe was
+-- read (the game loads item names on demand, so right after login it may not know yet).
+function Book.ReagentName(r)
+    local name = Book.ItemName(r.id)
+    if name then r.name = name end
+    return name or r.name or "some mats"
+end
+
 function Book.ItemCount(id)
     if not id then return 0 end
     local fn = (C_Item and C_Item.GetItemCount) or GetItemCount
@@ -256,7 +264,9 @@ local function ScanModern()
                         and slot.reagentType == Enum.CraftingReagentType.Basic)
                     local r = slot.reagents and slot.reagents[1]
                     if basic and r and r.itemID then
-                        e.reagents[#e.reagents + 1] = { id = r.itemID, n = slot.quantityRequired or 1 }
+                        -- the window is open, so the name is usually known now; keep it for later
+                        e.reagents[#e.reagents + 1] = { id = r.itemID, n = slot.quantityRequired or 1,
+                                                        name = Book.ItemName(r.itemID) }
                     end
                 end
             end
@@ -294,7 +304,7 @@ function Book.Mats(e)
     if not e or not e.reagents or #e.reagents == 0 then return { text = "" } end
     local parts, missing = {}, {}
     for _, r in ipairs(e.reagents) do
-        local name = Book.ItemName(r.id) or ("item " .. r.id)
+        local name = Book.ReagentName(r)
         parts[#parts + 1] = r.n .. " " .. name
         local have = Book.ItemCount(r.id)
         if have < r.n then missing[#missing + 1] = { name = name, need = r.n, have = have, id = r.id } end
@@ -483,8 +493,12 @@ ev:SetScript("OnEvent", function(_, event)
                         if not e.enchant and e.item and (e.callName == e.name) then
                             e.callName = Book.ItemName(e.item) or e.callName
                         end
+                        for _, r in ipairs(e.reagents or {}) do
+                            if not r.name then r.name = Book.ItemName(r.id) end
+                        end
                     end
                 end
+                if ns.Refresh then ns.Refresh() end
             end)
         end
     else

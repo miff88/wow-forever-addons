@@ -319,7 +319,7 @@ function ns.TradePanelState()
         L[#L + 1] = "Mats for " .. (e.callName or e.name) .. ":"
         local allInBags, allAfter = true, true
         for _, r in ipairs(e.reagents) do
-            local name = ns.Book.ItemName(r.id) or ("item " .. r.id)
+            local name = ns.Book.ReagentName(r)
             local bags, given = BagCount(r.id), theirs[r.id] or 0
             local icon
             if bags >= r.n then icon = READY

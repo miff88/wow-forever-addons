@@ -2,6 +2,9 @@
 
 ## 2026-11-27
 
+Craft Services 1.1.1
+- Mats always show by name. Right after logging in the game may not have loaded an item's name yet, which showed as "short on 1 item 2836"; it now uses the name saved when it read your recipes, and fills it in as soon as the game has it.
+
 Craft Services 1.1.0
 - Choose which professions it watches: the settings page has a tick-box for every profession. The ones you've trained start ticked, and you can tick others (one an alt has, say). Nothing else is picked up. This replaces "Also list requests for professions you don't have".
 - Never picks up mage requests. "looking for mage port uc to tb" was being read as a cooking request, because "looking" counted as a typo of "cooking". Typos now have to keep the first letter of the word, and lines about ports, portals, water or a mage are skipped unless a profession or recipe is named.

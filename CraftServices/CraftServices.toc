@@ -2,7 +2,7 @@
 ## Title: |cffffb347Craft|r Services
 ## Notes: Spots people asking for enchants, crafts and lockboxes in chat, knows your recipes and mats, and lists them with Invite and Whisper buttons. Works for every profession.
 ## Author: Mitch Brindle
-## Version: 1.1.0
+## Version: 1.1.1
 ## IconTexture: Interface\Icons\Trade_BlackSmithing
 ## Category: Professions
 ## X-Website: https://github.com/miff88/wow-forever-addons
