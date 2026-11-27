@@ -289,6 +289,120 @@ local function ScanAuras()
 end
 
 ---------------------------------------------------------------------------
+-- In combat: asking for each proc by spell ID
+--
+-- In combat the game hides the buff list from addons, but it still answers "is this
+-- buff on you?" for a given spell. Some buffs come back in full (exact timer and
+-- stacks); for the rest it may only say that the buff is there, and then the timer runs
+-- from when it was first seen, using the duration learned out of combat.
+---------------------------------------------------------------------------
+-- Looks one spell up: "absent", "present" (and the aura when it's readable), or nil
+-- when the game won't say.
+local function ProbeAura(id)
+    if not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then return nil end
+    local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
+    if not ok then return nil end
+    if IsSecret(aura) then return "present" end      -- there, but nothing readable
+    if aura == nil then return "absent" end
+    if type(aura) ~= "table" then return nil end
+    return "present", aura
+end
+ns.ProbeAura = ProbeAura
+
+-- The IDs to ask about for a proc: its own, plus any learned from your buffs.
+local function IDsFor(p)
+    local ids = {}
+    for _, id in ipairs(p.ids or {}) do ids[#ids + 1] = id end
+    if db and db.learnedIDs then
+        for id, key in pairs(db.learnedIDs) do
+            if key == p.key then ids[#ids + 1] = id end
+        end
+    end
+    return ids
+end
+
+local function Readable(v) return v ~= nil and not IsSecret(v) end
+
+-- Does the game hide this buff in combat? (nil answer counts as hidden)
+local function SpellAuraSecret(id)
+    if not (C_Secrets and C_Secrets.ShouldSpellAuraBeSecret) then return true end
+    local ok, v = pcall(C_Secrets.ShouldSpellAuraBeSecret, id)
+    if not ok or IsSecret(v) then return true end
+    return v and true or false
+end
+
+-- Returns true if it could tell anything at all.
+local function CombatScan()
+    if testMode then return false end
+    local decided, changed = false, false
+    local now = GetTime()
+    for _, p in ipairs(ns.PROCS) do
+        if not p.react and Wanted(p) then
+            local state, best
+            for _, id in ipairs(IDsFor(p)) do
+                local st, aura = ProbeAura(id)
+                if st == "present" then
+                    state = "present"
+                    if aura then best = best or aura end
+                elseif st == "absent" and state == nil and not SpellAuraSecret(id) then
+                    -- only a buff the game shows in combat can be trusted to be really gone
+                    state = "absent"
+                end
+            end
+            if state then decided = true end
+            local a = active[p.key]
+            if state == "present" then
+                local exp = best and Readable(best.expirationTime) and best.expirationTime or nil
+                local dur = best and Readable(best.duration) and best.duration or nil
+                local stacks = best and Readable(best.applications) and best.applications > 1 and best.applications or nil
+                if exp and exp > 0 then
+                    -- exact
+                    if not a or a.expires ~= exp or a.stacks ~= stacks then
+                        Start(p, "aura", { duration = dur, expires = exp, stacks = stacks, count = a and a.count or 1 })
+                        changed = true
+                    end
+                elseif not a or a.source == "react" then
+                    Start(p, "seen") -- timer from now, with the duration learned out of combat
+                    changed = true
+                elseif a.expires and now > a.expires then
+                    Start(p, "seen", { count = a.count }) -- refreshed: still there after its time ran out
+                    changed = true
+                end
+            elseif state == "absent" and a and a.source ~= "react" then
+                Remove(p.key)
+                changed = true
+            end
+        end
+    end
+    if changed then Layout() end
+    return decided
+end
+ns.CombatScan = CombatScan
+
+-- For /proc debug: what the game will say about each proc you track, right now.
+function ns.AuraProbeLines()
+    local lines = {}
+    for _, p in ipairs(ns.PROCS) do
+        if not p.react and Wanted(p) then
+            local parts = {}
+            for _, id in ipairs(IDsFor(p)) do
+                local secret = "?"
+                if C_Secrets and C_Secrets.ShouldSpellAuraBeSecret then
+                    local ok, v = pcall(C_Secrets.ShouldSpellAuraBeSecret, id)
+                    if ok and not IsSecret(v) then secret = v and "hidden in combat" or "readable" end
+                end
+                local st, aura = ProbeAura(id)
+                local detail = st or "no answer"
+                if aura then detail = detail .. (Readable(aura.expirationTime) and ", timer readable" or ", timer hidden") end
+                parts[#parts + 1] = ("%d %s (%s)"):format(id, detail, secret)
+            end
+            lines[#lines + 1] = p.name .. ": " .. table.concat(parts, "; ")
+        end
+    end
+    return lines
+end
+
+---------------------------------------------------------------------------
 -- In combat: your casts
 ---------------------------------------------------------------------------
 local function ScanTrinkets()
@@ -660,11 +774,17 @@ ns.Layout = function() Layout() end
 
 -- seconds left on each icon, and dropping finished procs
 local ticker = CreateFrame("Frame")
-local since = 0
+local since, probeSince = 0, 0
 ticker:SetScript("OnUpdate", function(_, elapsed)
     since = since + elapsed
+    probeSince = probeSince + elapsed
     if since < 0.1 or not db then return end
     since = 0
+    -- in combat, ask about each proc twice a second (buff changes don't always say which)
+    if probeSince >= 0.5 then
+        probeSince = 0
+        if not testMode and not AurasReadable() then CombatScan() end
+    end
     local now = GetTime()
     local removed = false
     for i = #order, 1, -1 do
@@ -840,7 +960,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
         -- out of combat: trust the real buffs again
         C_Timer.After(0.2, function() ScanAuras(); lastStr = ReadStr(); Layout() end)
     elseif event == "UNIT_AURA" then
-        if not ScanAuras() then OnStats() end
+        if not ScanAuras() and not CombatScan() then OnStats() end
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         OnCast(arg3)
     elseif event == "UNIT_STATS" then
@@ -936,6 +1056,8 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.5.1", "In combat, procs light up again: it asks the game about each proc directly instead of reading the hidden buff list",
+                       "/proc debug lists what the game says about each proc, if any still stay grey" },
             { "1.5.0", "Starter pins: the procs your class builds around are pinned for you (if you have them)",
                        "Unpin any you don't want with /proc unpin <name> or on this page" },
             { "1.4.0", "Proc Plates is now part of Proc City: Overpower, Revenge, Riposte, Counterattack and Mongoose Bite",
@@ -1116,6 +1238,8 @@ SlashCmdList.PROCCITY = function(msg)
                 Print("Overpower charges: " .. tostring(ns.ReadOverpowerCharges()))
             end
             if ns.ReactiveDebug then for _, line in ipairs(ns.ReactiveDebug()) do Print(line) end end
+            Print("per proc (try this in combat with a proc up):")
+            for _, line in ipairs(ns.AuraProbeLines()) do Print("  " .. line) end
             if ns.GlowDebug then
                 for _, p in ipairs(ns.PROCS) do
                     if p.glow and p.class and p.class[playerClass] then

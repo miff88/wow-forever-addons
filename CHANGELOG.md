@@ -2,6 +2,10 @@
 
 ## 2026-11-27
 
+Proc City 1.5.1
+- Procs show in combat again. The game hides your buff list from addons in combat, so pinned procs stayed grey until combat ended. Proc City now also asks the game about each proc you track by its spell, which it still answers in combat. Where the game gives the timer and stacks they're exact; where it only says the buff is there, the timer runs from when it appeared, using the duration learned out of combat.
+- `/proc debug` now lists, for each proc you track, what the game says about it right now. If any still stay grey in combat, run it in combat with that proc up.
+
 Craft Services 1.1.1
 - Mats always show by name. Right after logging in the game may not have loaded an item's name yet, which showed as "short on 1 item 2836"; it now uses the name saved when it read your recipes, and fills it in as soon as the game has it.
 
