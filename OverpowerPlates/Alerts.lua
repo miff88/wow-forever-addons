@@ -1,5 +1,6 @@
--- Overpower Plates: the louder alerts.
---   * a gold glow and border on your Overpower button on the action bars while Overpower is up
+-- Payback (formerly Overpower Plates): the louder alerts.
+--   * a gold glow and border on your Overpower button (or Revenge, Riposte, Counterattack,
+--     Mongoose Bite) on the action bars while it's up
 --   * an optional big Overpower icon in the middle of the screen, with a countdown sweep
 -- The glow is its own frame laid over the button, so the action buttons themselves are
 -- never touched (they're protected in combat).
@@ -43,26 +44,30 @@ local function SpellName(id)
     end
 end
 
--- Overpower's spell IDs: the one you know, plus every rank
-local function OverpowerIDs()
+-- a spell's IDs: the one you know, plus every rank given
+local function SpellIDs(name, ranks)
     local ids, seen = {}, {}
     local function add(id)
         if type(id) == "number" and not IsSecret(id) and not seen[id] then seen[id] = true; ids[#ids + 1] = id end
     end
     if C_Spell and C_Spell.GetSpellInfo then
-        local ok, info = pcall(C_Spell.GetSpellInfo, ns.OVERPOWER_NAME)
+        local ok, info = pcall(C_Spell.GetSpellInfo, name)
         if ok and type(info) == "table" then add(info.spellID) end
     end
     if C_Spell and C_Spell.GetSpellIDForSpellIdentifier then
-        local ok, id = pcall(C_Spell.GetSpellIDForSpellIdentifier, ns.OVERPOWER_NAME)
+        local ok, id = pcall(C_Spell.GetSpellIDForSpellIdentifier, name)
         if ok then add(id) end
     end
-    for _, id in ipairs({ 7384, 7887, 11584, 11585 }) do add(id) end
+    for _, id in ipairs(ranks or {}) do add(id) end
     return ids, seen
 end
 
--- Action slots holding Overpower, straight from the game (no button reading needed)
-local function OverpowerSlots(ids)
+local function OverpowerIDs()
+    return SpellIDs(ns.OVERPOWER_NAME, { 7384, 7887, 11584, 11585 })
+end
+
+-- Action slots holding the spell, straight from the game (no button reading needed)
+local function SpellSlots(ids)
     local slots = {}
     if C_ActionBar and C_ActionBar.FindSpellActionButtons then
         for _, id in ipairs(ids) do
@@ -76,6 +81,7 @@ local function OverpowerSlots(ids)
     end
     return slots
 end
+local OverpowerSlots = SpellSlots
 
 -- Which action slot a button shows, tried every way the bar addons expose it
 local function ButtonSlot(btn)
@@ -114,13 +120,17 @@ local function SlotInfo(slot)
     return kind, id
 end
 
-local function IsOverpowerButton(btn, slots, idSet)
+local function IsSpellButton(btn, slots, idSet, name)
     local slot = ButtonSlot(btn)
     if not slot then return false end
     if slots[slot] then return true end
     local kind, id = SlotInfo(slot)
     if kind ~= "spell" or not id then return false end
-    return idSet[id] or SpellName(id) == ns.OVERPOWER_NAME
+    return idSet[id] or SpellName(id) == name
+end
+
+local function IsOverpowerButton(btn, slots, idSet)
+    return IsSpellButton(btn, slots, idSet, ns.OVERPOWER_NAME)
 end
 
 local glows = {} -- [button] = glow frame
@@ -173,21 +183,35 @@ local function GetGlow(btn)
     return g
 end
 
--- Light or clear every Overpower button.
-function ns.SetButtonGlow(on)
+-- Which spells should glow: Overpower (from the nameplate code) and any reactive
+-- ability that's up (Reactive.lua). Every matching button is lit, the rest cleared.
+local glowOverpower = false
+local reactive = {} -- [key] = { name =, ids = } that are up
+
+local function UpdateGlows()
+    local specs = {}
+    if glowOverpower then specs[#specs + 1] = { name = ns.OVERPOWER_NAME, ranks = { 7384, 7887, 11584, 11585 } } end
+    for _, r in pairs(reactive) do specs[#specs + 1] = { name = r.name, ranks = r.ids } end
     local lit = {}
-    if on then
-        local ids, idSet = OverpowerIDs()
-        local slots = OverpowerSlots(ids)
+    if #specs > 0 then
+        for _, spec in ipairs(specs) do
+            spec.ids, spec.idSet = SpellIDs(spec.name, spec.ranks)
+            spec.slots = SpellSlots(spec.ids)
+        end
         for _, btn in ipairs(AllButtons()) do
-            if btn:IsVisible() and IsOverpowerButton(btn, slots, idSet) then
-                lit[btn] = true
-                local g = GetGlow(btn)
-                local w = btn:GetWidth() or 36
-                g.ring:SetSize(w * 1.75, w * 1.75)
-                if not g:IsShown() then
-                    g:Show()
-                    g.pulse:Play()
+            if btn:IsVisible() then
+                for _, spec in ipairs(specs) do
+                    if IsSpellButton(btn, spec.slots, spec.idSet, spec.name) then
+                        lit[btn] = true
+                        local g = GetGlow(btn)
+                        local w = btn:GetWidth() or 36
+                        g.ring:SetSize(w * 1.75, w * 1.75)
+                        if not g:IsShown() then
+                            g:Show()
+                            g.pulse:Play()
+                        end
+                        break
+                    end
                 end
             end
         end
@@ -198,6 +222,19 @@ function ns.SetButtonGlow(on)
             g:Hide()
         end
     end
+end
+
+-- Light or clear every Overpower button.
+function ns.SetButtonGlow(on)
+    glowOverpower = on and true or false
+    UpdateGlows()
+end
+
+-- key = "revenge" etc.; spec = { name, ids } while it's up, nil to clear
+function ns.SetReactiveGlow(key, spec)
+    if (reactive[key] ~= nil) == (spec ~= nil) then return end
+    reactive[key] = spec
+    UpdateGlows()
 end
 
 -- /opp debug: what the button search sees

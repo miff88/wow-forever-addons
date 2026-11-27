@@ -2,6 +2,12 @@
 
 ## 2026-11-27
 
+Payback 2.0.0 (was Overpower Plates)
+- Renamed, because it now covers rogues and hunters too, with a new logo.
+- Revenge (warriors), Riposte (rogues), Counterattack and Mongoose Bite (hunters): a big icon in the middle of the screen with a 5 second sweep, and a glow on the spell's action buttons, after you block, dodge or parry (Mongoose Bite: after your target dodges). It only shows while the game says the spell can be cast, so one on cooldown stays hidden. Each can be turned off, and the icon moved, resized or turned off in favour of just the button glow.
+- Overpower works exactly as before. Your settings carry over, and `/opp` still works alongside the new `/payback`.
+- `/opp debug` now also shows the dodges and parries it has seen, to help if something doesn't light up.
+
 Target Arrow 1.3.0
 - An optional second arrow for your focus or a raid marker (skull by default), a little smaller and in its own colour (blue by default). It hides when it would point at your target. Set it up on the settings page, or with `/tarrow focus` and `/tarrow marker skull`.
 - Purple and orange arrows.
@@ -29,6 +35,7 @@ Plate Threat 1.5.0
 - The early warning and the sound can each be turned off. Move the message with `/pth move` or from the settings page, and change its size.
 
 Buff Notice 2.0.0 (was Battle Shout Notice)
+- New logo.
 - Now for every class. Reminds you about the buffs your class keeps up: Battle Shout, Arcane Intellect and mage armors, Fortitude, Inner Fire and Divine Spirit, Mark of the Wild, Omen of Clarity and Thorns, Blessings and Righteous Fury, Demon Skin/Armor, Lightning Shield and weapon imbues, Aspects and Trueshot Aura, and rogue poisons on each weapon. Only buffs you know are watched, and each can be turned off on the settings page.
 - Group buffs show how many nearby party or raid members are missing yours (Intellect and Spirit skip warriors and rogues).
 - Optional food and flask/elixir reminder in dungeons and raids.

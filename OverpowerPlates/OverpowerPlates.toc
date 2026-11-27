@@ -1,9 +1,9 @@
 ## Interface: 16001
-## Title: |cffffd100Overpower|r Plates
-## Notes: Shows an Overpower icon above the nameplate of the mob that dodged you, including off-target Whirlwind and Cleave dodges. Warrior only.
+## Title: |cffffd100Pay|rback
+## Notes: Lights up your after-a-dodge abilities: Overpower on the mob that dodged you, plus Revenge, Riposte, Counterattack and Mongoose Bite. Warriors, rogues and hunters.
 ## Author: Mitch Brindle
-## Version: 1.5.1
-## IconTexture: Interface\Icons\Ability_MeleeDamage
+## Version: 2.0.0
+## IconTexture: Interface\Icons\Ability_Warrior_Revenge
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons
 ## AddonCompartmentFunc: OverpowerPlates_OnAddonCompartmentClick
@@ -13,3 +13,4 @@ Options.lua
 VersionCheck.lua
 OverpowerPlates.lua
 Alerts.lua
+Reactive.lua

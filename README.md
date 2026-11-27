@@ -1,6 +1,6 @@
 # WoW Forever Addons
 
-Small addons for World of Warcraft: Forever (Interface 16001). Some work on any class, some are for warriors only. None of them use the combat log, which Forever blocks for addons.
+Small addons for World of Warcraft: Forever (Interface 16001). Most work on any class; Mage Services is made for mages, and Payback is for warriors, rogues and hunters. None of them use the combat log, which Forever blocks for addons.
 
 ## Install
 
@@ -8,7 +8,7 @@ Copy whichever addon folders you want into `World of Warcraft\_forever_\Interfac
 
 ## Settings
 
-Every addon has a settings page under **Options > AddOns**, and an entry on the minimap's addon button. Typing the slash command on its own (for example `/opp`) opens the page, and adding `help` (`/opp help`) lists the chat commands. The top of each page has a short "What's new" list for the last few versions.
+Every addon has a settings page under **Options > AddOns**, and an entry on the minimap's addon button. Typing the slash command on its own (for example `/proc`) opens the page, and adding `help` (`/proc help`) lists the chat commands. The top of each page has a short "What's new" list for the last few versions.
 
 **Update notice.** Addons can't go online, so each addon quietly tells guild and group members running it which version it's on. If someone has a newer one, you get a chat message saying it's out, and a reminder at each login until you update through the CurseForge app. Turn it off under "Updates" on the settings page.
 
@@ -17,7 +17,7 @@ Every addon has a settings page under **Options > AddOns**, and an entry on the 
 ### Target Arrow (`/tarrow`)
 <img src="logos/TargetArrow.png" alt="TargetArrow logo" width="96">
 
-A bobbing arrow above your target's nameplate so you can pick it out of a crowd. It sits high enough to clear the Overpower Plates icon if you use both.
+A bobbing arrow above your target's nameplate so you can pick it out of a crowd. It sits high enough to clear Payback's Overpower icon if you use both.
 
 An optional second, smaller arrow marks your focus or a raid marker (skull by default) in its own colour, and hides when it would point at your target.
 
@@ -134,22 +134,23 @@ Forever hides chat text from addons inside dungeons, raids, M+ and PvP, so it on
 - `/ms autoreply` turns automatic replies to whispers on or off
 - `/ms test` add sample requests, `/ms show` show the window
 
-## Warrior only
+## Warriors, rogues and hunters
 
-These do nothing on other classes.
+### Payback (`/payback` or `/opp`), formerly Overpower Plates
+<img src="logos/OverpowerPlates.png" alt="Payback logo" width="96">
 
-### Overpower Plates (`/opp`)
-<img src="logos/OverpowerPlates.png" alt="OverpowerPlates logo" width="96">
+Lights up the abilities you can only use right after a dodge, parry or block.
 
-Puts an Overpower icon with a 5 second countdown above the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave. A nameplate dodge only counts when your Overpower charge (combo point) goes up at the same moment, so dodges against other players are ignored.
+**Overpower (warriors).** An Overpower icon with a 5 second countdown above the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave. A nameplate dodge only counts when your Overpower charge (combo point) goes up at the same moment, so dodges against other players are ignored. While it's up, a gold glow pulses around the icon and your Overpower button glows on the action bars (Blizzard bars, Bartender4, ElvUI and Dominos). There's also an optional big Overpower icon in the middle of the screen.
 
-While Overpower is up, a gold glow pulses around the icon and your Overpower button glows on the action bars (Blizzard bars, Bartender4, ElvUI and Dominos). There's also an optional big Overpower icon in the middle of the screen that you can move and resize.
+**Revenge (warriors), Riposte (rogues), Counterattack and Mongoose Bite (hunters).** A big icon in the middle of the screen with a 5 second sweep and the spell's name, plus a glow on its action buttons, after you block, dodge or parry (Mongoose Bite: after your target dodges). The game still reports your own dodges, parries and blocks to addons, which starts the window, and the icon only shows while the game says the spell can be cast, so one on cooldown stays hidden. Mongoose Bite only shows when the game confirms it's usable, since your target dodging your pet looks the same as dodging you. Each one can be turned off. This part is new: `/opp debug` shows what it sees in a fight, which helps if something doesn't light up.
 
-- `/opp test` show the icon on every nameplate (and the glow and screen icon)
+- `/opp test` show the icons (Overpower on every nameplate, and your reactive abilities)
 - `/opp size <n>`, `/opp offset <n>`, `/opp window <n>`
 - `/opp sound` toggle the dodge sound
-- `/opp glow` toggle the action bar glow, `/opp screen` toggle the screen icon, `/opp move` place it
-- `/opp debug` print your Overpower charges and which action buttons hold Overpower
+- `/opp glow` toggle the action bar glow, `/opp screen` toggle the Overpower screen icon, `/opp move` place the screen icons
+- `/opp reactive` Revenge, Riposte, Counterattack and Mongoose Bite on or off
+- `/opp debug` your Overpower charges, which action buttons it found, and the dodges and parries it has seen
 
 ## Problems and ideas
 

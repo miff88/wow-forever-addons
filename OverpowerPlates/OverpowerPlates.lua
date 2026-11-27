@@ -1,6 +1,7 @@
--- Overpower Plates (WoW Forever)
--- Puts an Overpower icon above the nameplate of the mob that dodged YOU, including mobs
--- that dodge a Whirlwind or Cleave while they aren't your target.
+-- Payback (WoW Forever), formerly Overpower Plates
+-- Warriors: puts an Overpower icon above the nameplate of the mob that dodged YOU,
+-- including mobs that dodge a Whirlwind or Cleave while they aren't your target.
+-- Reactive.lua adds Revenge, Riposte, Counterattack and Mongoose Bite.
 --
 -- How it knows a dodge was against you:
 --   Forever tracks Overpower as combo points on the warrior, one per dodge against you,
@@ -26,6 +27,14 @@ local defaults = {
     barGlow = true, -- your Overpower button on the action bars glows while it's up
     screenIcon = false, -- big Overpower icon in the middle of the screen
     screenSize = 64,
+    -- Revenge, Riposte, Counterattack, Mongoose Bite (Reactive.lua)
+    reactive    = true,
+    reactOff    = {},   -- [key] = true for ones you've turned off
+    reactScreen = true, -- big icon in the middle of the screen
+    reactSize   = 56,
+    reactNames  = true, -- the spell's name under the icon
+    reactGlow   = true, -- glow on its action buttons
+    reactSound  = false,
 }
 
 local MATCH_WINDOW = 0.35 -- seconds between a nameplate dodge and a new combo point to call it a match
@@ -212,6 +221,8 @@ local function RefreshAll()
     if testMode then latest = now + db.window end
     if ns.SetButtonGlow then ns.SetButtonGlow(db.barGlow and latest ~= nil) end
     if ns.UpdateScreenIcon then ns.UpdateScreenIcon(latest, ReadPoints()) end
+    ns.reactTest = testMode
+    if ns.UpdateReactive then ns.UpdateReactive() end
 end
 
 ---------------------------------------------------------------------------
@@ -347,11 +358,19 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
     elseif event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         OverpowerPlatesDB = OverpowerPlatesDB or {}
         for k, v in pairs(defaults) do
-            if OverpowerPlatesDB[k] == nil then OverpowerPlatesDB[k] = v end
+            if OverpowerPlatesDB[k] == nil then
+                if type(v) == "table" then
+                    local copy = {}
+                    for kk, vv in pairs(v) do copy[kk] = vv end
+                    OverpowerPlatesDB[k] = copy
+                else
+                    OverpowerPlatesDB[k] = v
+                end
+            end
         end
         db = OverpowerPlatesDB
         ns.db = db
-        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Overpower Plates") end
+        if ns.StartVersionCheck then ns.StartVersionCheck(db, "Payback") end
         ns.BuildOptions()
 
     elseif event == "PLAYER_LOGIN" then
@@ -371,7 +390,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2)
 
         lastPoints = ReadPoints() or 0
         if ReadPoints() == nil then
-            DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Overpower Plates:|r can't read your Overpower charges on this client, so no icons will show.")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Payback:|r can't read your Overpower charges on this client, so no Overpower icons will show.")
         end
         -- backup in case a power event is missed
         C_Timer.NewTicker(0.1, CheckPoints)
@@ -382,51 +401,91 @@ end)
 -- Slash command: /opp
 ---------------------------------------------------------------------------
 local function Print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Overpower Plates:|r " .. msg)
+    DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Payback:|r " .. msg)
 end
 
 ---------------------------------------------------------------------------
 -- Settings page (Options > AddOns) and minimap addon button
 ---------------------------------------------------------------------------
 function ns.BuildOptions()
+    local _, class = UnitClass("player")
+    local controls = {}
+    local function add(c) controls[#controls + 1] = c end
+    local mineR = {}
+    for _, r in ipairs(ns.REACTIVE or {}) do if r.class == class then mineR[#mineR + 1] = r end end
+
+    if class == "WARRIOR" or #mineR == 0 then
+        add({ type = "header", label = "Overpower (warriors): icon on the mob that dodged you" })
+        add({ type = "range", key = "size", label = "Icon size", min = 16, max = 64, step = 2 })
+        add({ type = "range", key = "offsetY", label = "Height above health bar", min = 0, max = 80, step = 2 })
+        add({ type = "range", key = "window", label = "Seconds the icon stays up", min = 1, max = 10, step = 1, suffix = "s" })
+        add({ type = "check", key = "pop", label = "Pop the icon in when a mob dodges you" })
+        add({ type = "check", key = "pulse", label = "Pulse a gold glow around the icon while Overpower is up" })
+        add({ type = "check", key = "sound", label = "Play a sound when a mob dodges you" })
+        add({ type = "check", key = "barGlow", label = "Make your Overpower button glow on the action bars" })
+        add({ type = "check", key = "screenIcon", label = "Show a big Overpower icon in the middle of the screen" })
+        add({ type = "range", key = "screenSize", label = "Overpower screen icon size", min = 32, max = 128, step = 4 })
+    end
+
+    add({ type = "header", label = "Revenge, Riposte, Counterattack, Mongoose Bite" })
+    add({ type = "check", key = "reactive", label = "Show them when they light up (after a block, dodge or parry)" })
+    for _, r in ipairs(mineR) do
+        add({ type = "check", key = "react_" .. r.key, label = "   " .. r.name })
+    end
+    if #mineR == 0 then
+        add({ type = "info", height = 24, lines = function()
+            return "|cff999999Revenge is for warriors, Riposte for rogues, Counterattack and Mongoose Bite for hunters.|r" end })
+    end
+    add({ type = "check", key = "reactScreen", label = "Big icon in the middle of the screen" })
+    add({ type = "range", key = "reactSize", label = "Its size", min = 32, max = 128, step = 4 })
+    add({ type = "check", key = "reactNames", label = "Spell name under the icon" })
+    add({ type = "check", key = "reactGlow", label = "Glow on its action buttons" })
+    add({ type = "check", key = "reactSound", label = "Play a sound" })
+    add({ type = "info", height = 44, lines = function()
+        return "|cff999999They show for 5 seconds after the block, dodge or parry, only while the game says you can cast them. "
+            .. "Mongoose Bite only shows when the game confirms it, since your target dodging your pet looks the same.|r" end })
+
+    add({ type = "header", label = "Position and preview" })
+    add({ type = "button", dynamicLabel = function() return ns.screenUnlocked and "Lock screen icons" or "Move screen icons" end,
+          label = "Move screen icons", func = function() ns.screenUnlocked = not ns.screenUnlocked; RefreshAll() end })
+    add({ type = "button", label = "Reset screen icon positions", func = function()
+        ns.ResetScreenIcon(); if ns.ResetReactivePosition then ns.ResetReactivePosition() end; RefreshAll() end })
+    add({ type = "button", dynamicLabel = function() return testMode and "Stop test" or "Test" end,
+          label = "Test", func = function() testMode = not testMode; RefreshAll() end })
+
+    -- per-ability checkboxes live in db.reactOff; mirror them as flat keys for the settings page
+    local proxy = setmetatable({}, {
+        __index = function(_, k)
+            local key = type(k) == "string" and k:match("^react_(.+)$")
+            if key then return not db.reactOff[key] end
+            return db[k]
+        end,
+        __newindex = function(_, k, v)
+            local key = type(k) == "string" and k:match("^react_(.+)$")
+            if key then db.reactOff[key] = (not v) or nil else db[k] = v end
+        end,
+    })
+
     ns.CreateOptions({
-        title = "Overpower Plates",
+        title = "Payback",
         updateNotice = true,
         changes = {
+            { "2.0.0", "Renamed from Overpower Plates: now for warriors, rogues and hunters",
+                       "Revenge, Riposte, Counterattack and Mongoose Bite light up when they're usable",
+                       "A big icon in the middle of the screen and a glow on their action buttons" },
             { "1.5.1", "Finds your Overpower button on more setups, with a gold border",
                        "/opp debug shows which buttons it found" },
             { "1.5.0", "Gold glow pulses around the nameplate icon",
                        "Your Overpower button glows on the action bars",
                        "Optional big Overpower icon in the middle of the screen" },
-            { "1.4.1", "This What's new list" },
-            { "1.4.0", "Tells you when a newer version is out" },
-            { "1.3.0", "Icon pops in with a quick animation (can be turned off)" },
         },
-        icon = OVERPOWER_ICON,
-        about = "Overpower icon on the mob that dodged you",
+        icon = "Interface\\Icons\\Ability_Warrior_Revenge",
+        about = "Overpower, Revenge, Riposte, Counterattack and Mongoose Bite alerts",
         credit = "Created by Miff, supported by Claude",
-        slash = "/opp",
-        db = db,
+        slash = "/payback",
+        db = proxy,
         onChange = function() RefreshAll() end,
-        controls = {
-            { type = "header", label = "Icon" },
-            { type = "range", key = "size", label = "Icon size", min = 16, max = 64, step = 2 },
-            { type = "range", key = "offsetY", label = "Height above health bar", min = 0, max = 80, step = 2 },
-            { type = "range", key = "window", label = "Seconds the icon stays up", min = 1, max = 10, step = 1, suffix = "s" },
-            { type = "check", key = "pop", label = "Pop the icon in when a mob dodges you" },
-            { type = "check", key = "pulse", label = "Pulse a gold glow around the icon while Overpower is up" },
-            { type = "header", label = "Alerts" },
-            { type = "check", key = "sound", label = "Play a sound when a mob dodges you" },
-            { type = "check", key = "barGlow", label = "Make your Overpower button glow on the action bars" },
-            { type = "check", key = "screenIcon", label = "Show a big Overpower icon in the middle of the screen" },
-            { type = "range", key = "screenSize", label = "Screen icon size", min = 32, max = 128, step = 4 },
-            { type = "button", dynamicLabel = function() return ns.screenUnlocked and "Lock screen icon" or "Move screen icon" end,
-              label = "Move screen icon", func = function() ns.screenUnlocked = not ns.screenUnlocked; RefreshAll() end },
-            { type = "button", label = "Reset screen icon position", func = function() ns.ResetScreenIcon(); RefreshAll() end },
-            { type = "header", label = "Preview" },
-            { type = "button", dynamicLabel = function() return testMode and "Stop test" or "Test on nameplates" end,
-              label = "Test on nameplates", func = function() testMode = not testMode; RefreshAll() end },
-        },
+        controls = controls,
     })
 end
 
@@ -434,7 +493,8 @@ function OverpowerPlates_OnAddonCompartmentClick()
     if ns.OpenOptions then ns.OpenOptions() end
 end
 
-SLASH_OVERPOWERPLATES1 = "/opp"
+SLASH_OVERPOWERPLATES1 = "/payback"
+SLASH_OVERPOWERPLATES2 = "/opp"
 SlashCmdList.OVERPOWERPLATES = function(msg)
     local cmd, val = (msg or ""):lower():match("^(%S*)%s*(.-)$")
     local n = tonumber(val)
@@ -445,7 +505,7 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
     elseif cmd == "test" then
         testMode = not testMode
         RefreshAll()
-        Print(testMode and "test mode on, every visible nameplate shows the icon. /opp test again to turn it off."
+        Print(testMode and "test mode on: every visible nameplate shows the Overpower icon, and your reactive abilities show. /opp test again to turn it off."
                         or "test mode off.")
     elseif cmd == "size" and n then
         db.size = n; RefreshAll(); Print("icon size " .. n)
@@ -464,22 +524,29 @@ SlashCmdList.OVERPOWERPLATES = function(msg)
         Print("screen icon " .. (db.screenIcon and "on" or "off") .. (db.screenIcon and ". /opp move to place it." or ""))
     elseif cmd == "move" then
         ns.screenUnlocked = not ns.screenUnlocked; RefreshAll()
-        Print(ns.screenUnlocked and "screen icon unlocked, drag it where you want it. /opp move again to lock." or "screen icon locked.")
+        Print(ns.screenUnlocked and "screen icons unlocked, drag them where you want them. /opp move again to lock." or "screen icons locked.")
+    elseif cmd == "reactive" then
+        db.reactive = not db.reactive; RefreshAll()
+        Print("Revenge / Riposte / Counterattack / Mongoose Bite alerts " .. (db.reactive and "on" or "off"))
     elseif cmd == "debug" then
         Print("Overpower charges: " .. tostring(ReadPoints()))
         if ns.GlowDebug then
             for _, line in ipairs(ns.GlowDebug()) do Print(line) end
         end
+        if ns.ReactiveDebug then
+            for _, line in ipairs(ns.ReactiveDebug()) do Print(line) end
+        end
     else
-        Print("v" .. ns.version .. " commands (or just /opp for the settings page):")
-        Print("/opp test - show the icon on every nameplate to check placement")
+        Print("v" .. ns.version .. " commands (/payback or /opp; on its own it opens the settings page):")
+        Print("/opp test - show the icons to check placement")
         Print("/opp size <n> - icon size (now " .. db.size .. ")")
         Print("/opp offset <n> - height above the health bar (now " .. db.offsetY .. ")")
         Print("/opp window <n> - seconds the icon stays up (now " .. db.window .. ")")
         Print("/opp sound - dodge sound (now " .. (db.sound and "on" or "off") .. ")")
         Print("/opp glow - glow on your Overpower button (now " .. (db.barGlow and "on" or "off") .. ")")
         Print("/opp screen - big icon in the middle of the screen (now " .. (db.screenIcon and "on" or "off") .. "), /opp move to place it")
-        Print("/opp debug - show your Overpower charges and which action buttons hold Overpower")
+        Print("/opp reactive - Revenge, Riposte, Counterattack and Mongoose Bite alerts (now " .. (db.reactive and "on" or "off") .. ")")
+        Print("/opp debug - what Payback can see: Overpower charges, action buttons, dodges and parries")
     end
     if ns.RefreshOptions then ns.RefreshOptions() end
 end
