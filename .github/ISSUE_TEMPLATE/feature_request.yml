@@ -12,6 +12,8 @@ body:
         - Overpower Plates
         - Target Arrow
         - Battle Shout Notice
+        - Proc City
+        - Kick Tally
         - A new addon
     validations:
       required: true

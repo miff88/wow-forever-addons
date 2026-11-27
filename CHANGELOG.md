@@ -2,6 +2,14 @@
 
 ## 2026-11-27
 
+Kick Tally 1.0.0 (new)
+- Announces your successful interrupts in chat. The message is editable, with `{target}`, `{spell}`, `{ability}` and `{count}`, and any part the game hides is left out cleanly.
+- Choose where it goes: auto (instance, raid or party chat), party, raid, instance, say, yell (inside instances only) or just your own chat window.
+- A movable window with each party or raid member's kicks this fight and in total. `/kicks report` posts it to the group, and it can post a boss fight's tally when the boss dies.
+- Tells you when your kick didn't interrupt anything.
+- Counts Pummel, Shield Bash, Kick, Counterspell, Earth Shock, Spell Lock, Feral Charge and Silence, and optionally stuns and fears that stop a cast.
+- Works without the combat log: your kicks are matched to the enemy's interrupted cast; other players' kicks are matched by timing because Forever hides their spells in combat. During boss fights, when addons can't post in chat, your kicks show in your own chat window.
+
 Proc City 1.2.0
 - Tracks every WoW Forever weapon whose chance on hit or Use puts a buff on you (28 weapons, taken from Forever's item database):
   - Strength: Destiny, Arcanite Champion, Malown's Slam, Claymore of Two Moons (Wane).

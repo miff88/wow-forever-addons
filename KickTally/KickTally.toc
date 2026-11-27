@@ -1,0 +1,15 @@
+## Interface: 16001
+## Title: |cffff8000Kick|r Tally
+## Notes: Announces your successful interrupts and tallies who in your party or raid kicked what. Any class.
+## Author: Mitch Brindle
+## Version: 1.0.0
+## IconTexture: Interface\Icons\Ability_Kick
+## Category: Combat
+## X-Website: https://github.com/miff88/wow-forever-addons
+## AddonCompartmentFunc: KickTally_OnAddonCompartmentClick
+## SavedVariables: KickTallyDB
+
+Options.lua
+VersionCheck.lua
+Kicks.lua
+KickTally.lua

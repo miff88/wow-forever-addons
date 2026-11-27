@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#3a2108"/>
+      <stop offset="1" stop-color="#120a04"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ff8000" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#ff8000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb" cx="40%" cy="38%" r="65%">
+      <stop offset="0" stop-color="#e6f2ff"/>
+      <stop offset="0.45" stop-color="#6fb7ff"/>
+      <stop offset="1" stop-color="#1f4f99"/>
+    </radialGradient>
+    <linearGradient id="boot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b07a44"/>
+      <stop offset="1" stop-color="#6a4120"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="url(#bg)"/>
+  <circle cx="200" cy="180" r="170" fill="url(#glow)"/>
+
+  <!-- the enemy's spell, cracking apart where the boot hits it -->
+  <g transform="translate(268 146)">
+    <circle r="62" fill="url(#orb)" stroke="#0e1a2e" stroke-width="7"/>
+    <path d="M -58 -4 L -26 -10 L -14 12 L 10 -6 L 30 14 L 58 6" fill="none" stroke="#0e1a2e" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -14 12 L -6 40" fill="none" stroke="#0e1a2e" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 10 -6 L 18 -40" fill="none" stroke="#0e1a2e" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <!-- shards flying off -->
+  <path d="M 340 82 L 358 70 L 352 92 Z" fill="#6fb7ff" stroke="#0e1a2e" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M 344 200 L 366 206 L 348 220 Z" fill="#6fb7ff" stroke="#0e1a2e" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M 300 64 L 312 44 L 318 66 Z" fill="#6fb7ff" stroke="#0e1a2e" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- impact burst -->
+  <polygon points="214,170 226,146 234,168 258,160 242,180 262,194 236,194 238,218 220,198 200,210 206,188 186,178"
+           fill="#ffd23d" stroke="#3a2108" stroke-width="5" stroke-linejoin="round"/>
+
+  <!-- the boot, swinging in from the left -->
+  <g transform="translate(150 196) rotate(-28)">
+    <path d="M -64 -104 L -14 -104 L -10 -10 Q 30 -14 66 0 Q 86 8 84 30 L -70 30 Z"
+          fill="url(#boot)" stroke="#2a1606" stroke-width="7" stroke-linejoin="round"/>
+    <rect x="-74" y="22" width="162" height="18" rx="7" fill="#3a2108" stroke="#2a1606" stroke-width="5"/>
+    <rect x="-70" y="-112" width="60" height="16" rx="5" fill="#ff8000" stroke="#2a1606" stroke-width="5"/>
+    <path d="M -50 -70 L -24 -70 M -50 -48 L -24 -48" stroke="#2a1606" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <!-- motion lines -->
+  <path d="M 34 214 L 72 218 M 44 248 L 80 240" stroke="#ff8000" stroke-opacity="0.7" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- the tally -->
+  <g stroke="#ff8000" stroke-width="13" stroke-linecap="round">
+    <line x1="132" y1="296" x2="132" y2="352"/>
+    <line x1="168" y1="296" x2="168" y2="352"/>
+    <line x1="204" y1="296" x2="204" y2="352"/>
+    <line x1="240" y1="296" x2="240" y2="352"/>
+    <line x1="114" y1="342" x2="262" y2="306"/>
+  </g>
+
+  <rect x="8" y="8" width="384" height="384" rx="76" fill="none" stroke="#ff8000" stroke-width="10"/>
+  <rect x="22" y="22" width="356" height="356" rx="64" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
+</svg>

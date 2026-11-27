@@ -4,7 +4,7 @@ Small addons for World of Warcraft: Forever (Interface 16001). Some work on any 
 
 ## Install
 
-Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates need to be on (V) for everything except Battle Shout Notice and Proc City.
+Copy whichever addon folders you want into `World of Warcraft\_forever_\Interface\AddOns` and `/reload`. Each addon works on its own. Enemy nameplates need to be on (V) for everything except Battle Shout Notice and Proc City, and Kick Tally works best with them on.
 
 ## Settings
 
@@ -42,6 +42,17 @@ Forever hides buff details from addons in combat. Out of combat Proc City reads 
 - `/proc grow left|right`, `/proc size <n>`
 - `/proc list` what's tracked for your class, `/proc off <name>` / `/proc on <name>`
 - `/proc debug` print casts, Strength changes and combat text in combat
+
+### Kick Tally (`/kicks`)
+<img src="logos/KickTally.png" alt="KickTally logo" width="96">
+
+Announces your successful interrupts in chat ("Interrupted Defias Pillager's Fireball!") and keeps a small window with how many kicks each person in your party or raid has landed, this fight and in total. Counts Pummel, Shield Bash, Kick, Counterspell, Earth Shock, Spell Lock, Feral Charge and Silence, plus (optionally) stuns and fears that stop a cast, like Hammer of Justice or Kidney Shot. It also tells you, in your own chat window, when your kick didn't interrupt anything.
+
+How it works on Forever: your own kicks are exact. Kick Tally sees you cast the interrupt and the enemy's cast being interrupted. In combat the game hides which spells other players cast, so a party or raid member's kick is counted when their cast lands at the same moment an enemy's cast is interrupted. Keep enemy nameplates on so it sees every enemy. The game blocks addon chat messages during boss fights, so there your kicks go to your own chat window, and the fight's tally can be posted to the group when the boss dies.
+
+- Announce to auto (instance, raid or party chat), party, raid, instance, say or yell (say and yell only inside instances), or only yourself. The message is editable: `{target}`, `{spell}`, `{ability}`, `{count}`.
+- `/kicks test`, `/kicks report` (or `report total`) post the tally to the group, `/kicks lock|unlock`, `/kicks show|hide`, `/kicks reset` (or `reset position`)
+- `/kicks debug` print the casts and interrupts it sees
 
 ## Mage
 
