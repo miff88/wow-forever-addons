@@ -98,6 +98,10 @@ Spots people asking for portals or water in chat and lists them in a small windo
 
 **Pause.** The window's **Pause** button (or `/ms pause`, or a key binding) stops taking requests on that character: no list, alerts, glows or replies until you press **Resume**. While paused the window shrinks to a slim bar with the Resume button; close it with x if you like. Payment messages for people you've already served still work.
 
+**Group trips.** When two or more people want the same city, their rows get an **All** button (e.g. "All 3") that invites everyone going there at once, so one portal serves them all. Optionally (off by default), once your portal is up, customers who were standing with you are removed from the group as they go through, so there's room for the next lot. It only removes people you invited from Mage Services or who asked you in chat, and only while you lead the group.
+
+**Runes.** The bottom right of the window shows how many Runes of Teleportation and Runes of Portals you carry, and you get a chat warning when Runes of Portals drop below 5 (adjustable). The warning starts once it has seen a portal use a rune.
+
 **On-screen alerts.** The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4, ElvUI and Dominos), a message shows at the top of the screen, and the screen edges flash. Each can be turned off.
 
 **Portal button.** A big icon at the top-left of the window casts the portal for the selected request (or Conjure Water for a water request). The top request is picked automatically; click a row to pick another. It can be bound to a key under Key Bindings > AddOns. It updates as soon as combat ends, since the game doesn't allow spell buttons to change during combat.

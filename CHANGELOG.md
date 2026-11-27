@@ -2,6 +2,11 @@
 
 ## 2026-11-27
 
+Mage Services 2.0.0
+- When two or more people want the same city, their rows get an **All** button ("All 3") that invites everyone going there at once.
+- Rune counts at the bottom right of the window (Runes of Teleportation and Runes of Portals), and a chat warning when Runes of Portals drop below 5. The threshold is on the settings page; the warning starts once it has seen a portal use a rune.
+- Optional (off by default): after your portal, customers who were standing with you are removed from the group once they've gone through. Only people you invited from Mage Services or who asked you in chat, and only while you lead the group.
+
 Kill Clock 1.1.0
 - A smaller second line shows how long until your target reaches execute range, e.g. `20% in 0:12`. On by default for warriors and paladins (Execute, Hammer of Wrath); turn it on for any class and set the percentage on the settings page or with `/kclock execute <n>`. Where the game allows it, it turns red once the target is in range.
 - An optional second clock beside the focus frame (`/kclock focus`). It hides while your focus is also your target.

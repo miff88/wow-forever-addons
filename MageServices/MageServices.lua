@@ -67,6 +67,10 @@ local defaults = {
     cantMsg = "Sorry {name}, I can't help with that one right now.",
     point = { "CENTER", "CENTER", 300, 100 },
     theme = "dark",       -- "dark" or "light"
+    -- runes and your group (Group.lua)
+    runeCount = true,     -- rune counts at the bottom right of the window
+    runeLow = 5,          -- warn when Runes of Portals fall below this
+    kickAfterPort = false,-- remove customers from the group once they've gone through your portal
 }
 
 ns.defaults = defaults
@@ -362,11 +366,38 @@ end
 ---------------------------------------------------------------------------
 -- Actions
 ---------------------------------------------------------------------------
+ns.invited = {} -- [name key] = when you invited them from Mage Services
+
 local function Invite(name)
+    ns.invited[ns.NameKey(name)] = GetTime()
     if C_PartyInfo and C_PartyInfo.InviteUnit then
         C_PartyInfo.InviteUnit(name)
     elseif InviteUnit then
         InviteUnit(name)
+    end
+end
+ns.Invite = Invite
+
+-- everyone in the list going to the same city as this request, not yet in your group
+local function SameTrip(req, list)
+    local out = {}
+    if not (req.info and req.info.kind == "port" and req.info.dest) then return out end
+    for _, r in ipairs(list or requests) do
+        if r.info and r.info.kind == "port" and r.info.dest == req.info.dest
+            and not ns.InGroupWith(ns.NameKey(r.sender)) then
+            out[#out + 1] = r
+        end
+    end
+    return out
+end
+ns.SameTrip = SameTrip
+
+local function InviteTrip(req, list)
+    local trip = SameTrip(req, list)
+    for _, r in ipairs(trip) do Invite(r.sender) end
+    if #trip > 0 then
+        Print(("invited %d going to %s: %s"):format(#trip, req.info.dest,
+            table.concat((function() local n = {} for _, r in ipairs(trip) do n[#n + 1] = r.display or r.sender end return n end)(), ", ")))
     end
 end
 
@@ -613,6 +644,19 @@ local function MakeRow(i)
     row.whisper:SetPoint("RIGHT", row.dismiss, "LEFT", -3, 0)
     row.invite = FlatButton(row, 52, 20, "Invite", true)
     row.invite:SetPoint("RIGHT", row.whisper, "LEFT", -3, 0)
+    row.all = FlatButton(row, 38, 20, "All 2")
+    row.all:SetPoint("RIGHT", row.invite, "LEFT", -3, 0)
+    row.all:Hide()
+    row.all:HookScript("OnEnter", function(self)
+        if not row.req then return end
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:AddLine("Invite everyone going to " .. (row.req.info.dest or "the same city"))
+        local names = {}
+        for _, r in ipairs(row.trip or {}) do names[#names + 1] = r.display or r.sender end
+        GameTooltip:AddLine(table.concat(names, ", "), 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    row.all:HookScript("OnLeave", function() GameTooltip:Hide() end)
     row.where = FlatButton(row, 20, 20, "?")
     row.where:SetPoint("RIGHT", row.invite, "LEFT", -3, 0)
     Tooltip(row.where, "Where are they?", "Runs a /who on this player and re-ranks the request by their zone.")
@@ -644,6 +688,7 @@ local function MakeRow(i)
     row:SetScript("OnMouseUp", function(self) if self.req and ns.Select then ns.Select(self.req) end end)
 
     row.invite:SetScript("OnClick", function() if row.req then Invite(row.req.sender) end end)
+    row.all:SetScript("OnClick", function() if row.req then InviteTrip(row.req, row.visible) end end)
     row.where:SetScript("OnClick", function() if row.req then ns.LookupZone(row.req) end end)
     row.whisper:SetScript("OnClick", function() if row.req then OpenWhisper(row.req) end end)
     row.dismiss:SetScript("OnClick", function() if row.req then Remove(row.req) end end)
@@ -753,6 +798,14 @@ Refresh = function()
                 row.sel:SetShown(req.selected and true or false)
                 row.line:SetShown(i < shown)
                 row:SetAlpha(req.priority == LOW and 0.5 or 1)
+                -- two or more going to the same city: one button invites them all
+                row.visible = visible
+                row.trip = SameTrip(req, visible)
+                local together = #row.trip >= 2
+                row.all:SetShown(together)
+                if together then row.all.text:SetText("All " .. #row.trip) end
+                row.where:ClearAllPoints()
+                row.where:SetPoint("RIGHT", together and row.all or row.invite, "LEFT", -3, 0)
                 row:Show()
             else
                 row.req = nil
@@ -1166,16 +1219,15 @@ function ns.BuildOptions()
         title = "Mage Services",
         updateNotice = true,
         changes = {
+            { "2.0.0", "\"All\" button invites everyone going to the same city at once",
+                       "Rune counts on the window, with a warning when Runes of Portals run low",
+                       "Optional: remove customers from the group once they've gone through your portal" },
             { "1.9.0", "Pause / Resume button on the window",
                        "\"Show requests from\": your city only, your city + unknown, or everywhere",
                        "Better at telling where people are: channel zones, guildmates, friends" },
-            { "1.8.1", "This What's new list" },
             { "1.8.0", "Edit your replies on this page, with an example under each",
                        "Optional automatic reply when someone whispers you",
                        "Tells you when a newer version is out" },
-            { "1.7.0", "Hides requests for portals you don't have",
-                       "Option to hide requests that don't say where they are" },
-            { "1.6.0", "Gold amount left out of payment messages" },
         },
         icon = "Interface\\Icons\\Spell_Arcane_PortalOrgrimmar",
         about = "Spots portal and water requests in chat",
@@ -1244,6 +1296,12 @@ function ns.BuildOptions()
               onSelect = function(v) ns.PlayAlertSound(v) end, preview = function(v) ns.PlayAlertSound(v) end },
             { type = "check", key = "flash", label = "Flash the WoW icon on the taskbar" },
             { type = "check", key = "autoInvite", label = "Invite them automatically" },
+            { type = "header", label = "Runes and your group" },
+            { type = "check", key = "runeCount", label = "Show your rune counts at the bottom of the window" },
+            { type = "range", key = "runeLow", label = "Warn when Runes of Portals fall below", min = 0, max = 20, step = 1 },
+            { type = "check", key = "kickAfterPort", label = "After a portal, remove customers from the group once they've gone through" },
+            { type = "info", height = 32, lines = function()
+                return "|cff999999Only people you invited from Mage Services or who asked you in chat, and only once they've vanished from beside you after your portal. You need to be the group leader.|r" end },
             { type = "range", key = "expire", label = "Keep requests for", min = 30, max = 600, step = 30, suffix = "s" },
             { type = "range", key = "maxRows", label = "Rows shown", min = 2, max = 12, step = 1 },
             { type = "header", label = "Preview" },

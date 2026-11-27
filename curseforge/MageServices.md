@@ -27,7 +27,13 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 - **Invite** and **Whisper** on every request. Whisper opens a ready-made reply aimed at the player's full two-part Forever name ("Hi Lil, I can port you to Undercity..."), so you just press Enter.
 - Edit the replies on the settings page, with a live example. `{name}`, `{dest}` and `{zone}` are filled in.
 - **Optional automatic reply** for people who whisper you directly. Never for Trade or General posts, at most once per player every few minutes, and a separate polite reply when you can't help (a portal you don't have, or they're somewhere else).
+- **Invite everyone going to the same city** with one click: rows that share a destination get an "All 3" button, so one portal serves the whole group.
+- **Optional group tidy-up:** after your portal, customers who went through are removed from the group so there's room for the next lot. Only people you invited from Mage Services or who asked you in chat, and only while you lead.
 - Optional auto-invite.
+
+### Runes
+- Your Runes of Teleportation and Runes of Portals counts at the bottom of the window.
+- A chat warning when Runes of Portals run low (below 5 by default, adjustable), so you restock before you run dry mid-service.
 
 ### Hard to miss
 - The matching Portal or Conjure button on your action bars glows (Blizzard bars, Bartender4, ElvUI).
