@@ -27,6 +27,7 @@ local defaults = {
     learned = {},       -- [key] = real duration seen out of combat
     learnedIDs = {},    -- [spellID] = key, for buffs matched by name (new Forever enchants)
     learnedIcons = {},  -- [icon] = key, seen out of combat: names a buff the game hides in combat
+    procIcons = {},     -- [key] = the icon Forever shows on the buff itself (can differ from the spell's)
     pins    = {},       -- keys always shown, greyed out while they're down, in this order
     pinsInCombat = true,-- ...only greyed out in combat (out of combat they hide)
     pinAlpha = 50,      -- how faint a pinned icon is while it's down
@@ -126,6 +127,12 @@ local function BuildLookups()
                 if n then AddName(n, p) end
                 if p.icon == 134400 then p.icon = SpellIcon(id) or p.icon end
             end
+        end
+    end
+    if db and db.procIcons then
+        for _, p in ipairs(ns.PROCS) do
+            local icon = db.procIcons[p.key]
+            if icon then p.icon = icon end
         end
     end
     if db and db.learnedIcons then
@@ -331,6 +338,11 @@ ScanOne = function(aura, found)
         db.learnedIcons[aura.icon] = p.key
         AddIcon(aura.icon, p)
     end
+    if p and not p.generic and aura.icon and not IsSecret(aura.icon) and not InCombatLockdown()
+        and db.procIcons[p.key] ~= aura.icon then
+        db.procIcons[p.key] = aura.icon -- show the same icon as your buff bar
+        p.icon = aura.icon
+    end
     if p and Wanted(p) then
         local f = found[p.key]
         if not f then
@@ -427,7 +439,10 @@ local function SpellAuraSecret(id)
 end
 
 -- Returns true if it could tell anything at all.
-local function CombatScan()
+-- addOnly: the buff list was read too, so it decides what has ended. The game's answer
+-- for one spell in combat can be "not there" for a buff that is (Forever 1.60.1), so only
+-- trust it to add a proc the list couldn't see, never to remove one.
+local function CombatScan(addOnly)
     if testMode then return false end
     local decided, changed = false, false
     local now = GetTime()
@@ -463,7 +478,7 @@ local function CombatScan()
                     Start(p, "seen", { count = a.count }) -- refreshed: still there after its time ran out
                     changed = true
                 end
-            elseif state == "absent" and a and a.source ~= "react" then
+            elseif state == "absent" and a and a.source ~= "react" and not addOnly then
                 Remove(p.key)
                 changed = true
             end
@@ -883,7 +898,8 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
         if not testMode and InCombatLockdown() then
             -- a buff the game hides in combat (Crusader, for one) is skipped by the list read,
             -- so ask about each tracked proc by spell as well whenever anything is hidden
-            if not ScanAuras() or lastHidden > 0 then CombatScan() end
+            if not ScanAuras() then CombatScan()
+            elseif lastHidden > 0 then CombatScan(true) end
         elseif not testMode and not AurasReadable() then
             CombatScan()
         end
@@ -1160,6 +1176,7 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.6.3", "Fixed: since 1.6.1, Flurry, Berserker Rage and other procs could vanish in combat", "Crusader uses the same icon as your buff bar" },
             { "1.6.2", "Buffs the game hides in combat are recognised by their icon (Crusader)", "/proc debug describes each hidden buff" },
             { "1.6.1", "Crusader (and any other buff the game hides in combat) shows in combat again" },
             { "1.6.0", "Tracks the new WoW Forever procs and cooldowns for every class (Reckless Swings, Shield Wall, Heating Up, Eclipse, Infusion of Light, Maelstrom Weapon and more)",

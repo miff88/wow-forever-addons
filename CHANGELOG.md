@@ -2,6 +2,10 @@
 
 ## 2026-11-28
 
+Proc City 1.6.3
+- Fixed a problem in 1.6.1 and 1.6.2: in combat, once any buff was hidden, Proc City also asked the game about each proc by spell, and believed it when the game said a buff wasn't there. In combat Forever answers "not there" for buffs that are up, so Flurry, Berserker Rage and the rest were wiped from the row as fast as they were read. The buff list now decides what has ended, and the per-spell answer can only add a proc the list couldn't see (Crusader).
+- Crusader and other procs show the icon Forever puts on the buff itself (learned when Proc City sees it out of combat), so they match your buff bar. Crusader on Forever uses crossed swords, not the old Holy Strength icon.
+
 Proc City 1.6.2
 - Crusader still didn't show in combat for some players: the game hides the buff's name and spell ID, and won't confirm it when asked by spell either. Proc City now remembers each proc's icon from when it sees the buff out of combat, and in combat recognises a hidden buff by its icon when the game leaves that readable. Two hidden Crusaders count as both weapons.
 - With /proc debug on, each hidden buff is described once per fight (its icon, time left and stacks, or "hidden"), so it's clear what Forever does and doesn't show.
