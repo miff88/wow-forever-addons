@@ -415,6 +415,15 @@ local MIRROR_MAX = 8
 local mirrorBase = {}      -- [auraInstanceID] = true: buffs you already had when the fight started
 local mirrorActive = false -- drawing hidden buffs right now: grey pins can't be trusted to be down
 
+-- debug: say once per fight why hidden buffs can't be drawn
+local mirrorNoted = {}
+local function MirrorNote(why)
+    if debugMode and not mirrorNoted[why] then
+        mirrorNoted[why] = true
+        Debug("can't draw hidden buffs: " .. why)
+    end
+end
+
 local function MirrorAvailable()
     return (C_UnitAuras and C_UnitAuras.GetUnitAuraInstanceIDs and C_UnitAuras.GetAuraDataByAuraInstanceID
         and C_UnitAuras.GetAuraDuration) and true or false
@@ -425,24 +434,30 @@ ns.MirrorAvailable = MirrorAvailable
 local function MirrorIDs()
     if not MirrorAvailable() then return nil end
     local ok, ids = pcall(C_UnitAuras.GetUnitAuraInstanceIDs, "player", MIRROR_FILTER)
-    if not ok or type(ids) ~= "table" or IsSecret(ids) then return nil end
+    if not ok then MirrorNote("the game refused the list of your buffs") return nil end
+    if IsSecret(ids) or type(ids) ~= "table" then MirrorNote("the list of your buffs came back hidden") return nil end
     local set = {}
     for _, id in ipairs(ids) do
-        if IsSecret(id) then return nil end
+        if IsSecret(id) then MirrorNote("your buffs' IDs came back hidden") return nil end
         set[id] = true
     end
+    -- an empty list while you had buffs going in means the game isn't telling, not that they all ended
+    if #ids == 0 and next(mirrorBase) then MirrorNote("the list of your buffs came back empty") return nil end
     return set, ids
 end
 
 local function AuraHidden(id)
     local ok, aura = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, "player", id)
-    if not ok or aura == nil then return nil end -- gone, or can't tell
-    if IsSecret(aura) then return true end
-    return IsSecret(aura.name) or IsSecret(aura.spellId)
+    if not ok then return nil end
+    if IsSecret(aura) then return true end -- (checked before anything else touches it)
+    if aura == nil then return nil end -- gone
+    local okN, hid = pcall(function() return IsSecret(aura.name) or IsSecret(aura.spellId) end)
+    return not okN or hid
 end
 
 local function MirrorStart()
     wipe(mirrorBase)
+    wipe(mirrorNoted)
     local set = MirrorIDs()
     if set then for id in pairs(set) do mirrorBase[id] = true end end
 end
@@ -475,6 +490,10 @@ local function MirrorUpdate()
             for _, id in ipairs(a.insts) do if set[id] then still = true break end end
             if not still then Remove(key); changed = true end
         end
+    end
+    if debugMode then
+        local summary = ("%d of your buffs listed in combat"):format(#ids)
+        if summary ~= mirrorNoted.last then mirrorNoted.last = summary; Debug(summary) end
     end
     -- new buffs this fight that can't be read: draw them as the game does
     local shown = 0
@@ -950,25 +969,37 @@ Layout = function()
         f:ClearAllPoints()
         f:SetPoint("CENTER", anchor, "CENTER", (i - 1) * (size + gap) * dir, 0)
         if a and a.mirror then
-            -- drawn straight from the game: Proc City never reads these values
-            local ok, aura = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, "player", a.mirror)
-            f.tex:SetTexture(ok and aura and aura.icon or 134400)
+            -- drawn straight from the game: Proc City passes these values on without
+            -- reading, testing or comparing them (the game forbids that in combat)
+            local id = a.mirror
+            local drawn = pcall(function()
+                local aura = C_UnitAuras.GetAuraDataByAuraInstanceID("player", id)
+                f.tex:SetTexture(aura.icon)
+            end)
+            if not drawn then
+                f.tex:SetTexture(134400)
+                MirrorNote("the buff's icon couldn't be drawn")
+            end
             if f.tex.SetDesaturated then f.tex:SetDesaturated(false) end
             f:SetAlpha(1)
-            local okD, dur = pcall(C_UnitAuras.GetAuraDuration, "player", a.mirror)
-            if okD and dur and db.swipe ~= false and f.cd.SetCooldownFromDurationObject then
-                pcall(f.cd.SetCooldownFromDurationObject, f.cd, dur)
-                if f.cd.SetHideCountdownNumbers then f.cd:SetHideCountdownNumbers(not db.timer) end
-                f.cd:Show()
-            else
-                f.cd:Hide()
+            f.cd:Hide()
+            if db.swipe ~= false and f.cd.SetCooldownFromDurationObject then
+                local okD = pcall(function()
+                    f.cd:SetCooldownFromDurationObject(C_UnitAuras.GetAuraDuration("player", id))
+                end)
+                if okD then
+                    if f.cd.SetHideCountdownNumbers then f.cd:SetHideCountdownNumbers(not db.timer) end
+                    f.cd:Show()
+                else
+                    MirrorNote("the buff's timer couldn't be drawn")
+                end
             end
-            local text = ""
+            f.stacks:SetText("")
             if C_UnitAuras.GetAuraApplicationDisplayCount then
-                local okS, s = pcall(C_UnitAuras.GetAuraApplicationDisplayCount, "player", a.mirror, 2)
-                if okS and s then text = s end
+                pcall(function()
+                    f.stacks:SetText(C_UnitAuras.GetAuraApplicationDisplayCount("player", id, 2))
+                end)
             end
-            f.stacks:SetText(text)
             f.time:SetText("")
             SetGlow(f, false)
             if f.key ~= e.key then
@@ -1310,6 +1341,7 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.7.1", "Fixed the row going blank in combat when the game hides your buffs", "/proc debug and /proc check say whether hidden buffs can be drawn, and why not" },
             { "1.7.0", "In combat, buffs the game hides are drawn the way your buff bar draws them, so procs show mid-fight again", "A proc read before the fight drops off when its buff ends" },
             { "1.6.4", "/proc check crusader: everything the game says about one proc, right now" },
             { "1.6.3", "Fixed: since 1.6.1, Flurry, Berserker Rage and other procs could vanish in combat", "Crusader uses the same icon as your buff bar" },
@@ -1537,6 +1569,18 @@ SlashCmdList.PROCCITY = function(msg)
         end
         Print("by spell: " .. (#parts > 0 and table.concat(parts, "; ") or "no IDs known"))
         Print(("icons: buff %s, spell %s"):format(tostring(db.procIcons[p.key]), tostring(SpellIcon(p.ids[1]))))
+        local okL, ids = pcall(C_UnitAuras.GetUnitAuraInstanceIDs, "player", "HELPFUL|PLAYER")
+        if not okL then Print("your own buffs by instance: refused")
+        elseif IsSecret(ids) then Print("your own buffs by instance: hidden")
+        else
+            local n, hid = 0, 0
+            for _, id in ipairs(ids) do
+                n = n + 1
+                if AuraHidden(id) then hid = hid + 1 end
+            end
+            Print(("your own buffs by instance: %d listed, %d can't be read, %d drawn now"):format(n, hid,
+                (function() local c = 0 for _, x in pairs(active) do if x.mirror then c = c + 1 end end return c end)()))
+        end
     elseif cmd == "debug" then
         debugMode = not debugMode
         Print(debugMode and "debug on: casts, Strength changes and combat text are printed. /proc debug again to stop." or "debug off.")

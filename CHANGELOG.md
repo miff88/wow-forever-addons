@@ -2,6 +2,10 @@
 
 ## 2026-11-28
 
+Proc City 1.7.1
+- Fixed the row going blank in combat when the game hides your buffs. Drawing a hidden buff no longer tests or compares any of its hidden values (the game stops an addon that does), each icon is drawn on its own so one failure can't take down the rest of the row, and an empty buff list from the game mid-fight no longer counts as every buff having ended.
+- With /proc debug on, Proc City says once per fight how many of your buffs the game listed and, if it can't draw them, why. /proc check also reports it.
+
 Proc City 1.7.0
 - Procs show in combat again when the game hides your buffs. In some fights (open world, for one) Forever hides every buff's name, spell ID, icon and timer from addons, so Proc City had nothing to go on until combat ended. Forever still lets an addon draw a hidden buff the way the buff bar does, without reading it. Proc City now does that: any buff of your own you gain mid-fight that it can't read appears in the row with its real icon, timer sweep, countdown and stacks, and goes when the buff ends. Out of combat everything is read and named as before.
 - A proc Proc City read before the fight now drops off when its buff ends mid-fight, instead of running on a guessed timer.
