@@ -2,6 +2,11 @@
 
 ## 2026-11-28
 
+Proc City 1.7.0
+- Procs show in combat again when the game hides your buffs. In some fights (open world, for one) Forever hides every buff's name, spell ID, icon and timer from addons, so Proc City had nothing to go on until combat ended. Forever still lets an addon draw a hidden buff the way the buff bar does, without reading it. Proc City now does that: any buff of your own you gain mid-fight that it can't read appears in the row with its real icon, timer sweep, countdown and stacks, and goes when the buff ends. Out of combat everything is read and named as before.
+- A proc Proc City read before the fight now drops off when its buff ends mid-fight, instead of running on a guessed timer.
+- While hidden buffs are being drawn, greyed-out pinned procs are hidden, since Proc City can't tell they're really down.
+
 Proc City 1.6.4
 - New `/proc check <name>` (Crusader if no name): prints, in a few lines, whether that proc is showing and why, what the buff list says about it and about any hidden buffs, what the game says when asked by spell, and which icons are in play. Made to diagnose Crusader not showing in combat from a single screenshot.
 

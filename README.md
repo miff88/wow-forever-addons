@@ -46,7 +46,7 @@ Your procs and short buffs as a movable row of icons, with the time left on each
 
 **Pinned procs.** Pin the ones you build around (Flurry, Crusader, Enrage...) on the settings page or with `/proc pin <name>`. They come first, always in the same place, and stay as a faint grey icon while they're down, so a missing proc is as easy to spot as a running one. By default the grey icons only show in combat. The first time each class logs in, a few starter pins are set for it if the character has them (warriors: Overpower, Flurry and Crusader; mages: Clearcasting; and so on); unpin any you don't want and they stay unpinned.
 
-Out of combat Proc City reads your buffs exactly and learns each buff's real Forever duration, and the spell ID and icon of procs that are new in Forever. In combat Forever hides some buffs from addons: Proc City reads the ones it can see, asks the game about each tracked proc by spell, and also uses your own casts, your Strength (Crusader and other Strength procs) and the game's combat text. Weapon procs only count while that weapon is on. `/proc debug` prints what it sees during a fight.
+Out of combat Proc City reads your buffs exactly and learns each buff's real Forever duration, and the spell ID and icon of procs that are new in Forever. In combat Forever can hide your buffs from addons: Proc City reads the ones it can see, and draws any buff of yours it can't read the way the buff bar does (icon, timer and stacks), so procs still show mid-fight. Weapon procs only count while that weapon is on. `/proc debug` prints what it sees during a fight.
 
 - `/proc test` show test icons, `/proc move` move them (`/proc lock` when done), `/proc reset`
 - `/proc grow left|right`, `/proc size <n>`

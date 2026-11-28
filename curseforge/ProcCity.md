@@ -51,7 +51,7 @@ Made for **World of Warcraft: Forever**. Every class.
 | `/proc check <name>` | Everything the game says about one proc right now (default: Crusader) |
 
 ## Good to know
-- Out of combat Proc City reads your buffs exactly and learns their real Forever durations, plus the spell ID and icon of procs that are new in Forever. In combat Forever hides some buffs from addons: Proc City reads the ones it can see, asks the game about each tracked proc, and also uses your casts, your Strength and the game's combat text.
+- Out of combat Proc City reads your buffs exactly and learns their real Forever durations, plus the spell ID and icon of procs that are new in Forever. In combat Forever can hide your buffs from addons: Proc City reads the ones it can see, and draws any buff of yours it can't read exactly as your buff bar does (icon, timer and stacks), so procs still show mid-fight.
 
 ## More WoW Forever addons
 - **[Mage Services](https://www.curseforge.com/wow/addons/mage-services)**: catches portal, food and water requests in chat, with one-click invite, whisper and portal.

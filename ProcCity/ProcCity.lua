@@ -350,6 +350,11 @@ ScanOne = function(aura, found)
             found[p.key] = f
         end
         f.count = f.count + 1
+        local inst = aura.auraInstanceID
+        if inst and not IsSecret(inst) then
+            f.insts = f.insts or {}
+            f.insts[#f.insts + 1] = inst
+        end
         local exp, dur = aura.expirationTime, aura.duration
         if not IsSecret(exp) and exp and exp > 0 and (not f.expires or exp > f.expires) then
             f.expires, f.duration = exp, dur
@@ -385,15 +390,113 @@ ApplyFound = function(found, hidden)
                                expires = f.expires, noTimer = not f.expires })
         end
         active[key].readable = true
+        if f.insts then active[key].insts = f.insts end
     end
     -- anything we were showing that isn't really there any more (abilities aren't buffs).
     -- With some buffs hidden, only a proc we could read before is known to be gone.
     for key, a in pairs(active) do
-        if not found[key] and a.source ~= "react" and (hidden == 0 or a.readable) then Remove(key) end
+        if not found[key] and a.source ~= "react" and not a.mirror and (hidden == 0 or a.readable) then Remove(key) end
     end
     Layout()
     return true
 end
+
+---------------------------------------------------------------------------
+-- In combat: buffs the game won't name. Forever can hide your buffs' names and IDs
+-- from addons in combat, but still lets an addon draw them the way the buff bar does
+-- (icon, timer and stacks, passed straight to the game without being read). Any buff
+-- you gain mid-fight that Proc City can't read is shown that way, so Crusader, Flurry
+-- and the rest still appear; and a proc Proc City could read before the fight is
+-- dropped when its buff goes. Your own buffs only (HELPFUL|PLAYER), so heals and
+-- other people's buffs on you stay out.
+---------------------------------------------------------------------------
+local MIRROR_FILTER = "HELPFUL|PLAYER"
+local MIRROR_MAX = 8
+local mirrorBase = {}      -- [auraInstanceID] = true: buffs you already had when the fight started
+local mirrorActive = false -- drawing hidden buffs right now: grey pins can't be trusted to be down
+
+local function MirrorAvailable()
+    return (C_UnitAuras and C_UnitAuras.GetUnitAuraInstanceIDs and C_UnitAuras.GetAuraDataByAuraInstanceID
+        and C_UnitAuras.GetAuraDuration) and true or false
+end
+ns.MirrorAvailable = MirrorAvailable
+
+-- Your own buffs right now, by aura instance (nil if the game won't list them).
+local function MirrorIDs()
+    if not MirrorAvailable() then return nil end
+    local ok, ids = pcall(C_UnitAuras.GetUnitAuraInstanceIDs, "player", MIRROR_FILTER)
+    if not ok or type(ids) ~= "table" or IsSecret(ids) then return nil end
+    local set = {}
+    for _, id in ipairs(ids) do
+        if IsSecret(id) then return nil end
+        set[id] = true
+    end
+    return set, ids
+end
+
+local function AuraHidden(id)
+    local ok, aura = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, "player", id)
+    if not ok or aura == nil then return nil end -- gone, or can't tell
+    if IsSecret(aura) then return true end
+    return IsSecret(aura.name) or IsSecret(aura.spellId)
+end
+
+local function MirrorStart()
+    wipe(mirrorBase)
+    local set = MirrorIDs()
+    if set then for id in pairs(set) do mirrorBase[id] = true end end
+end
+
+local function MirrorClear()
+    local changed = false
+    for i = #order, 1, -1 do
+        local a = active[order[i]]
+        if a and a.mirror then Remove(order[i]); changed = true end
+    end
+    wipe(mirrorBase)
+    mirrorActive = false
+    return changed
+end
+ns.MirrorClear = MirrorClear
+
+local function MirrorUpdate()
+    if testMode then return false end
+    local set, ids = MirrorIDs()
+    if not set then return false end
+    local changed = false
+    -- a proc read before (or earlier in the fight) whose buff has gone
+    for i = #order, 1, -1 do
+        local key = order[i]
+        local a = active[key]
+        if a and a.mirror then
+            if not set[a.mirror] then Remove(key); changed = true end
+        elseif a and a.insts and a.source == "aura" then
+            local still = false
+            for _, id in ipairs(a.insts) do if set[id] then still = true break end end
+            if not still then Remove(key); changed = true end
+        end
+    end
+    -- new buffs this fight that can't be read: draw them as the game does
+    local shown = 0
+    for _, a in pairs(active) do if a.mirror then shown = shown + 1 end end
+    for _, id in ipairs(ids) do
+        local key = "mirror:" .. id
+        if not mirrorBase[id] and not active[key] and shown < MIRROR_MAX and AuraHidden(id) then
+            local now = GetTime()
+            active[key] = { proc = { key = key, name = "?", cat = "proc" }, mirror = id, source = "mirror",
+                            started = now, seenAt = now, lastAt = now, count = 1 }
+            order[#order + 1] = key
+            shown = shown + 1
+            changed = true
+            mirrorActive = true
+            PlayProcSound()
+            Debug(("hidden buff %d shown as the game draws it"):format(id))
+        end
+    end
+    if changed then Layout() end
+    return true
+end
+ns.MirrorUpdate = MirrorUpdate
 
 ---------------------------------------------------------------------------
 -- In combat: asking for each proc by spell ID
@@ -795,6 +898,7 @@ local function ShowPinned(p)
     if not p or not Wanted(p) then return false end
     if p.items and not HasItem(p) then return false end
     if p.key == "holystrength" and crusaderWeapons == 0 then return false end -- no Crusader on
+    if mirrorActive then return false end -- buffs hidden this fight: it may well be up
     if testMode or unlocked then return true end
     if db.pinsInCombat then
         local ok, c = pcall(UnitAffectingCombat, "player")
@@ -845,7 +949,34 @@ Layout = function()
         f.glow:SetSize(size * 1.8, size * 1.8)
         f:ClearAllPoints()
         f:SetPoint("CENTER", anchor, "CENTER", (i - 1) * (size + gap) * dir, 0)
-        if a then
+        if a and a.mirror then
+            -- drawn straight from the game: Proc City never reads these values
+            local ok, aura = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, "player", a.mirror)
+            f.tex:SetTexture(ok and aura and aura.icon or 134400)
+            if f.tex.SetDesaturated then f.tex:SetDesaturated(false) end
+            f:SetAlpha(1)
+            local okD, dur = pcall(C_UnitAuras.GetAuraDuration, "player", a.mirror)
+            if okD and dur and db.swipe ~= false and f.cd.SetCooldownFromDurationObject then
+                pcall(f.cd.SetCooldownFromDurationObject, f.cd, dur)
+                if f.cd.SetHideCountdownNumbers then f.cd:SetHideCountdownNumbers(not db.timer) end
+                f.cd:Show()
+            else
+                f.cd:Hide()
+            end
+            local text = ""
+            if C_UnitAuras.GetAuraApplicationDisplayCount then
+                local okS, s = pcall(C_UnitAuras.GetAuraApplicationDisplayCount, "player", a.mirror, 2)
+                if okS and s then text = s end
+            end
+            f.stacks:SetText(text)
+            f.time:SetText("")
+            SetGlow(f, false)
+            if f.key ~= e.key then
+                f.key = e.key
+                if f.pop then f.pop:Stop(); f.pop:Play() end
+            end
+        elseif a then
+            if f.cd.SetHideCountdownNumbers then f.cd:SetHideCountdownNumbers(true) end
             f.tex:SetTexture(a.icon or 134400)
             if f.tex.SetDesaturated then f.tex:SetDesaturated(false) end
             f:SetAlpha(1)
@@ -898,8 +1029,10 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
         if not testMode and InCombatLockdown() then
             -- a buff the game hides in combat (Crusader, for one) is skipped by the list read,
             -- so ask about each tracked proc by spell as well whenever anything is hidden
-            if not ScanAuras() then CombatScan()
-            elseif lastHidden > 0 then CombatScan(true) end
+            local listed = ScanAuras()
+            local mirrored = MirrorUpdate()
+            if not listed and not mirrored then CombatScan()
+            elseif listed and lastHidden > 0 and not mirrored then CombatScan(true) end
         elseif not testMode and not AurasReadable() then
             CombatScan()
         end
@@ -920,7 +1053,7 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
                 removed = true
             end
         elseif not a.expires and not testMode and a.source ~= "aura" and a.source ~= "stat"
-            and now - a.started > 30 then
+            and a.source ~= "mirror" and now - a.started > 30 then
             -- "until used" buffs we can't see: give up after 30 seconds
             Remove(key)
             removed = true
@@ -1073,12 +1206,13 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
         Refresh()
         if event == "PLAYER_ENTERING_WORLD" and ns.SeedPins then C_Timer.After(4, ns.SeedPins) end
     elseif event == "PLAYER_REGEN_DISABLED" then
+        MirrorStart()
         Layout() -- pinned procs appear greyed out
         wipe(hiddenShown)
         Debug("combat started; buffs readable: " .. tostring(AurasReadable()) .. ", strength readable: " .. tostring(ReadStr() ~= nil))
     elseif event == "PLAYER_REGEN_ENABLED" then
         -- out of combat: trust the real buffs again
-        C_Timer.After(0.2, function() ScanAuras(); lastStr = ReadStr(); Layout() end)
+        C_Timer.After(0.2, function() MirrorClear(); ScanAuras(); lastStr = ReadStr(); Layout() end)
     elseif event == "UNIT_AURA" then
         if not ScanAuras() and not CombatScan() then OnStats() end
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
@@ -1176,6 +1310,7 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.7.0", "In combat, buffs the game hides are drawn the way your buff bar draws them, so procs show mid-fight again", "A proc read before the fight drops off when its buff ends" },
             { "1.6.4", "/proc check crusader: everything the game says about one proc, right now" },
             { "1.6.3", "Fixed: since 1.6.1, Flurry, Berserker Rage and other procs could vanish in combat", "Crusader uses the same icon as your buff bar" },
             { "1.6.2", "Buffs the game hides in combat are recognised by their icon (Crusader)", "/proc debug describes each hidden buff" },
