@@ -2,7 +2,7 @@
 ## Title: |cffff8000Proc|r City
 ## Notes: Your procs and short buffs as a movable row of icons with the time left: Flurry, Crusader, Clearcasting, trinkets, and Overpower, Revenge and Riposte after a dodge or parry. Any class.
 ## Author: Mitch Brindle
-## Version: 1.6.0
+## Version: 1.6.1
 ## IconTexture: Interface\Icons\Spell_Holy_BlessingOfStrength
 ## Category: Combat
 ## X-Website: https://github.com/miff88/wow-forever-addons

@@ -837,7 +837,9 @@ ticker:SetScript("OnUpdate", function(_, elapsed)
         probeSince = 0
         -- (buff changes don't always come with an event in combat, so look anyway)
         if not testMode and InCombatLockdown() then
-            if not ScanAuras() then CombatScan() end
+            -- a buff the game hides in combat (Crusader, for one) is skipped by the list read,
+            -- so ask about each tracked proc by spell as well whenever anything is hidden
+            if not ScanAuras() or lastHidden > 0 then CombatScan() end
         elseif not testMode and not AurasReadable() then
             CombatScan()
         end
@@ -1113,6 +1115,7 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.6.1", "Crusader (and any other buff the game hides in combat) shows in combat again" },
             { "1.6.0", "Tracks the new WoW Forever procs and cooldowns for every class (Reckless Swings, Shield Wall, Heating Up, Eclipse, Infusion of Light, Maelstrom Weapon and more)",
                        "Overpower shows for every charge, including Bloodthrill procs and mobs without a nameplate",
                        "A Swiftness Potion no longer shows as a Sprinter's Sword proc (weapon procs need the weapon on)",

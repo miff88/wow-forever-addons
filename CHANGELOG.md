@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-28
+
+Proc City 1.6.1
+- Crusader (Holy Strength) didn't show in combat. In combat Forever hides a few buffs from addons and shows the rest. Proc City read the ones it could see and skipped the hidden ones, and only asked the game about each proc by spell when the whole list was hidden, so a hidden Crusader never showed until combat ended. It now asks about every tracked proc by spell whenever any buff is hidden.
+
 ## 2026-11-27
 
 Proc City 1.6.0
