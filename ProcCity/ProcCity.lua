@@ -26,6 +26,7 @@ local defaults = {
     off     = {},       -- [key] = true for procs you've turned off
     learned = {},       -- [key] = real duration seen out of combat
     learnedIDs = {},    -- [spellID] = key, for buffs matched by name (new Forever enchants)
+    learnedIcons = {},  -- [icon] = key, seen out of combat: names a buff the game hides in combat
     pins    = {},       -- keys always shown, greyed out while they're down, in this order
     pinsInCombat = true,-- ...only greyed out in combat (out of combat they hide)
     pinAlpha = 50,      -- how faint a pinned icon is while it's down
@@ -86,8 +87,18 @@ local function AddName(n, p)
     list[#list + 1] = p
 end
 
+-- Icons that belong to exactly one tracked proc: in combat the game can hide a buff's name
+-- and spell ID but still show its icon, which is then enough to say which proc it is.
+local byIcon = {}
+local function AddIcon(icon, p)
+    if not icon or icon == 134400 or IsSecret(icon) then return end
+    local cur = byIcon[icon]
+    if cur == nil then byIcon[icon] = p
+    elseif cur ~= p then byIcon[icon] = false end -- shared by two procs: can't tell them apart
+end
+
 local function BuildLookups()
-    wipe(byID); wipe(byName)
+    wipe(byID); wipe(byName); wipe(byIcon)
     for _, p in ipairs(ns.PROCS) do
         p.icon = p.icon or SpellIcon(p.ids[1]) or 134400
         for _, id in ipairs(p.react and {} or p.ids) do
@@ -97,6 +108,11 @@ local function BuildLookups()
             if n then AddName(n, p) end
         end
         if not p.react then AddName(p.name, p) end
+    end
+    for _, p in ipairs(ns.PROCS) do
+        if not p.react then
+            for _, id in ipairs(p.ids) do AddIcon(SpellIcon(id), p) end
+        end
     end
     -- IDs learned from your own buffs, for entries whose ID isn't published yet
     if db and db.learnedIDs then
@@ -110,6 +126,13 @@ local function BuildLookups()
                 if n then AddName(n, p) end
                 if p.icon == 134400 then p.icon = SpellIcon(id) or p.icon end
             end
+        end
+    end
+    if db and db.learnedIcons then
+        local byKey = {}
+        for _, p in ipairs(ns.PROCS) do byKey[p.key] = p end
+        for icon, key in pairs(db.learnedIcons) do
+            if byKey[key] then AddIcon(icon, byKey[key]) end
         end
     end
 end
@@ -250,6 +273,7 @@ end
 -- Returns true if it could read your buffs (and updated the list from them).
 local ScanOne, ApplyFound
 local lastHidden = 0
+local hiddenShown = {} -- debug: each hidden buff slot described once per fight
 local function ScanAuras()
     if testMode or not AurasReadable() then return false end
     local found, readable, hidden = {}, 0, 0
@@ -264,6 +288,21 @@ local function ScanAuras()
             break
         elseif IsSecret(aura.name) or IsSecret(aura.spellId) then
             hidden = hidden + 1
+            -- the name and ID are hidden: the icon may still say which proc it is
+            local icon = aura.icon
+            local p = icon and not IsSecret(icon) and byIcon[icon]
+            if p and Wanted(p) and (not p.items or HasItem(p)) then
+                ScanOne({ name = p.name, spellId = p.ids[1], icon = icon,
+                          expirationTime = aura.expirationTime, duration = aura.duration,
+                          applications = aura.applications }, found)
+                readable = readable + 1
+            end
+            if debugMode and not hiddenShown[i] then
+                hiddenShown[i] = true
+                local function f(v) if v == nil then return "nil" end return IsSecret(v) and "hidden" or tostring(v) end
+                Debug(("hidden buff %d: icon %s (%s), time left %s, stacks %s"):format(i, f(icon),
+                    p and p.name or "not tracked", f(aura.expirationTime), f(aura.applications)))
+            end
         else
             readable = readable + 1
             ScanOne(aura, found)
@@ -286,6 +325,11 @@ ScanOne = function(aura, found)
         db.learnedIDs[aura.spellId] = p.key
         if p.icon == 134400 and aura.icon and not IsSecret(aura.icon) then p.icon = aura.icon end
         Debug(("learned %s = spell %d"):format(p.name, aura.spellId))
+    end
+    if p and not p.generic and aura.icon and not IsSecret(aura.icon) and db.learnedIcons[aura.icon] ~= p.key
+        and not InCombatLockdown() then
+        db.learnedIcons[aura.icon] = p.key
+        AddIcon(aura.icon, p)
     end
     if p and Wanted(p) then
         local f = found[p.key]
@@ -1014,6 +1058,7 @@ ev:SetScript("OnEvent", function(_, event, arg1, arg2, arg3)
         if event == "PLAYER_ENTERING_WORLD" and ns.SeedPins then C_Timer.After(4, ns.SeedPins) end
     elseif event == "PLAYER_REGEN_DISABLED" then
         Layout() -- pinned procs appear greyed out
+        wipe(hiddenShown)
         Debug("combat started; buffs readable: " .. tostring(AurasReadable()) .. ", strength readable: " .. tostring(ReadStr() ~= nil))
     elseif event == "PLAYER_REGEN_ENABLED" then
         -- out of combat: trust the real buffs again
@@ -1115,6 +1160,7 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.6.2", "Buffs the game hides in combat are recognised by their icon (Crusader)", "/proc debug describes each hidden buff" },
             { "1.6.1", "Crusader (and any other buff the game hides in combat) shows in combat again" },
             { "1.6.0", "Tracks the new WoW Forever procs and cooldowns for every class (Reckless Swings, Shield Wall, Heating Up, Eclipse, Infusion of Light, Maelstrom Weapon and more)",
                        "Overpower shows for every charge, including Bloodthrill procs and mobs without a nameplate",

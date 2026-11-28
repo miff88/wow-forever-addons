@@ -2,6 +2,10 @@
 
 ## 2026-11-28
 
+Proc City 1.6.2
+- Crusader still didn't show in combat for some players: the game hides the buff's name and spell ID, and won't confirm it when asked by spell either. Proc City now remembers each proc's icon from when it sees the buff out of combat, and in combat recognises a hidden buff by its icon when the game leaves that readable. Two hidden Crusaders count as both weapons.
+- With /proc debug on, each hidden buff is described once per fight (its icon, time left and stacks, or "hidden"), so it's clear what Forever does and doesn't show.
+
 Proc City 1.6.1
 - Crusader (Holy Strength) didn't show in combat. In combat Forever hides a few buffs from addons and shows the rest. Proc City read the ones it could see and skipped the hidden ones, and only asked the game about each proc by spell when the whole list was hidden, so a hidden Crusader never showed until combat ended. It now asks about every tracked proc by spell whenever any buff is hidden.
 
