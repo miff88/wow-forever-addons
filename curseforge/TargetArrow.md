@@ -33,4 +33,12 @@ Made for **World of Warcraft: Forever**. Works on every class.
 - The arrow attaches to nameplates, so it needs nameplates switched on (V for enemies).
 - Your target needs to have a nameplate showing for the arrow to appear.
 
+## More WoW Forever addons
+- **[Proc City](https://www.curseforge.com/wow/addons/proc-city)**: your procs and short buffs as a row of icons, including the new Forever talents, plus Overpower on the nameplate of the mob that dodged.
+- **[Mage Services](https://www.curseforge.com/wow/addons/mage-services)**: catches portal, food and water requests in chat, with one-click invite, whisper and portal.
+- **[Buff Notice](https://www.curseforge.com/wow/addons/battle-shout-notice)**: an icon when a buff your class keeps up is missing or about to run out.
+- **[Kick Tally](https://www.curseforge.com/wow/addons/kick-tally)**: announces your successful interrupts and counts your group's kicks.
+- **[Kill Clock](https://www.curseforge.com/wow/addons/kill-clock)**: how long until your target dies, and until it reaches execute range.
+- **[Plate Threat](https://www.curseforge.com/wow/addons/plate-threat)**: your threat on every enemy nameplate, with a warning before you pull aggro.
+
 Created by Miff, supported by Claude. Source and changelog: [github.com/miff88/wow-forever-addons](https://github.com/miff88/wow-forever-addons)

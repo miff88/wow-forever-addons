@@ -50,6 +50,14 @@ Made for **World of Warcraft: Forever**. Every class.
 | `/proc debug` | Print what Proc City sees in combat |
 
 ## Good to know
-- WoW Forever hides buff details from addons during combat. Out of combat Proc City reads your buffs exactly and learns their real durations. In combat it works from your own casts, your Strength and the game's combat text, then corrects itself when combat ends.
+- Out of combat Proc City reads your buffs exactly and learns their real Forever durations, plus the spell ID and icon of procs that are new in Forever. In combat Forever hides some buffs from addons: Proc City reads the ones it can see, asks the game about each tracked proc, and also uses your casts, your Strength and the game's combat text.
+
+## More WoW Forever addons
+- **[Mage Services](https://www.curseforge.com/wow/addons/mage-services)**: catches portal, food and water requests in chat, with one-click invite, whisper and portal.
+- **[Buff Notice](https://www.curseforge.com/wow/addons/battle-shout-notice)**: an icon when a buff your class keeps up is missing or about to run out.
+- **[Kick Tally](https://www.curseforge.com/wow/addons/kick-tally)**: announces your successful interrupts and counts your group's kicks.
+- **[Kill Clock](https://www.curseforge.com/wow/addons/kill-clock)**: how long until your target dies, and until it reaches execute range.
+- **[Plate Threat](https://www.curseforge.com/wow/addons/plate-threat)**: your threat on every enemy nameplate, with a warning before you pull aggro.
+- **[Target Arrow](https://www.curseforge.com/wow/addons/target-arrow)**: an arrow over your target so you can find it in any crowd.
 
 Created by Miff, supported by Claude. Source and changelog: [github.com/miff88/wow-forever-addons](https://github.com/miff88/wow-forever-addons)

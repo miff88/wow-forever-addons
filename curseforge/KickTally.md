@@ -44,4 +44,12 @@ Made for **World of Warcraft: Forever**. Every class.
 - In dungeon fights the game hides enemies' names and spells from addons. Kick Tally remembers names it saw before the pull and uses raid markers; a kick it can't name stays in your own chat window unless you turn on posting it anyway.
 - Say and yell only work inside dungeons and raids; outdoors the game blocks addons from using them.
 
+## More WoW Forever addons
+- **[Proc City](https://www.curseforge.com/wow/addons/proc-city)**: your procs and short buffs as a row of icons, including the new Forever talents, plus Overpower on the nameplate of the mob that dodged.
+- **[Mage Services](https://www.curseforge.com/wow/addons/mage-services)**: catches portal, food and water requests in chat, with one-click invite, whisper and portal.
+- **[Buff Notice](https://www.curseforge.com/wow/addons/battle-shout-notice)**: an icon when a buff your class keeps up is missing or about to run out.
+- **[Kill Clock](https://www.curseforge.com/wow/addons/kill-clock)**: how long until your target dies, and until it reaches execute range.
+- **[Plate Threat](https://www.curseforge.com/wow/addons/plate-threat)**: your threat on every enemy nameplate, with a warning before you pull aggro.
+- **[Target Arrow](https://www.curseforge.com/wow/addons/target-arrow)**: an arrow over your target so you can find it in any crowd.
+
 Created by Miff, supported by Claude. Source and changelog: [github.com/miff88/wow-forever-addons](https://github.com/miff88/wow-forever-addons)

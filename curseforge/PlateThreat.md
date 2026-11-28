@@ -49,4 +49,12 @@ Made for **World of Warcraft: Forever**. Works on every class: damage dealers wa
 - Inside dungeons and raids, Forever may hide threat on nameplates, so the numbers can drop out there. The aggro warning uses the game's threat status, which it usually still shares.
 - The nameplate numbers need enemy nameplates switched on (V by default). The target frame box needs the default target frame.
 
+## More WoW Forever addons
+- **[Proc City](https://www.curseforge.com/wow/addons/proc-city)**: your procs and short buffs as a row of icons, including the new Forever talents, plus Overpower on the nameplate of the mob that dodged.
+- **[Mage Services](https://www.curseforge.com/wow/addons/mage-services)**: catches portal, food and water requests in chat, with one-click invite, whisper and portal.
+- **[Buff Notice](https://www.curseforge.com/wow/addons/battle-shout-notice)**: an icon when a buff your class keeps up is missing or about to run out.
+- **[Kick Tally](https://www.curseforge.com/wow/addons/kick-tally)**: announces your successful interrupts and counts your group's kicks.
+- **[Kill Clock](https://www.curseforge.com/wow/addons/kill-clock)**: how long until your target dies, and until it reaches execute range.
+- **[Target Arrow](https://www.curseforge.com/wow/addons/target-arrow)**: an arrow over your target so you can find it in any crowd.
+
 Created by Miff, supported by Claude. Source and changelog: [github.com/miff88/wow-forever-addons](https://github.com/miff88/wow-forever-addons)
