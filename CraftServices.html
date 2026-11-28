@@ -1,0 +1,143 @@
+<h1>Craft Services</h1>
+<p><strong>Every enchant, craft and lockbox request, in one list.</strong> Craft Services watches chat for people asking for your professions, knows which recipes you have and whether you have the mats, and follows each customer from the first whisper to the payment. It's Mage Services for every profession.</p>
+<p>Made for <strong>World of Warcraft: Forever</strong>. Works on any class, for anyone with a profession (and rogues, for lockboxes).</p>
+<h2>Features</h2>
+<h3>Every profession</h3>
+<ul>
+<li>Enchanting, Blacksmithing, Leatherworking, Tailoring, Alchemy, Engineering, Jewelcrafting, Inscription, Cooking and First Aid, plus <strong>Lockpicking</strong> for rogues.</li>
+<li>Watches only the professions ticked on the settings page. The ones you've trained start ticked; tick any others you want (one an alt has, say). Nothing else is picked up.</li>
+</ul>
+<h3>Knows your recipes</h3>
+<ul>
+<li>Open each profession window once and it reads every recipe you've learned, with its materials and description. It updates when you learn something new.</li>
+<li>So it can tell "you know this and have the mats" from "you're short 2 Illusion Dust" or "you don't have this recipe".</li>
+<li><code>/cs can crusader</code> tells you on the spot. <code>/cs shopping</code> lists the mats you're short of for everyone waiting.</li>
+</ul>
+<h3>Understands what people ask for</h3>
+<ul>
+<li>Links to recipes, items or enchants, and recipe names: "LF tailor runecloth bag".</li>
+<li>Enchant nicknames: "crusader", "+7 agi gloves", "minor speed boots", "2h int". When it could be two enchants, it asks them which rather than guessing.</li>
+<li>Notices who brings the mats ("have mats", "your mats").</li>
+<li>Ignores other crafters' adverts ("WTS", "LFW"), mage requests (ports, water) and chatter like "crusader is the best enchant".</li>
+<li>Allows typos ("firey", "enchnter") as long as the first letter is right.</li>
+<li>Add your own phrases (<code>/cs add</code>) and words to ignore (<code>/cs exclude</code>).</li>
+</ul>
+<h3>Replies that do the work</h3>
+<ul>
+<li><strong>Whisper</strong> opens a ready-made reply: "Hi Ana, I can do Enchant Weapon - Crusader for you for 5g. You're #2 in line. Sending you an invite." Edit them on the settings page.</li>
+<li>Different replies when you're short on mats, when they didn't say what they want, and for lockboxes.</li>
+<li><strong>Optional automatic reply</strong> to whispers (never Trade or General), at most once per player every few minutes.</li>
+<li><strong>Optional automatic invite</strong>, only when you know the recipe and have the mats (or they bring them).</li>
+</ul>
+<h3>From request to paid</h3>
+<ul>
+<li>Each customer moves through <em>replied</em>, <em>invited</em>, <em>in your group</em>, <em>mats received</em>, <em>trading</em> and <em>paid</em>. The window shows who's next and how many are in your queue.</li>
+<li>Repeat customers are tagged "regular", with their history in <code>/cs customers</code>.</li>
+<li><strong>Profession button:</strong> the big icon on the window opens your profession straight to the recipe they want, or casts Pick Lock for a lockbox. Bindable to a key.</li>
+</ul>
+<h3>Trade helper</h3>
+<p>A panel beside the trade window:
+- <strong>Mats checklist:</strong> each reagent, how many are in your bags and how many they're handing over.
+- <strong>Their item:</strong> whether the enchant fits what they put in the "will not be traded" slot, or for a lockbox, whether it's locked and your lockpicking is high enough.
+- <strong>Payment:</strong> what they're offering against your price.
+- <strong>Enchant their item</strong> (first click opens the recipe, the next puts the enchant on their item), <strong>Pick Lock</strong>, <strong>Open recipe</strong>, <strong>Ask to pay</strong> and <strong>Ask for mats</strong> buttons.</p>
+<h3>Prices and advert</h3>
+<ul>
+<li>Set prices with <code>/cs price crusader 5g</code> or on the settings page; they go into replies and the trade panel.</li>
+<li>Feature your best recipes and the <strong>Advertise</strong> button posts "LFW Enchanter and Tailor in Orgrimmar: Crusader, Minor Speed. Whisper me!". At most once every 3 minutes (adjustable), with a countdown on the button.</li>
+</ul>
+<h3>Payments and earnings</h3>
+<ul>
+<li>After a trade it posts the result in party chat, or a whisper if they've left: payment received, mats received, cancelled or failed. The gold amount is left out by default.</li>
+<li>Earnings saved through logouts, split by profession and by recipe: all characters, this character and this session.</li>
+<li><strong>Optional group tidy-up:</strong> customers who've paid are removed from your group after a short wait. Only people you invited, only while you lead, never in combat.</li>
+</ul>
+<h3>Hard to miss</h3>
+<ul>
+<li>Message at the top of the screen, screen-edge flash and a sound of your choice.</li>
+<li>Dark and light themes, a full settings page under Options &gt; AddOns, and an entry on the minimap's addon button.</li>
+</ul>
+<h2>Commands</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/cs</code></td>
+<td>Open settings</td>
+</tr>
+<tr>
+<td><code>/cs recipes</code></td>
+<td>What it knows of your professions</td>
+</tr>
+<tr>
+<td><code>/cs can &lt;recipe&gt;</code></td>
+<td>Do you know it, and do you have the mats?</td>
+</tr>
+<tr>
+<td><code>/cs price &lt;recipe&gt; &lt;amount&gt;</code> / <code>/cs prices</code></td>
+<td>Set or list your prices</td>
+</tr>
+<tr>
+<td><code>/cs feature &lt;recipe&gt;</code> / <code>/cs featured</code></td>
+<td>Choose what your advert lists</td>
+</tr>
+<tr>
+<td><code>/cs ad</code></td>
+<td>Post your advert</td>
+</tr>
+<tr>
+<td><code>/cs shopping</code></td>
+<td>Mats you're short of for the current requests</td>
+</tr>
+<tr>
+<td><code>/cs customers</code></td>
+<td>Your best customers</td>
+</tr>
+<tr>
+<td><code>/cs autoreply</code> / <code>/cs autoinvite</code></td>
+<td>Turn those on or off</td>
+</tr>
+<tr>
+<td><code>/cs pause</code> / <code>/cs resume</code></td>
+<td>Stop or start taking requests on this character</td>
+</tr>
+<tr>
+<td><code>/cs filter here, nearby or all</code></td>
+<td>Which requests to show</td>
+</tr>
+<tr>
+<td><code>/cs earnings</code></td>
+<td>Your earnings</td>
+</tr>
+<tr>
+<td><code>/cs test</code></td>
+<td>Add sample requests to try the window</td>
+</tr>
+<tr>
+<td><code>/cs help</code></td>
+<td>All commands</td>
+</tr>
+</tbody>
+</table>
+<h2>Good to know</h2>
+<ul>
+<li>Open each profession window once after installing so it can read your recipes. It still spots requests before that, it just can't check recipes and mats yet.</li>
+<li>WoW Forever hides chat text from addons inside dungeons, raids, Mythic+ and PvP, so requests are only picked up out in the world.</li>
+<li>The game only lets addons post in Trade from a click or key press, so the advert never posts by itself.</li>
+</ul>
+<h2>More WoW Forever addons</h2>
+<ul>
+<li><strong><a href="https://www.curseforge.com/wow/addons/proc-city">Proc City</a></strong>: Overpower on the mob that dodged you, plus Revenge, Victory Rush, Riposte, Counterattack and Mongoose Bite, with their buttons lit.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/mage-services">Mage Services</a></strong>: catches portal, food and water requests in chat, with one-click invite, whisper and portal.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/battle-shout-notice">Buff Notice</a></strong>: an icon when a buff your class keeps up is missing or about to run out.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/kick-tally">Kick Tally</a></strong>: announces your successful interrupts and counts your group's kicks.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/kill-clock">Kill Clock</a></strong>: how long until your target dies, and until it reaches execute range.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/plate-threat">Plate Threat</a></strong>: your threat on every enemy nameplate, with a warning before you pull aggro.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/target-arrow">Target Arrow</a></strong>: an arrow over your target so you can find it in any crowd.</li>
+</ul>
+<p>Created by Miff, supported by Claude. Source and changelog: <a href="https://github.com/miff88/wow-forever-addons">github.com/miff88/wow-forever-addons</a></p>

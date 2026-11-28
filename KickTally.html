@@ -1,0 +1,83 @@
+<h1>Kick Tally</h1>
+<p><strong>Know when your kick landed, and who's pulling their weight.</strong> Kick Tally announces your successful interrupts in chat and keeps a small window with how many kicks each person in your party or raid has landed.</p>
+<p>Made for <strong>World of Warcraft: Forever</strong>. Every class.</p>
+<h2>Features</h2>
+<h3>Your kicks</h3>
+<ul>
+<li>Announces each successful interrupt: "Pummel interrupted Defias Pillager's Fireball!"</li>
+<li>Post to auto (instance, raid or party chat), party, raid, instance, say or yell, or just your own chat window.</li>
+<li>Edit the message with <code>{target}</code>, <code>{spell}</code>, <code>{ability}</code> and <code>{count}</code>.</li>
+<li>Tells you (only you) when your kick didn't interrupt anything.</li>
+<li>Optional sound.</li>
+</ul>
+<h3>The group's kicks</h3>
+<ul>
+<li>A window styled like the game's own damage meter: class-coloured bars, C / O for this fight or overall, and a minimise button. Hover a row to see what that player kicked.</li>
+<li>Resize it by dragging the corner, and scroll with the mouse wheel when there are more players than fit.</li>
+<li>Show or hide it, or only show it in a party or raid. Bar height and background opacity are adjustable.</li>
+<li><strong>Interrupt cooldowns</strong> count down over the class icons: yours, and your group's when they run Kick Tally too. See at a glance whose kick is up next.</li>
+<li><strong>More accurate with friends:</strong> group members who also run Kick Tally send you their kicks directly, so their counts are exact instead of worked out from timing.</li>
+<li><code>/ktally report</code> posts the tally to your group, and it can post a boss fight's tally automatically when the boss dies.</li>
+</ul>
+<h3>What counts</h3>
+<ul>
+<li>Pummel, Shield Bash, Kick, Counterspell, Earth Shock, Spell Lock, Feral Charge and Silence.</li>
+<li>Optionally, stuns and fears that stop a cast: Hammer of Justice, Bash, Concussion Blow, Kidney Shot, Gouge, War Stomp, Intimidation and more.</li>
+</ul>
+<h2>Commands</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/ktally</code></td>
+<td>Open settings</td>
+</tr>
+<tr>
+<td><code>/ktally test</code></td>
+<td>Sample window and message</td>
+</tr>
+<tr>
+<td><code>/ktally report</code> / <code>/ktally report total</code></td>
+<td>Post this fight's (or all) kicks to the group</td>
+</tr>
+<tr>
+<td><code>/ktally lock</code> / <code>/ktally unlock</code></td>
+<td>Lock or move the window</td>
+</tr>
+<tr>
+<td><code>/ktally show</code> / <code>/ktally hide</code></td>
+<td>Show or hide the window</td>
+</tr>
+<tr>
+<td><code>/ktally reset</code> / <code>/ktally reset position</code></td>
+<td>Clear all kick data (also in the window's C / O and gear menus) or reset the window position</td>
+</tr>
+<tr>
+<td><code>/ktally debug</code></td>
+<td>Print the casts and interrupts it sees</td>
+</tr>
+</tbody>
+</table>
+<h2>Good to know</h2>
+<ul>
+<li>WoW Forever doesn't let addons read the combat log. Your own kicks are exact: Kick Tally sees your interrupt and the enemy's cast stopping. In combat the game hides which spells other players cast, so their kicks are counted when their cast lands at the same moment an enemy's cast is interrupted.</li>
+<li>Keep enemy nameplates on (V) so it sees every enemy, not just your target.</li>
+<li>The game blocks addon chat messages during boss fights. There your kicks show in your own chat window instead.</li>
+<li>In dungeon fights the game hides enemies' names and spells from addons. Kick Tally remembers names it saw before the pull and uses raid markers; a kick it can't name stays in your own chat window unless you turn on posting it anyway.</li>
+<li>Say and yell only work inside dungeons and raids; outdoors the game blocks addons from using them.</li>
+</ul>
+<h2>More WoW Forever addons</h2>
+<ul>
+<li><strong><a href="https://www.curseforge.com/wow/addons/proc-city">Proc City</a></strong>: Overpower on the mob that dodged you, plus Revenge, Victory Rush, Riposte, Counterattack and Mongoose Bite, with their buttons lit.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/mage-services">Mage Services</a></strong>: catches portal, food and water requests in chat, with one-click invite, whisper and portal.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/battle-shout-notice">Buff Notice</a></strong>: an icon when a buff your class keeps up is missing or about to run out.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/kill-clock">Kill Clock</a></strong>: how long until your target dies, and until it reaches execute range.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/plate-threat">Plate Threat</a></strong>: your threat on every enemy nameplate, with a warning before you pull aggro.</li>
+<li><strong><a href="https://www.curseforge.com/wow/addons/target-arrow">Target Arrow</a></strong>: an arrow over your target so you can find it in any crowd.</li>
+</ul>
+<p>Created by Miff, supported by Claude. Source and changelog: <a href="https://github.com/miff88/wow-forever-addons">github.com/miff88/wow-forever-addons</a></p>
