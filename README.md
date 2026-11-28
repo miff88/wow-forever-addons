@@ -40,20 +40,23 @@ Also adds a retail-style threat box on top of the target frame, coloured by your
 ### Proc City (`/proc`)
 <img src="logos/ProcCity.png" alt="ProcCity logo" width="96">
 
-Your procs and short buffs as a movable row of icons, with the time left on each: Flurry, Enrage, Blood Craze, Clearcasting, Vengeance, Shadow Trance, Quick Shots, the new Forever talents (Reckless Swings, Heating Up, Eclipse, Infusion of Light, Maelstrom Weapon and more), Crusader (Holy Strength), the new Forever enchants Insight and Revelation, every Forever weapon that buffs you (Destiny, Arcanite Champion, Ragehammer, Hand of Edward the Odd and more), item procs, on-use trinkets, class cooldowns and racials, for every class. Icons grow to the right or left as procs happen. When Crusader is up on both weapons at once, its icon glows. Any equipped trinket with a Use is picked up automatically, even if it's new to Forever.
+The abilities that light up for a few seconds in a fight, as a movable row of icons with the time left on each, and their buttons glow on your action bars (Blizzard bars, Bartender4, ElvUI and Dominos):
 
-**After a dodge, parry or block.** Overpower, Revenge (warriors), Riposte (rogues), Counterattack and Mongoose Bite (hunters) join the row for their 5 second window, and their buttons glow on your action bars. Overpower also puts an icon on the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave: a nameplate dodge only counts when your Overpower charge goes up at the same moment, so dodges against other players are ignored. The others only show while the game says you can cast them, and go away once you use them. Mongoose Bite only shows when the game confirms it, since your target dodging your pet looks the same as dodging you. This used to be Proc Plates (Overpower Plates). Shadow Trance also lights your Shadow Bolt buttons.
+- **Warriors:** Overpower after a mob dodges you, Revenge after you block, dodge or parry, and Victory Rush after a kill.
+- **Rogues:** Riposte after you parry. **Hunters:** Counterattack after you parry, and Mongoose Bite after your target dodges.
 
-**Pinned procs.** Pin the ones you build around (Flurry, Crusader, Enrage...) on the settings page or with `/proc pin <name>`. They come first, always in the same place, and stay as a faint grey icon while they're down, so a missing proc is as easy to spot as a running one. By default the grey icons only show in combat. The first time each class logs in, a few starter pins are set for it if the character has them (warriors: Overpower, Flurry and Crusader; mages: Clearcasting; and so on); unpin any you don't want and they stay unpinned.
+**Overpower on the right mob.** Overpower also puts an icon on the nameplate of the mob that dodged you, including off-target dodges from Whirlwind and Cleave. A nameplate dodge only counts when your Overpower charge goes up at the same moment, so dodges against other players are ignored. A charge with no dodge to match (Bloodthrill, or a mob without a nameplate) still shows in the row. The others only show while the game says you can cast them, and go away once you use them.
 
-Out of combat Proc City reads your buffs exactly and learns each buff's real Forever duration, and the spell ID and icon of procs that are new in Forever. In combat Forever can hide your buffs from addons: Proc City reads the ones it can see, and draws any buff of yours it can't read the way the buff bar does (icon, timer and stacks), so procs still show mid-fight. Weapon procs only count while that weapon is on. `/proc debug` prints what it sees during a fight.
+**Pinned.** Pin the ones you build around on the settings page or with `/proc pin <name>`. They keep their place and stay as a faint grey icon while they're down (by default only in combat). Warriors get Overpower pinned the first time they log in.
+
+**Buff procs (Flurry, Crusader, Clearcasting...).** WoW Forever hides your buffs from addons in combat, open world included, so no addon can show buff procs mid-fight. Proc City 1.x tried and could only catch up when combat ended, so 2.0 leaves them to the game's own Cooldown Manager: turn it on under Options > Gameplay > Advanced and add the buffs you want to its Tracked Buffs.
 
 - `/proc test` show test icons, `/proc move` move them (`/proc lock` when done), `/proc reset`
 - `/proc grow left|right`, `/proc size <n>`
-- `/proc list` what's tracked for your class, `/proc off <name>` / `/proc on <name>`
+- `/proc list` what's shown for your class, `/proc off <name>` / `/proc on <name>`
 - `/proc pin <name>` / `/proc unpin <name>` keep it on screen, greyed out while it's down
 - `/proc glow` the action button glow, `/proc plates` the Overpower nameplate icon
-- `/proc debug` print casts, Strength changes, combat text, dodges and parries in combat
+- `/proc debug` what Proc City sees: Overpower charges, dodges and parries, and your action buttons
 
 ### Kick Tally (`/ktally`, also `/kicks`)
 <img src="logos/KickTally.png" alt="KickTally logo" width="96">

@@ -75,7 +75,7 @@ Made for **World of Warcraft: Forever**. Works on any class, built for mages.
 - The game only allows /who from a click, so the **?** lookup can't run automatically.
 
 ## More WoW Forever addons
-- **[Proc City](https://www.curseforge.com/wow/addons/proc-city)**: your procs and short buffs as a row of icons, including the new Forever talents, plus Overpower on the nameplate of the mob that dodged.
+- **[Proc City](https://www.curseforge.com/wow/addons/proc-city)**: Overpower on the mob that dodged you, plus Revenge, Victory Rush, Riposte, Counterattack and Mongoose Bite, with their buttons lit.
 - **[Buff Notice](https://www.curseforge.com/wow/addons/battle-shout-notice)**: an icon when a buff your class keeps up is missing or about to run out.
 - **[Kick Tally](https://www.curseforge.com/wow/addons/kick-tally)**: announces your successful interrupts and counts your group's kicks.
 - **[Kill Clock](https://www.curseforge.com/wow/addons/kill-clock)**: how long until your target dies, and until it reaches execute range.

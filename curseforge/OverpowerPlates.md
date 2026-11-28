@@ -1,6 +1,6 @@
 # Proc Plates is now part of Proc City
 
-**Proc Plates (formerly Overpower Plates) has moved into [Proc City](https://www.curseforge.com/wow/addons/proc-city).** Everything it did is there now, alongside your other procs and buffs, and this page won't get any more updates.
+**Proc Plates (formerly Overpower Plates) has moved into [Proc City](https://www.curseforge.com/wow/addons/proc-city).** Everything it did is there now, plus Victory Rush, and this page won't get any more updates.
 
 ## What to do
 1. Install **[Proc City](https://www.curseforge.com/wow/addons/proc-city)** from CurseForge.
@@ -16,7 +16,7 @@
 The last Proc Plates version (2.1.0) still works on its own if you'd rather not switch yet, and reminds you at login that it has moved.
 
 ## More WoW Forever addons
-- **[Proc City](https://www.curseforge.com/wow/addons/proc-city)**: your procs and short buffs as a row of icons, including the new Forever talents, plus Overpower on the nameplate of the mob that dodged.
+- **[Proc City](https://www.curseforge.com/wow/addons/proc-city)**: Overpower on the mob that dodged you, plus Revenge, Victory Rush, Riposte, Counterattack and Mongoose Bite, with their buttons lit.
 - **[Mage Services](https://www.curseforge.com/wow/addons/mage-services)**: catches portal, food and water requests in chat, with one-click invite, whisper and portal.
 - **[Buff Notice](https://www.curseforge.com/wow/addons/battle-shout-notice)**: an icon when a buff your class keeps up is missing or about to run out.
 - **[Kick Tally](https://www.curseforge.com/wow/addons/kick-tally)**: announces your successful interrupts and counts your group's kicks.

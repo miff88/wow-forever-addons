@@ -2,6 +2,12 @@
 
 ## 2026-11-28
 
+Proc City 2.0.0
+- Proc City now shows the abilities that light up in a fight: Overpower (with its icon on the nameplate of the mob that dodged you), Revenge, Victory Rush, Riposte, Counterattack and Mongoose Bite, with their action buttons lit.
+- Victory Rush is new: it lights up when the game says it can be cast after a kill.
+- Buff procs are gone (Flurry, Crusader, Clearcasting, trinkets, cooldowns, racials). WoW Forever hides your buffs from addons in combat, open world included: it hides their names, IDs and timers, and refuses to list them at all, so Proc City could only catch up once combat ended. The game's own Cooldown Manager can show them (Options > Gameplay > Advanced, then Tracked Buffs). Proc City says so once when you log in.
+- Old buff settings and pins are cleared out. Your layout, the Overpower nameplate settings and pins for the abilities above are kept.
+
 Proc City 1.7.1
 - Fixed the row going blank in combat when the game hides your buffs. Drawing a hidden buff no longer tests or compares any of its hidden values (the game stops an addon that does), each icon is drawn on its own so one failure can't take down the rest of the row, and an empty buff list from the game mid-fight no longer counts as every buff having ended.
 - With /proc debug on, Proc City says once per fight how many of your buffs the game listed and, if it can't draw them, why. /proc check also reports it.

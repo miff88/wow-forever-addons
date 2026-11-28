@@ -1,5 +1,6 @@
--- Proc City: abilities that light up after a dodge, parry or block.
+-- Proc City: abilities that light up after a dodge, parry, block or kill.
 --   Warrior  Revenge        after you block, dodge or parry
+--   Warrior  Victory Rush   after you kill something (watched for becoming castable)
 --   Rogue    Riposte        after you parry
 --   Hunter   Counterattack  after you parry
 --   Hunter   Mongoose Bite  after your target dodges
@@ -18,6 +19,7 @@ local _, ns = ...
 local GRACE = 0.5      -- the game may say "usable" a moment after the dodge arrives
 local mine = {}        -- the entries for your class that you know (Overpower aside)
 local pending = {}     -- [key] = when its dodge / parry / block happened
+local wasUsable = {}   -- [key] = last answer, for the ones that start when they become castable
 local seen = { player = 0, target = 0, text = 0, secret = 0 }
 
 local function IsSecret(v)
@@ -64,6 +66,14 @@ local function Tick()
     local now = GetTime()
     local active = ns.Active()
     for _, p in ipairs(mine) do
+        if p.poll then
+            -- Victory Rush: starts the moment the game says it can be cast after not being castable
+            local u = Usable(p)
+            if u == true and wasUsable[p.key] == false and not active[p.key] and ns.Wanted(p) then
+                ns.Start(p, "react", { duration = p.dur })
+            end
+            if u ~= nil then wasUsable[p.key] = u end
+        end
         local t = pending[p.key]
         if t then
             local u = Usable(p)

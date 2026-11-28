@@ -1,6 +1,5 @@
--- Proc City: lights your action buttons for procs you act on: Overpower, Revenge,
--- Riposte, Counterattack and Mongoose Bite while they're up, and Shadow Bolt during
--- Shadow Trance. A gold glow and border laid over the button as its own frame, so the
+-- Proc City: lights your action buttons for the abilities it shows: Overpower, Revenge,
+-- Victory Rush, Riposte, Counterattack and Mongoose Bite while they're up. A gold glow and border laid over the button as its own frame, so the
 -- action buttons themselves are never touched (they're protected in combat).
 -- (From Overpower Plates / Proc Plates, now part of Proc City.)
 
