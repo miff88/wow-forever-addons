@@ -1176,6 +1176,7 @@ function ns.BuildOptions()
         title = "Proc City",
         updateNotice = true,
         changes = {
+            { "1.6.4", "/proc check crusader: everything the game says about one proc, right now" },
             { "1.6.3", "Fixed: since 1.6.1, Flurry, Berserker Rage and other procs could vanish in combat", "Crusader uses the same icon as your buff bar" },
             { "1.6.2", "Buffs the game hides in combat are recognised by their icon (Crusader)", "/proc debug describes each hidden buff" },
             { "1.6.1", "Crusader (and any other buff the game hides in combat) shows in combat again" },
@@ -1357,6 +1358,50 @@ SlashCmdList.PROCCITY = function(msg)
             parts[#parts + 1] = (db.off[p.key] or not db.cats[p.cat]) and ("|cff888888" .. p.name .. "|r") or p.name
         end
         Print("tracked for your class (grey = off): " .. table.concat(parts, ", "))
+    elseif cmd == "check" then
+        -- one proc, everything the game will say about it right now (short enough for one screenshot)
+        local want = (rest and rest ~= "" and rest or "crusader"):lower()
+        local p
+        for _, q in ipairs(ns.PROCS) do
+            if not q.react and (q.key == want or q.name:lower() == want or (q.alias and q.alias == want)) then p = q break end
+        end
+        if not p then Print("check: no proc called " .. want) return end
+        local function f(v) if v == nil then return "nil" end return IsSecret(v) and "hidden" or tostring(v) end
+        local now = GetTime()
+        local a = active[p.key]
+        Print(("check %s: in combat %s, tracked %s%s, showing %s"):format(p.name, tostring(InCombatLockdown()),
+            tostring(Wanted(p)), p.key == "holystrength" and (", Crusader on " .. crusaderWeapons .. " weapon(s)") or "",
+            a and (a.source .. (a.expires and (" " .. math.floor(a.expires - now + 0.5) .. "s") or "") .. " x" .. (a.count or 1)) or "no"))
+        local total, hiddenN, lines = 0, 0, {}
+        for i = 1, 40 do
+            local ok, aura = pcall(C_UnitAuras.GetAuraDataByIndex, "player", i, "HELPFUL")
+            if not ok then lines[#lines + 1] = "list read failed at " .. i break end
+            if aura == nil then break end
+            total = total + 1
+            if IsSecret(aura) then
+                hiddenN = hiddenN + 1
+                lines[#lines + 1] = ("[%d] whole buff hidden"):format(i)
+            else
+                local name, id, icon = aura.name, aura.spellId, aura.icon
+                local hid = IsSecret(name) or IsSecret(id)
+                if hid then hiddenN = hiddenN + 1 end
+                local mine = (not IsSecret(id) and id and byID[id] == p) or (not IsSecret(name) and name == p.name)
+                    or (not IsSecret(icon) and icon and (icon == p.icon or db.procIcons[p.key] == icon))
+                if hid or mine then
+                    lines[#lines + 1] = ("[%d] %s id %s icon %s left %s"):format(i, f(name), f(id), f(icon),
+                        IsSecret(aura.expirationTime) and "hidden" or (aura.expirationTime and math.floor(aura.expirationTime - now + 0.5) or "nil"))
+                end
+            end
+        end
+        Print(("buff list: %d buffs, %d hidden; this proc or hidden:"):format(total, hiddenN))
+        for _, l in ipairs(lines) do Print("  " .. l) end
+        local parts = {}
+        for _, id in ipairs(IDsFor(p)) do
+            local st = ProbeAura(id)
+            parts[#parts + 1] = ("%d %s%s"):format(id, st or "?", SpellAuraSecret(id) and " (secret)" or "")
+        end
+        Print("by spell: " .. (#parts > 0 and table.concat(parts, "; ") or "no IDs known"))
+        Print(("icons: buff %s, spell %s"):format(tostring(db.procIcons[p.key]), tostring(SpellIcon(p.ids[1]))))
     elseif cmd == "debug" then
         debugMode = not debugMode
         Print(debugMode and "debug on: casts, Strength changes and combat text are printed. /proc debug again to stop." or "debug off.")

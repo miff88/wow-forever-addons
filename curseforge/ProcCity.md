@@ -48,6 +48,7 @@ Made for **World of Warcraft: Forever**. Every class.
 | `/proc glow` | Turn the action button glow on or off |
 | `/proc plates` | Turn the Overpower nameplate icon on or off (warriors) |
 | `/proc debug` | Print what Proc City sees in combat |
+| `/proc check <name>` | Everything the game says about one proc right now (default: Crusader) |
 
 ## Good to know
 - Out of combat Proc City reads your buffs exactly and learns their real Forever durations, plus the spell ID and icon of procs that are new in Forever. In combat Forever hides some buffs from addons: Proc City reads the ones it can see, asks the game about each tracked proc, and also uses your casts, your Strength and the game's combat text.

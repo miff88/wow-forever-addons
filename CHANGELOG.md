@@ -2,6 +2,9 @@
 
 ## 2026-11-28
 
+Proc City 1.6.4
+- New `/proc check <name>` (Crusader if no name): prints, in a few lines, whether that proc is showing and why, what the buff list says about it and about any hidden buffs, what the game says when asked by spell, and which icons are in play. Made to diagnose Crusader not showing in combat from a single screenshot.
+
 Proc City 1.6.3
 - Fixed a problem in 1.6.1 and 1.6.2: in combat, once any buff was hidden, Proc City also asked the game about each proc by spell, and believed it when the game said a buff wasn't there. In combat Forever answers "not there" for buffs that are up, so Flurry, Berserker Rage and the rest were wiped from the row as fast as they were read. The buff list now decides what has ended, and the per-spell answer can only add a proc the list couldn't see (Crusader).
 - Crusader and other procs show the icon Forever puts on the buff itself (learned when Proc City sees it out of combat), so they match your buff bar. Crusader on Forever uses crossed swords, not the old Holy Strength icon.
